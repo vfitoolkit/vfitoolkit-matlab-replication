@@ -1,4 +1,9 @@
-% Aiyagari1994_Tables
+% Replicates the results (and more) of Aiyagari (1994)
+% Note: The algorithm used for calculating the general equilibrium is not what you would want to use normally for solving this model. It finds the general equilibrium using a discrete grid on interest rates, rather
+% than just solving the fixed-point problem on interest rates directly by using optimization. This is done for robustness reasons and because these codes were written as part of a paper on
+% a convergent algorithm for solving Bewley-Huggett-Aiyagari-models.
+
+
 
 Parallel=2 %GPU
 
@@ -40,7 +45,7 @@ vfoptions.parallel=Parallel;
 vfoptions.returnmatrix=Parallel;
 %vfoptions.verbose=1
 
-simoptions.ssfull=1
+simoptions.iterate=1
 simoptions.ncores=4; % Number of CPU cores
 simoptions.burnin=10000;
 simoptions.simperiods=50000;

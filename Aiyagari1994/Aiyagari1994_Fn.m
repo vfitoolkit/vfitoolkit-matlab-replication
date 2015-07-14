@@ -102,16 +102,13 @@ ReturnFnParams=[alpha,delta,mu,p_test]; %It is important that these are in same 
 % toc
 % 
 % tic;
-% SteadyStateDist=SteadyState_Case1_Simulation(Policy,n_d,n_a,n_z,pi_z, simoptions);
+% StationaryDist=SteadyState_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions);
 % toc
-% %tic;
-% SteadyStateDist=SteadyState_Case1(SteadyStateDist,Policy,n_d,n_a,n_z,pi_z,simoptions);
-% %toc
 % tic;
-% SSvalues_AggVars=SSvalues_AggVars_Case1(SteadyStateDist, Policy, SSvaluesFn, n_d, n_a, n_s, d_grid, a_grid,s_grid,pi_s,p_test, Parallel);
+% SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn, n_d, n_a, n_s, d_grid, a_grid,s_grid,pi_s,p_test, Parallel);
 % toc
 % MC=p_test - (alpha*(SSvalues_AggVars^(alpha-1))*(Expectation_l^(1-alpha))-delta);
-% surf(SteadyStateDist)
+% surf(StationaryDist)
 
 
 %% Solve
@@ -139,13 +136,12 @@ ReturnFnParams(IndexesForPricesInReturnFnParams)=p_eqm;
 
 % PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_s,d_grid,a_grid, Parallel);
 
-SteadyStateDist=SteadyState_Case1_Simulation(Policy,n_d,n_a,n_s,pi_s, simoptions);
+StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_s,pi_s, simoptions);
 
-SteadyStateDist=SteadyState_Case1(SteadyStateDist,Policy,n_d,n_a,n_s,pi_s,simoptions);
-SSvalues_AggVars=SSvalues_AggVars_Case1(SteadyStateDist, Policy, SSvaluesFn, SSvalueParams,n_d, n_a, n_s, d_grid, a_grid,s_grid,pi_s,p_eqm, Parallel)
+SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn, SSvalueParams,n_d, n_a, n_s, d_grid, a_grid,s_grid,pi_s,p_eqm, Parallel)
 
 eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,p_eqm_index,n_p,p_grid, MarketPriceEqns, MarketPriceParams));
-save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy SteadyStateDist
+save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy StationaryDist
 
 % Calculate savings rate:
 % We know production is Y=K^{\alpha}L^{1-\alpha}, and that L=1
@@ -162,7 +158,7 @@ SSvalue_Earnings = @(aprime_val,a_val,s_val,p_val,param) param*s_val;
 SSvalue_Income = @(aprime_val,a_val,s_val,p_val,param) param*s_val+(1+p_val)*a_val;
 SSvalue_Wealth = @(aprime_val,a_val,s_val,p_val,param) a_val;
 SSvaluesFnIneq={SSvalue_Earnings, SSvalue_Income, SSvalue_Wealth};
-SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(SteadyStateDist, Policy, SSvaluesFnIneq, SSvalueParams, n_d, n_a, n_s, d_grid, a_grid, s_grid, pi_s,p_eqm,Parallel);
+SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(StationaryDist, Policy, SSvaluesFnIneq, SSvalueParams, n_d, n_a, n_s, d_grid, a_grid, s_grid, pi_s,p_eqm,Parallel);
 
 % 3.5 The Distributions of Earnings and Wealth
 %  Gini for Earnings
@@ -173,7 +169,7 @@ WealthGini=Gini_from_LorenzCurve(SSvalues_LorenzCurves(3,:));
 % Calculate inverted Pareto coeff, b, from the top income shares as b=1/[log(S1%/S0.1%)/log(10)] (formula taken from Excel download of WTID database)
 % No longer used: Calculate Pareto coeff from Gini as alpha=(1+1/G)/2; ( http://en.wikipedia.org/wiki/Pareto_distribution#Lorenz_curve_and_Gini_coefficient)
 % Recalculte Lorenz curves, now with 1000 points
-SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(SteadyStateDist, Policy, SSvaluesFnIneq, SSvalueParams, n_d, n_a, n_s, d_grid, a_grid, s_grid, pi_s,p_eqm,Parallel,1000);
+SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(StationaryDist, Policy, SSvaluesFnIneq, SSvalueParams, n_d, n_a, n_s, d_grid, a_grid, s_grid, pi_s,p_eqm,Parallel,1000);
 EarningsParetoCoeff=1/((log(SSvalues_LorenzCurves(1,990))/log(SSvalues_LorenzCurves(1,999)))/log(10)); %(1+1/EarningsGini)/2;
 IncomeParetoCoeff=1/((log(SSvalues_LorenzCurves(2,990))/log(SSvalues_LorenzCurves(2,999)))/log(10)); %(1+1/IncomeGini)/2;
 WealthParetoCoeff=1/((log(SSvalues_LorenzCurves(3,990))/log(SSvalues_LorenzCurves(3,999)))/log(10)); %(1+1/WealthGini)/2;
@@ -194,7 +190,7 @@ export_fig(fig1, ...            % figure handle
     '-pdf', ...                 % file format
     '-r300' );                  % resolution
 
-%plot(cumsum(sum(SteadyStateDist,2))) %Plot the asset cdf
+%plot(cumsum(sum(StationaryDist,2))) %Plot the asset cdf
 
 fprintf('For parameter values sigma=%.2f, mu=%.2f, rho=%.2f \n', [sigma,mu,rho])
 fprintf('The table 1 elements are sigma=%.4f, rho=%.4f \n',[sqrt(s_variance), s_corr])

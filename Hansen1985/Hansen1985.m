@@ -123,9 +123,11 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
     disp('Sim time series')
 
     %No need for asyptotic distribution.
-    %SteadyStateDist=SteadyState_Case1_Simulation(Policy,n_d,n_a,n_z,pi_z, simoptions);
-    %SteadyStateDist=SteadyState_Case1(SteadyStateDist,Policy,n_d,n_a,n_z,pi_z,simoptions);
-    %plot(1:1:n_z, N/sum(N), 1:1:n_z, sum(SteadyStateDist,1)) % Can see that the z discretization is working as two lines are identical.
+    %simperiods=simoptions.simperiods;
+    %simoptions.simperiods=10^4; simoptions.iterate=1;
+    %StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions);
+    %simoptions.simperiods=simperiods;
+    %plot(1:1:n_z, N/sum(N), 1:1:n_z, sum(StationaryDist,1)) % Can see that the z discretization is working as two lines are identical.
     
     if AlternativeProductivityShocks==0
         if Economy==1
