@@ -1,5 +1,5 @@
 %%% Example using the model of Hansen (1985)
-% Note: Most of the run time is actually spent in creating the
+% Note: Most of the run time is spent creating the
 % discretization of the shock process [AR(1) shock with log-normal
 % innovations means standard methods cannot be used].
 n_d=51;  % decide whether to work
@@ -10,7 +10,8 @@ AlternativeProductivityShocks=0
 
 %% Setup for server
 addpath(genpath('./MatlabToolkits/'))
-% try % Server has 16 cores, but is shared, so use max of 8.
+% % Following commented code is just for personal use. Relates to running codes on server.
+% try % Server has 16 cores, but is shared with other users, so use max of 8.
 %     PoolDetails=parpool(8)
 % catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
 %     PoolDetails=parpool
@@ -40,7 +41,6 @@ sigma_epsilon=0.00712;
 sigmasq_epsilon=sigma_epsilon^2;
 %Step 1: Compute the steady state
 K_ss=(alpha/(1/beta-1+delta))^(1/(1-alpha))*2/3; % Hansen footnote 15.
-% K_ss=((alpha*beta)/(1-beta*(1-delta)))^(1/(1-alpha));
 
 
 %Create grids (it is very important that each grid is defined as a column vector)
@@ -99,9 +99,6 @@ a_grid=gpuArray(a_grid);
 d_grid=gpuArray(d_grid);
 pi_z=gpuArray(pi_z);
 
-% n_z=length(z_grid);
-% n_a=length(a_grid);
-% n_d=length(d_grid);
 
 ReturnFn=@(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy) Hansen1985_ReturnFn(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy);
 ReturnFnParams=[alpha, delta, A, B, 0]; % The zero is later replaced with Economy.
