@@ -94,14 +94,22 @@ end
 a_grid=sort([linspace(0+0.0001,K_ss-0.0001,n_a-floor(n_a/2)),linspace(0,2*K_ss,floor(n_a/2))])';
 d_grid=linspace(0,1,n_d)';
 
-z_grid=gpuArray(z_grid);
-a_grid=gpuArray(a_grid);
-d_grid=gpuArray(d_grid);
+% z_grid=gpuArray(z_grid);
+% a_grid=gpuArray(a_grid);
+% d_grid=gpuArray(d_grid);
 pi_z=gpuArray(pi_z);
 
+% The toolkit uses a 'structure' called Params to store the parameter values. 
+% In this basic model this will appear over-complicated, but in more advanced models it is much simpler and more useful.
+Params=CreateParamsStrucFromParamsVec({'alpha','beta','delta','A','h0','B','rho','sigmasq_epsilon'}, [alpha,beta,delta,A,h0,B,rho,sigmasq_epsilon]);
+% Rather than use this command you could create all the parameters in this
+% form initially, namely instead of
+% alpha = 0.33;
+% You would use
+% Params.alpha= 0.33;
 
 ReturnFn=@(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy) Hansen1985_ReturnFn(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy);
-ReturnFnParams=[alpha, delta, A, B, 0]; % The zero is later replaced with Economy.
+ReturnFnParams={'alpha', 'delta', 'A', 'B', 'Economy'}; 
 
 %% Solve Model and Generate Table 1 of Hansen (1985)
 
@@ -111,11 +119,11 @@ simoptions.simperiods=115;
 StdBusCycleStats=zeros(2,7,2,NSims,'gpuArray');
 
 for Economy=1:2 % Divisible and Indivisible labour respectively
-    ReturnFnParams(5)=Economy;
+    Params.Economy=Economy;
     %% Solve
     disp('Solve value fn problem')
     V0=ones([n_a,n_z],'gpuArray'); %(a,z)
-    [V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, beta, ReturnFn,vfoptions,ReturnFnParams);
+    [V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, beta, ReturnFn,vfoptions,Params,ReturnFnParams);
 
     disp('Sim time series')
 
