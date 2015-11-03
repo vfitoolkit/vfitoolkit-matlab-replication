@@ -23,15 +23,15 @@ n_s=15; %21;
 n_p=251; %151
 
 %Parameters
-beta=0.96; %Model period is one-sixth of a year
-alpha=0.36;
-delta=0.08;
+Params.beta=0.96; %Model period is one-sixth of a year
+Params.alpha=0.36;
+Params.delta=0.08;
 
 mu_vec=[1,3,5]; % {1,3,5}
 sigma_vec=[0.2,0.4]; % {0.2,0.4}
 rho_vec=[0,0.3,0.6,0.9]; % {0,0.3,0.6,0.9}
 
-q=3; %Footnote 33 of Aiyagari(1993WP, pg 25) implicitly says that he uses q=3
+Params.q=3; %Footnote 33 of Aiyagari(1993WP, pg 25) implicitly says that he uses q=3
 
 %% Some Toolkit options
 tauchenoptions.parallel=Parallel;
@@ -58,14 +58,14 @@ Table2=zeros(2,3,2,4);
 Table3=zeros(6,3,2,4); % My own creation. Inequality stats.
 TimeTable=zeros(1,3,2,4);
 for mu_c=1:3
-    mu=mu_vec(mu_c);
+    Params.mu=mu_vec(mu_c);
     for sigma_c=1:2
-        sigma=sigma_vec(sigma_c);
+        Params.sigma=sigma_vec(sigma_c);
         for rho_c=1:4
-            rho=rho_vec(rho_c);
+            Params.rho=rho_vec(rho_c);
             fprintf('Current iteration mu_c=%d, sigma_c=%d, rho_c=%d \n', mu_c,sigma_c,rho_c')
             tic;
-            OutputVector=Aiyagari1994_Fn(n_k,n_s,n_p,beta,alpha,delta,mu,sigma,rho,q, Parallel, tauchenoptions, mcmomentsoptions, vfoptions, simoptions);
+            OutputVector=Aiyagari1994_Fn(n_k,n_s,n_p,Params, Parallel, tauchenoptions, mcmomentsoptions, vfoptions, simoptions);
             time1=toc
             % OutputVector=[sqrt(s_variance), s_corr, p_eqm*100, aggsavingsrate, EarningsGini, IncomeGini, WealthGini, EarningsParetoCoeff,IncomeParetoCoeff, WealthParetoCoeff];
             Table1(:,mu_c,sigma_c,rho_c)=[OutputVector(1); OutputVector(2)];
@@ -81,7 +81,7 @@ save ./SavedOutput/Aiyagari1994Tables.mat Table1 Table2 Table3 TimeTable
 
 %% Save output as Latex tables summarizing the results
 
-FilenameString=['./LatexInputs/Aiyagari1994_Table1.tex'];
+FilenameString=['./SavedOutput/LatexInputs/Aiyagari1994_Table1.tex'];
 FID = fopen(FilenameString, 'w');
 fprintf(FID, 'Markov Chain Approximation to the Labour Endowment Shock \\\\ \n');
 fprintf(FID, 'Markov Chain $\\sigma$/Markov Chain $\\rho$ \\\\ \n');
@@ -95,7 +95,7 @@ fprintf(FID, 'Replication of Table 1 of Aiyagari (1994) using grid sizes $ n_k=%
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
-FilenameString=['./LatexInputs/Aiyagari1994_Table2.tex'];
+FilenameString=['./SavedOutput/LatexInputs/Aiyagari1994_Table2.tex'];
 FID = fopen(FilenameString, 'w');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}l|ccc} \\hline \\hline \n');
 fprintf(FID, '\\multicolumn{4}{l}{A. Net Return to Capital in \\%%/Aggregate savings rate in \\%% ($\\sigma=0.2$)} \\\\ \n');
@@ -116,7 +116,7 @@ fprintf(FID, 'Replication of Table 2 of Aiyagari (1994) using grid sizes $ n_k=%
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
-FilenameString=['./LatexInputs/Aiyagari1994_TableGini.tex'];
+FilenameString=['./SavedOutput/LatexInputs/Aiyagari1994_TableGini.tex'];
 FID = fopen(FilenameString, 'w');
 fprintf(FID, 'Gini Coefficients for Earnings, Income, and Wealth \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}l|ccc} \\hline \\hline \n');
@@ -139,7 +139,7 @@ fprintf(FID, 'Uses grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_s, 
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
-FilenameString=['./LatexInputs/Aiyagari1994_TableInvParetoCoeff.tex'];
+FilenameString=['./SavedOutput/LatexInputs/Aiyagari1994_TableInvParetoCoeff.tex'];
 FID = fopen(FilenameString, 'w');
 fprintf(FID, '(Inverse) Pareto Coefficients for Earnings, Income, and Wealth \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}l|ccc} \\hline \\hline \n');
@@ -164,7 +164,7 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 mu_ind=2;
-FilenameString=['./LatexInputs/Aiyagari1994_TableRminusG.tex'];
+FilenameString=['./SavedOutput/LatexInputs/Aiyagari1994_TableRminusG.tex'];
 FID = fopen(FilenameString, 'w');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}l|ccccc} \\hline \\hline \n');
 fprintf(FID, '\\multicolumn{4}{c}{$\\sigma=0.2$} \\\\ \n');
