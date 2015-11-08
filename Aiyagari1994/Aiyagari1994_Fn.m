@@ -99,6 +99,8 @@ n_p
 Params.r=0.04; %0.0485
 % n_z=n_s; z_grid=s_grid; pi_z=pi_s;
 
+DiscountFactorParamNames={'beta'};
+
 ReturnFn=@(aprime_val, a_val, s_val,alpha,delta,mu,r) Aiyagari1994_ReturnFn(aprime_val, a_val, s_val,alpha,delta,mu,r);
 ReturnFnParamNames={'alpha','delta','mu','r'}; %It is important that these are in same order as they appear in 'Aiyagari1994_ReturnFn'
 
@@ -127,7 +129,7 @@ MultiMarketCriterion=1;
 
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1_Par2(V0, n_d, n_a, n_s, n_p, pi_s, d_grid, a_grid, s_grid, p_grid, Params.beta, ReturnFn, SSvaluesFn, SSvalueParamNames, MarketPriceEqns, MarketPriceParamNames, MultiMarketCriterion, simoptions, vfoptions,Params,ReturnFnParamNames, PriceParamNames);
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1_Par2(V0, n_d, n_a, n_s, n_p, pi_s, d_grid, a_grid, s_grid, p_grid, DiscountFactorParamNames, ReturnFn, SSvaluesFn, SSvalueParamNames, MarketPriceEqns, MarketPriceParamNames, MultiMarketCriterion, simoptions, vfoptions,Params,ReturnFnParamNames, PriceParamNames);
 % findeqmtime=toc
 save ./SavedOutput/Aiyagari1994Market.mat p_eqm p_eqm_index MarketClearance
 
@@ -139,7 +141,7 @@ Params.w=(1-Params.alpha)*((p_eqm+Params.delta)/Params.alpha)^(Params.alpha/(Par
 p_eqm_index
 disp('Calculating various equilibrium objects')
 Params.r=p_eqm;
-[~,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_s,d_grid,a_grid,s_grid, pi_s, Params.beta, ReturnFn,vfoptions,Params,ReturnFnParamNames);
+[~,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_s,d_grid,a_grid,s_grid, pi_s, DiscountFactorParamNames, ReturnFn,vfoptions,Params,ReturnFnParamNames);
 
 % PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_s,d_grid,a_grid, Parallel);
 

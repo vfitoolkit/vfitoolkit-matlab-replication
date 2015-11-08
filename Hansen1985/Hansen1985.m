@@ -108,6 +108,8 @@ Params=CreateParamsStrucFromParamsVec({'alpha','beta','delta','A','h0','B','rho'
 % You would use
 % Params.alpha= 0.33;
 
+DiscountFactorParamNames={'beta'};
+
 ReturnFn=@(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy) Hansen1985_ReturnFn(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy);
 ReturnFnParams={'alpha', 'delta', 'A', 'B', 'Economy'}; 
 
@@ -123,7 +125,7 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
     %% Solve
     disp('Solve value fn problem')
     V0=ones([n_a,n_z],'gpuArray'); %(a,z)
-    [V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, beta, ReturnFn,vfoptions,Params,ReturnFnParams);
+    [V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, DiscountFactorParamNames, ReturnFn,vfoptions,Params,ReturnFnParams);
 
     disp('Sim time series')
 
