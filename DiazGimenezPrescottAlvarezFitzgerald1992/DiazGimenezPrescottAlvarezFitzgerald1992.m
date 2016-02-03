@@ -54,7 +54,7 @@ Params.omega=0.02; % Welfare tranfers to Indigent retirees (are zero to everyone
 %calculate a few of the other parameters directly
 Params.i_l=Params.iota+Params.eta_l; %interest rate on loans
 Params.i_d=(1-Params.rho)*Params.iota-Params.eta_d; %interest rate on deposits
-Params.e=Params.epsilon_inflation; %pricing/inflation process on reserves
+Params.e=Params.epsilon_inflation-1; %pricing/inflation process on reserves
 
 
 %% Create grids for s,z,a (A & K), and transition matrices for s & z
@@ -106,10 +106,13 @@ time=toc;
 
 fprintf('Time to solve the value function iteration was %8.2f seconds. \n', time)
 
-%StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_sz,pi_sz, simoptions);
 
 %% Generate some output following what is reported in Diaz-Gimenez, Prescott, Alvarez & Fitzgerald (1992)
 % NOT YET DONE
+
+% Simulation of the model is highly non-standard due to the combination of
+% stochastic death in infinitely lived agents together with their not
+% caring about future generations.
 
 
 

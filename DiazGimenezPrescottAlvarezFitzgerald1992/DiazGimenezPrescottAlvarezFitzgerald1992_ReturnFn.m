@@ -61,12 +61,11 @@ if C>0 %If this is not met, then just leave Fmatrix as -Inf
         if K_val>0 %ie. if K=3
             F=( ( C^(alpha-alpha_k) * K_val^alpha_k * (tau-N_val)^(1-alpha) )^(1-psi) )/(1-psi);
         end
-    end
-    if s_val==3
+    elseif s_val==3
         F=delta_r* ((C^alpha)^(1-psi)) /(1-psi);
+    elseif s_val==4
+        F=0;
     end
-    %notice that is s==4, then return will be zero, so no need to calculate
-    %anything as we already set this when Fmatrix is first created
 end
 
 end
