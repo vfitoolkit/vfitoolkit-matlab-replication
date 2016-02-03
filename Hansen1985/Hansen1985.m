@@ -199,12 +199,3 @@ fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 %fprintf(FID, ['\\textsuperscript{b} The standard deviations and correlations with output are sample means of statistics computed for each of 100 simulations. Each simulation consists of 115 periods, which is the same number of periods as the US sample. The numbers in parentheses are sample standard deviations of these statistics. Before computing any statistics each simulated time series was logged and detrended using the same procedure used for the US time series. \\\\ \n']);
 %fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
-
-
-
-
-
-
-
-
-
