@@ -4,18 +4,6 @@ function F=Aiyagari1994_ReturnFn(aprime_val, a_val, s_val,alpha,delta,mu,r)
 % line as a command (and following line is not blank) then this will cause
 % an error with the GPU codes.
 
-% The following line is important and must be left unchanged. It tells the
-% toolbox exactly where to modify the return function by adding in the
-% parameter values.
-%PARAMETERVALUESHERE%
-
-% A list of the parameters to be used
-% alpha
-% delta
-% mu
-% r
-
-
 F=-Inf;
 w=(1-alpha)*((r+delta)/alpha)^(alpha/(alpha-1));
 c=w*s_val+(1+r)*a_val-aprime_val; 

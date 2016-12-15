@@ -83,7 +83,7 @@ SSvaluesFn={SSvaluesFn_1};
     %the market is to clearing.
 %Note: length(AggVars) is number_d_vars+number_a_vars and length(p) is number_p_vars
 MarketPriceParamNames={'alpha','delta'};
-MarketPriceEqn_1 = @(AggVars,p,params) params(1)*(AggVars^(params(1)-1))*(Expectation_l^(1-params(1)))-params(2); %The requirement that the interest rate corresponds to the agg capital level
+MarketPriceEqn_1 = @(AggVars,p,params) p-(params(1)*(AggVars^(params(1)-1))*(Expectation_l^(1-params(1)))-params(2)); %The requirement that the interest rate corresponds to the agg capital level
 MarketPriceEqns={MarketPriceEqn_1};
 
 disp('sizes')
@@ -124,12 +124,11 @@ ReturnFnParamNames={'alpha','delta','mu','r'}; %It is important that these are i
 V0=ones(n_a,n_s,'gpuArray'); %(a,s)
 %Use the toolkit to find the equilibrium price index
 PriceParamNames={'r'};
-%IndexesForPricesInReturnFnParams=4;
-MultiMarketCriterion=1;
 
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1_Par2(V0, n_d, n_a, n_s, n_p, pi_s, d_grid, a_grid, s_grid, p_grid, DiscountFactorParamNames, ReturnFn, SSvaluesFn, SSvalueParamNames, MarketPriceEqns, MarketPriceParamNames, MultiMarketCriterion, simoptions, vfoptions,Params,ReturnFnParamNames, PriceParamNames);
+heteroagentoptions.pgrid=p_grid;
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_s, n_p, pi_s, d_grid, a_grid, s_grid, ReturnFn, SSvaluesFn, MarketPriceEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, MarketPriceParamNames, PriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % findeqmtime=toc
 save ./SavedOutput/Aiyagari1994Market.mat p_eqm p_eqm_index MarketClearance
 
@@ -141,7 +140,8 @@ Params.w=(1-Params.alpha)*((p_eqm+Params.delta)/Params.alpha)^(Params.alpha/(Par
 p_eqm_index
 disp('Calculating various equilibrium objects')
 Params.r=p_eqm;
-[~,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_s,d_grid,a_grid,s_grid, pi_s, DiscountFactorParamNames, ReturnFn,vfoptions,Params,ReturnFnParamNames);
+[~,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_s,d_grid,a_grid,s_grid, pi_s, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames);
+
 
 % PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_s,d_grid,a_grid, Parallel);
 
@@ -149,7 +149,7 @@ StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_s,pi_s, simoptions);
 
 SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_s, d_grid, a_grid,s_grid,pi_s,p_eqm, Parallel)
 
-eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,p_eqm_index,n_p,p_grid, MarketPriceEqns, Params, MarketPriceParamNames));
+eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,p_eqm,MarketPriceEqns, Params, MarketPriceParamNames));
 save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy StationaryDist
 
 % Calculate savings rate:

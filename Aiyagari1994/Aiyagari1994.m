@@ -15,10 +15,12 @@ try % Server has 16 cores, but is shared with other users, so use max of 8.
 catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
     parpool
 end
+PoolDetails=gcp;
+NCores=PoolDetails.NumWorkers;
 
 %% Set some basic variables
 
-n_k=2^8;%2^9;
+n_k=2^6;%2^9;
 n_s=15; %21;
 n_p=251; %151
 
@@ -33,7 +35,7 @@ rho_vec=[0,0.3,0.6,0.9]; % {0,0.3,0.6,0.9}
 
 Params.q=3; %Footnote 33 of Aiyagari(1993WP, pg 25) implicitly says that he uses q=3
 
-%% Some Toolkit options
+%% Some Toolkit options (most are just being set to what would anyway be their defaults)
 tauchenoptions.parallel=Parallel;
 
 mcmomentsoptions.T=10^4;
@@ -46,7 +48,7 @@ vfoptions.returnmatrix=Parallel;
 %vfoptions.verbose=1
 
 simoptions.iterate=1
-simoptions.ncores=4; % Number of CPU cores
+simoptions.ncores=NCores; % Number of CPU cores
 simoptions.burnin=10000;
 simoptions.simperiods=50000;
 simoptions.parallel=Parallel; %Use GPU
