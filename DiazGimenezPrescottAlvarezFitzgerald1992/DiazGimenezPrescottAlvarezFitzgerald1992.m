@@ -99,7 +99,6 @@ time=toc;
 
 fprintf('Time to solve the value function iteration was %8.2f seconds. \n', time)
 
-
 %% Generate some output following what is reported in Diaz-Gimenez, Prescott, Alvarez & Fitzgerald (1992)
 % NOT YET DONE
 
