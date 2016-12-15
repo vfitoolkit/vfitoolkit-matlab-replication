@@ -48,23 +48,22 @@ Tables=struct();
 TimeTable=zeros(4,2);
 for alowerbar_c=1:4
     Params.alowerbar=alowerbar_vec(alowerbar_c);
-        for mu_c=1:2
-            Params.mu=mu_vec(mu_c);
-            fprintf('Current iteration alowerbar_c=%d, mu_c=%d \n', alowerbar_c,mu_c)
-            tic;
-            Output=Huggett1993_Fn(n_a,n_e,n_q,Params, Parallel, vfoptions, simoptions);
-            time1=toc
-            % Output is a structure
-            Tables(alowerbar_c,mu_c).q=Output.q;  
-            Tables(alowerbar_c,mu_c).r=Output.r;
-
-            Figures(alowerbar_c,mu_c).Policy=Output.Policy;
-            Figures(alowerbar_c,mu_c).StationaryDist=Output.StationaryDist;
-            
-            Figures(alowerbar_c,mu_c).a_grid=Output.a_grid;
-            
-            TimeTable(alowerbar_c,mu_c)=time1;
-        end
+    for mu_c=1:2
+        Params.mu=mu_vec(mu_c);
+        fprintf('Current iteration alowerbar_c=%d, mu_c=%d \n', alowerbar_c,mu_c)
+        tic;
+        Output=Huggett1993_Fn(n_a,n_e,n_q,Params, Parallel, vfoptions, simoptions);
+        time1=toc
+        % Output is a structure
+        Tables(alowerbar_c,mu_c).q=Output.q;
+        Tables(alowerbar_c,mu_c).r=Output.r;
+        
+        Figures(alowerbar_c,mu_c).Policy=Output.Policy;
+        Figures(alowerbar_c,mu_c).StationaryDist=Output.StationaryDist;
+        
+        Figures(alowerbar_c,mu_c).a_grid=Output.a_grid;
+        
+        TimeTable(alowerbar_c,mu_c)=time1;
     end
 end
 
