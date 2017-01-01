@@ -20,7 +20,7 @@ NCores=PoolDetails.NumWorkers;
 
 %% Set some basic variables
 
-n_a=2^9;% Huggett used "between 150 and 350 evenly spaced gridpoints" (and uses linear interpolation)
+n_a=2^10;% Huggett used "between 150 and 350 evenly spaced gridpoints" (and uses linear interpolation)
 n_e=2;
 n_q=551;
 
@@ -78,10 +78,10 @@ fprintf(FID, 'Coefficient of Relative Risk Aversion $\\mu$=%1.1f \\\\ \n', mu_ve
 fprintf(FID, '\\begin{tabular*}{0.5\\textwidth}{@{\\extracolsep{\\fill}}lcr} \\hline \\hline \n');
 fprintf(FID, ' Credit Limit & Interest Rate & Price \\\\ \n');
 fprintf(FID, ' (-$\\underbar{a}$) & ($r$) & ($q$) \\\\ \\hline \n');
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(1), Tables(1,mu_c).r, Tables(1,mu_c).q);
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(2), Tables(2,mu_c).r, Tables(2,mu_c).q);
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(3), Tables(3,mu_c).r, Tables(3,mu_c).q);
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(4), Tables(4,mu_c).r, Tables(4,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(1), Tables(1,mu_c).r, Tables(1,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(2), Tables(2,mu_c).r, Tables(2,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(3), Tables(3,mu_c).r, Tables(3,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(4), Tables(4,mu_c).r, Tables(4,mu_c).q);
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Replication of Table 1 of Huggett (1993) using grid sizes $ n_a=%d $, $ n_e=%d $, $ n_q=%d $ \n', n_a, n_e, n_q);
@@ -95,13 +95,13 @@ fprintf(FID, 'Coefficient of Relative Risk Aversion $\\mu$=%1.1f \\\\ \n', mu_ve
 fprintf(FID, '\\begin{tabular*}{0.5\\textwidth}{@{\\extracolsep{\\fill}}lcr} \\hline \\hline \n');
 fprintf(FID, ' Credit Limit & Interest Rate & Price \\\\ \n');
 fprintf(FID, ' (-$\\underbar{a}$) & ($r$) & ($q$) \\\\ \\hline \n');
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(1), Tables(1,mu_c).r, Tables(1,mu_c).q);
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(2), Tables(2,mu_c).r, Tables(2,mu_c).q);
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(3), Tables(3,mu_c).r, Tables(3,mu_c).q);
-fprintf(FID, '  %d & %1.1f \\% & %1.4f \\\\ \n', alowerbar_vec(4), Tables(4,mu_c).r, Tables(4,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(1), Tables(1,mu_c).r, Tables(1,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(2), Tables(2,mu_c).r, Tables(2,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(3), Tables(3,mu_c).r, Tables(3,mu_c).q);
+fprintf(FID, '  %d & %1.1f \\%% & %1.4f \\\\ \n', alowerbar_vec(4), Tables(4,mu_c).r, Tables(4,mu_c).q);
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 1 of Huggett (1993) using grid sizes $ n_a=%d $, $ n_e=%d $, $ n_q=%d $ \n', n_a, n_e, n_q);
+fprintf(FID, 'Replication of Table 2 of Huggett (1993) using grid sizes $ n_a=%d $, $ n_e=%d $, $ n_q=%d $ \n', n_a, n_e, n_q);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
