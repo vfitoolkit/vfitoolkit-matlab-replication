@@ -12,6 +12,7 @@ Parallel=2 %GPU
 addpath(genpath('./MatlabToolkits/'))
 try % Server has 16 cores, but is shared with other users, so use max of 8.
     parpool(8)
+    gpuDevice(2)
 catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
     parpool
 end
@@ -20,7 +21,7 @@ NCores=PoolDetails.NumWorkers;
 
 %% Set some basic variables
 
-n_a=2^10;% Huggett used "between 150 and 350 evenly spaced gridpoints" (and uses linear interpolation)
+n_a=2^9;% Huggett used "between 150 and 350 evenly spaced gridpoints" (and uses linear interpolation)
 n_e=2;
 n_q=551;
 
@@ -67,7 +68,7 @@ for alowerbar_c=1:4
     end
 end
 
-save ./SavedOutput/Huggett1993Tables.mat Tables TimeTable
+save ./SavedOutput/Huggett1993Tables.mat Tables TimeTable Figures
 
 %% Reproduce Tables 1 & 2 of Huggett (1993)
 
@@ -106,35 +107,36 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 %% Reproduce Figures 1 & 2 of Huggett (1993)
-% % Note that figures depend on plotly
-% a_grid=Figures(1,1).a_grid;
-% 
-% % Figure 1
-% Policy=Figures(1,1).Policy;
-% trace1= struct('x', a_grid,'y', Policy(:,1),'name','e_l','type', 'scatter');
-% trace2= struct('x', a_grid,'y', Policy(:,2),'name','e_h','type', 'scatter');
-% trace3= struct('x', a_grid,'y', a_grid,'name','45 deg line','type', 'scatter');
-% data = {trace1,trace2, trace3};
-% layout = struct('title', 'Optimal Decision Rule','showlegend', true,'width', 800,...
-%     'xaxis', struct('domain', [0, 1],'title','Assets (a)','showgrid',false), ...
-%     'yaxis', struct('title', 'Decision (next period assets)','showgrid',false,'titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0),...
-%     'legend',struct('x',0.8,'y',0.8));
-% response = plotly(data, struct('layout', layout, 'filename', 'Huggett1993_Figure1', 'fileopt', 'overwrite'));
-% response.data=data; response.layout=layout;
-% saveplotlyfig(response, ['./SavedOutput/Graphs/Huggett1993_Figure1.pdf'])
-% 
-% % Figure 2
-% StationaryDist=Figures(1,1).StationaryDist;
-% trace1= struct('x', a_grid,'y', cumsum(StationaryDist(:,1)),'name','e_l','type', 'scatter');
-% trace2= struct('x', a_grid,'y', cumsum(StationaryDist(:,2)),'name','e_h','type', 'scatter');
-% data = {trace1,trace2};
-% layout = struct('title', 'Stationarty Distribution','showlegend', true,'width', 800,...
-%     'xaxis', struct('domain', [0, 1],'title','Assets (a)','showgrid',false), ...
-%     'yaxis', struct('title', 'Cumulative Distribution Fn','showgrid',false,'titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0),...
-%     'legend',struct('x',0.8,'y',0.8));
-% response = plotly(data, struct('layout', layout, 'filename', 'Huggett1993_Figure2', 'fileopt', 'overwrite'));
-% response.data=data; response.layout=layout;
-% saveplotlyfig(response, ['./SavedOutput/Huggett1993_Figure2.pdf'])
+load ./Huggett1993Tables.mat Tables TimeTable Figures
+% Note that figures depend on plotly
+a_grid=Figures(1,1).a_grid;
+
+% Figure 1
+Policy=Figures(1,1).Policy;
+trace1= struct('x', a_grid,'y', a_grid(Policy(1,:,1)),'name','e_l','type', 'scatter');
+trace2= struct('x', a_grid,'y', a_grid(Policy(1,:,2)),'name','e_h','type', 'scatter');
+trace3= struct('x', a_grid,'y', a_grid,'name','45 deg line','type', 'scatter');
+data = {trace1,trace2, trace3};
+layout = struct('title', 'Optimal Decision Rule','showlegend', true,'width', 800,...
+    'xaxis', struct('domain', [0, 1],'title','Assets (a)','showgrid',false), ...
+    'yaxis', struct('title', 'Decision (next period assets)','showgrid',false,'titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0),...
+    'legend',struct('x',0.8,'y',0.8));
+response = plotly(data, struct('layout', layout, 'filename', 'Huggett1993_Figure1', 'fileopt', 'overwrite'));
+response.data=data; response.layout=layout;
+saveplotlyfig(response, ['./Huggett1993_Figure1.pdf'])
+
+% Figure 2
+StationaryDist=Figures(1,1).StationaryDist;
+trace1= struct('x', a_grid,'y', cumsum(StationaryDist(:,1)),'name','e_l','type', 'scatter');
+trace2= struct('x', a_grid,'y', cumsum(StationaryDist(:,2)),'name','e_h','type', 'scatter');
+data = {trace1,trace2};
+layout = struct('title', 'Stationarty Distribution','showlegend', true,'width', 800,...
+    'xaxis', struct('domain', [0, 1],'title','Assets (a)','showgrid',false), ...
+    'yaxis', struct('title', 'Cumulative Distribution Fn','showgrid',false,'titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0),...
+    'legend',struct('x',0.8,'y',0.8));
+response = plotly(data, struct('layout', layout, 'filename', 'Huggett1993_Figure2', 'fileopt', 'overwrite'));
+response.data=data; response.layout=layout;
+saveplotlyfig(response, ['./Huggett1993_Figure2.pdf'])
 
 
 
