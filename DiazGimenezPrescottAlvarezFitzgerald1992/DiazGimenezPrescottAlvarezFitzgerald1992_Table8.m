@@ -179,7 +179,7 @@ for ii=2:4
     % [Paper incorrectly describes this as the 'steady-state' when it is in
     % fact valued at mean of stationary distribution.]
     LambdaE=(Outputs(1).EValueFnofPublicandPrivateConsumption./Outputs(ii).EValueFnofPublicandPrivateConsumption).^(1/(Params.alpha*(1-Params.psi)));
-    S=(Outputs(ii).EW*(LambdaE-1))/Outputs(ii).EW;
+    S=(Outputs(ii).EW*(LambdaE-1))/Outputs(ii).EW; %Obviously this just gives LambdaE-1, I keep this form to highlight how S relates to M.
     
     S1factor=(Outputs(1).Ev1-Outputs(ii).Ev1)./(Outputs(1).EValueFnofPublicandPrivateConsumption-Outputs(ii).EValueFnofPublicandPrivateConsumption);
     S2factor=(Outputs(1).Ev2-Outputs(ii).Ev2)./(Outputs(1).EValueFnofPublicandPrivateConsumption-Outputs(ii).EValueFnofPublicandPrivateConsumption);

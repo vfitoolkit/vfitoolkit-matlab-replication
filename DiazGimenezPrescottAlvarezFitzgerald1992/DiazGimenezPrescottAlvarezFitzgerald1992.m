@@ -63,7 +63,7 @@ pi_s=[0.9593, 0.0369, 0.0038, 0.0000 ; 0.3317, 0.6645, 0.0038, 0.0000 ; 0.0000, 
 s_grid=(1:1:4)';  %individual states: 1&2 working age, 3 retirement, 4 death
 % transition matrix for s, the individual specific states row index is this state s, column index is next state s'
 %Economy-wide shock transition probabilities
-if Experiment==2
+if Experiment==2 %Note that since no results from this appear in any Tables of Figures of the paper it does not actually end up being used as part of this replication.
     pi_z=[0.5,0.5; 0.3,0.7]; %transition matrix for z, row index is z, column index is z'
     z_grid=[1;2];
 else
@@ -390,7 +390,7 @@ end
 % end
 
 %% Table 8
-% Uses a simplified and reparametrized version of the model. Hence have
+% Uses a substantially simplified and reparametrized version of the model. Hence have
 % just put it in an seperate command to be called.
 Table8=DiazGimenezPrescottAlvarezFitzgerald1992_Table8;
 
