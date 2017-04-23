@@ -1,6 +1,7 @@
 % Imrohoroglu (1989) - Cost of Business Cycles with Indivisibilities and Liquidity Constraints
+% Uses plotly to create graphs.
 
-% INCOMPLETE, DOES NOT YET REPLICATE TABLE 1
+vfoptions.policy_forceintegertype=1;
 
 % You can change this grid size to see if anything changes
 npoints_basic_a_grid=301; % Page 1373 of Imrohoroglu (1989), uses 301 (codes assume it is an odd number)
@@ -11,7 +12,6 @@ npoints_basic_a_grid=301; % Page 1373 of Imrohoroglu (1989), uses 301 (codes ass
 AvgUtility=nan(2,6); % WhichSigma-by-EconomyEnvironment
 AvgConsumption=nan(2,6);
 
-
 %Choose one of the following
 %EconomyEnvironment pairs
 %1: Economy=1, Environment=A
@@ -20,7 +20,8 @@ AvgConsumption=nan(2,6);
 %4: Economy=2, Environment=B
 %5: Economy=1, Environment=C
 %6: Economy=2, Environment=C
-%EconomyEnvironment=1
+% (Economy=1 is with business cycle (agg shock z), Economy 2 is without)
+% (Environment A is storage technology only, B is intermediation, C is perfect insurance)
 % Which of the two values of sigma, the risk aversion parameter, to use.
 %WhichSigma=1
 
@@ -38,7 +39,7 @@ for WhichSigma=1:2
         % num_d_vars=0; %There is none in Imrohorglu (you only choose aprime, which Case 1 codes assume is chosen anyway)
         
         %Discounting rate
-        Params.beta = 0.995
+        Params.beta = 0.995;
         
         %Parameters
         if WhichSigma==1
@@ -90,7 +91,7 @@ for WhichSigma=1:2
         
         tic;
         V0=ones([n_a,n_sz]);
-        [V, Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, DiscountFactorParamNames, ReturnFn, vfoptions, Params, ReturnFnParamNames);
+        [V, Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
         time=toc;
         
         fprintf('Time to solve the value function iteration was %8.2f seconds. \n', time)
@@ -112,7 +113,7 @@ for WhichSigma=1:2
         end
         
         %%
-        % Imrohoroglu (1989) does 500000 period simulations (apparently without
+        % Imrohoroglu (1989) does 500000 period simulations (seemingly without
         % burnin). Here we instead use the more robust method of iterating on whole distribution.
         StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_sz,pi_sz);
         
@@ -147,14 +148,31 @@ for WhichSigma=1:2
             plot(a_grid,StationaryDist(:,1),a_grid,StationaryDist(:,2))
         end
         
+        % Figure 1 of Imrohoroglu 1989
         if EconomyEnvironment==1 && WhichSigma==1
-            set(fig1, 'Color', 'white');     % white bckgr
-            set(fig1, 'Unit', 'centimeters');  % set unit to cm
-            set(fig1,'position',[0 0 20 10]);  % set size
-            export_fig(fig1, ...            % figure handle
-                ['./SavedOutput/Graphs/Imrohoroglu1989_Figure1.pdf'],... % name of output file without extension   %  '-painters', ...            % renderer
-                '-pdf', ...                 % file format
-                '-r300' );                  % resolution
+            temp11=gather(freq11*sum(StationaryDist(:,1,1))); 
+            temp21=gather(freq21*sum(StationaryDist(:,2,1)));
+            trace11= struct('x', X11i,'y',temp11,'name','Employment','type', 'scatter');
+            trace21= struct('x', X21i,'y',temp21,'name','Unemployment','type', 'scatter');
+            data = {trace11,trace21};
+            layout = struct('title', 'Good Times','showlegend', true,'width', 800,... %'title','Good Times'
+                'xaxis', struct('title', 'a','domain', [0, 1],'range',[0,5]), ... 
+                'yaxis', struct('titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
+            response = plotly(data, struct('layout', layout, 'filename', 'Imrohoroglu1989_Figure1good', 'fileopt', 'overwrite'));
+            response.data=data; response.layout=layout;
+            saveplotlyfig(response, './SavedOutput/Graphs/Imrohoroglu1989_Figure1good.pdf')
+            
+            temp12=gather(freq12*sum(StationaryDist(:,1,2))); 
+            temp22=gather(freq22*sum(StationaryDist(:,2,2)));
+            trace12= struct('x', X12i,'y',temp12,'name','Employment','type', 'scatter');
+            trace22= struct('x', X22i,'y',temp22,'name','Unemployment','type', 'scatter');
+            data = {trace12,trace22};
+            layout = struct('title', 'Bad Times','showlegend', true,'width', 800,... %'title','Good Times'
+                'xaxis', struct('title', 'a','domain', [0, 1],'range',[0,5]), ... 
+                'yaxis', struct('titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
+            response = plotly(data, struct('layout', layout, 'filename', 'Imrohoroglu1989_Figure1bad', 'fileopt', 'overwrite'));
+            response.data=data; response.layout=layout;
+            saveplotlyfig(response, './SavedOutput/Graphs/Imrohoroglu1989_Figure1bad.pdf')
         end
         
         %
@@ -166,30 +184,65 @@ for WhichSigma=1:2
             plot(a_grid,PolicyValues(1,:,1)-a_grid',a_grid,PolicyValues(1,:,2)-a_grid')
         end
         
+        % Figure A1 of Imrohoroglu 1989 (appendix figure)
+        if EconomyEnvironment==1 && WhichSigma==1
+            temp11=gather(PolicyValues(1,:,1,1)); 
+            temp21=gather(PolicyValues(1,:,2,1));
+            trace11= struct('x', gather(a_grid),'y',temp11,'name','Employment','type', 'scatter');
+            trace21= struct('x', gather(a_grid),'y',temp21,'name','Unemployment','type', 'scatter');
+            trace45= struct('x', gather(a_grid),'y',gather(a_grid),'name','45 degree','type', 'scatter');
+            data = {trace11,trace21,trace45};
+            layout = struct('title','Good Times','showlegend', true,'width', 800,... %'title','Good Times'
+                'xaxis', struct('title', 'a_t','domain', [0, 1]), ... 
+                'yaxis', struct('title', 'a_t+1''titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
+            response = plotly(data, struct('layout', layout, 'filename', 'Imrohoroglu1989_FigureA1good', 'fileopt', 'overwrite'));
+            response.data=data; response.layout=layout;
+            saveplotlyfig(response, './SavedOutput/Graphs/Imrohoroglu1989_FigureA1good.pdf')
+            
+            temp11=gather(PolicyValues(1,:,1,2)); 
+            temp21=gather(PolicyValues(1,:,2,2));
+            trace11= struct('x', gather(a_grid),'y',temp11,'name','Employment','type', 'scatter');
+            trace21= struct('x', gather(a_grid),'y',temp21,'name','Unemployment','type', 'scatter');
+            trace45= struct('x', gather(a_grid),'y',gather(a_grid),'name','45 degree','type', 'scatter');
+            data = {trace11,trace21,trace45};
+            layout = struct('title', 'Bad Times','showlegend', true,'width', 800,... %'title','Good Times'
+                'xaxis', struct('title', 'a_t','domain', [0, 1]), ... 
+                'yaxis', struct('title', 'a_t+1''titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
+            response = plotly(data, struct('layout', layout, 'filename', 'Imrohoroglu1989_FigureA1bad', 'fileopt', 'overwrite'));
+            response.data=data; response.layout=layout;
+            saveplotlyfig(response, './SavedOutput/Graphs/Imrohoroglu1989_FigureA1bad.pdf')
+        end
+        
         %%
-        SSvalueParamNames={}; % Only needed if using gpu for SSvalues
-        SSvalue_Utility = @(aprime_val,a_val,sz_val,pi_sz,p_val) Imrohoroglu1989_ReturnFn(aprime_val, a_val, sz_val(1),sz_val(2),Params.r_l,Params.r_b,Params.y,Params.theta,Params.sigma);
-        SSvalue_Consumption = @(aprime_val,a_val,sz_val,pi_sz,p_val) Imrohoroglu1989_ConsFn(aprime_val, a_val, sz_val(1),sz_val(2),Params.r_l,Params.r_b,Params.y,Params.theta,Params.sigma);
-        SSvalue_AssetsBorrowed = @(aprime_val,a_val,sz_val,pi_sz,p_val,param) a_val*(a_val<0);
-        SSvalue_AssetsStored = @(aprime_val,a_val,sz_val,pi_sz,p_val,param) a_val;
-        SSvalue_AssetsSaved = @(aprime_val,a_val,sz_val,pi_sz,p_val,param) a_val*(a_val>0);
-        SSvalue_Earnings = @(aprime_val,a_val,sz_val,pi_sz,p_val,param) Params.y*((sz_val(1)==1)+Params.theta*(sz_val(1)==2));
-        SSvalue_Income = @(aprime_val,a_val,sz_val,pi_sz,p_val,param) Imrohoroglu1989_IncomeFn(aprime_val, a_val, sz_val(1),sz_val(2),Params.r_l,Params.r_b,Params.y,Params.theta,Params.sigma);
+        SSvalueParamNames={};
+        SSvalueParamNames(1).Names={'r_l','r_b','y','theta','sigma'};
+        SSvalue_Utility = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ReturnFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
+        SSvalueParamNames(2).Names={'r_l','r_b','y','theta','sigma'};
+        SSvalue_Consumption = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ConsFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
+        SSvalueParamNames(3).Names={};
+        SSvalue_AssetsBorrowed = @(aprime_val,a_val,s_val,z_val) a_val*(a_val<0);
+        SSvalueParamNames(4).Names={};
+        SSvalue_AssetsStored = @(aprime_val,a_val,s_val,z_val) a_val;
+        SSvalueParamNames(5).Names={};
+        SSvalue_AssetsSaved = @(aprime_val,a_val,s_val,z_val) a_val*(a_val>0);
+        SSvalueParamNames(6).Names={'y','theta'};
+        SSvalue_Earnings = @(aprime_val,a_val,s_val,z_val,y,theta) y*((s_val==1)+theta*(s_val==2));
+        SSvalueParamNames(7).Names={'r_l','r_b','y','theta','sigma'};
+        SSvalue_Income = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_IncomeFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
         SSvaluesFn={SSvalue_Utility, SSvalue_Consumption, SSvalue_AssetsBorrowed, SSvalue_AssetsStored, SSvalue_AssetsSaved,SSvalue_Earnings,SSvalue_Income};
         
-        SSvalues_AggVars=SSvalues_AggVars_Case1(gather(StationaryDist), gather(Policy), SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_sz, d_grid, a_grid,sz_grid,pi_sz,[], 1)
+        SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_sz, d_grid, a_grid,sz_grid,vfoptions.parallel);
         
-        AvgUtility(WhichSigma,EconomyEnvironment)=SSvalues_AggVars(1);
-        AvgConsumption(WhichSigma,EconomyEnvironment)=SSvalues_AggVars(2);
+        AvgUtility(WhichSigma,EconomyEnvironment)=gather(SSvalues_AggVars(1));
+        AvgConsumption(WhichSigma,EconomyEnvironment)=gather(SSvalues_AggVars(2));
                
         if WhichSigma==1
             if EconomyEnvironment==1
-                Table2(1:5,2)=[SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)];%[SSvalue_AssetsBorrowed; SSvalue_AssetsStored; SSvalue_AssetsSaved; SSvalue_Income; SSvalue_Consumption];
+                Table2(1:5,2)=gather([SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)]);%[SSvalue_AssetsBorrowed; SSvalue_AssetsStored; SSvalue_AssetsSaved; SSvalue_Income; SSvalue_Consumption];
             elseif EconomyEnvironment==2
-                Table2(1:5,1)=[SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)];
+                Table2(1:5,1)=gather([SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)]);
             end
         end
-        
         
         % End the for loops for WhichSigma and EconomyEnvironment
     end
@@ -197,9 +250,52 @@ end
 
 
 %% Create Table 1
-%Table1=nan(2,2);
-% NOT YET IMPLEMENTED
 
+Table1=nan(2,2);
+% Perfect insurance: cost of aggregate shocks
+Table1(1,1)=(AvgUtility(1,3)/AvgUtility(1,6))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
+Table1(2,1)=(AvgUtility(2,3)/AvgUtility(2,6))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
+% Only storage
+Table1(1,1)=(AvgUtility(1,1)/AvgUtility(1,4))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
+Table1(2,1)=(AvgUtility(2,1)/AvgUtility(2,4))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
+
+
+FilenameString=['./SavedOutput/LatexInputs/Imrohoroglu1989_Table1.tex'];
+FID = fopen(FilenameString, 'w');
+fprintf(FID, 'Cost of Business Cycles as a Percentage of Consumption \\\\ \n');
+fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcc} \\hline \\hline \n');
+fprintf(FID, 'Risk  &  &  \\\\ \n');
+fprintf(FID, 'Aversion & For Economics with & For Economics with \\\\ \n');
+fprintf(FID, 'Parameter & Perfect Insurance & Only a Storage Technology \\\\  \\hline \n');
+fprintf(FID, '$\\sigma=1.5$ & %1.3f & %1.3f \\\\ \n', Table1(1,:));
+fprintf(FID, '$\\sigma=6.2$ & %1.3f & %1.3f \\\\ \n', Table1(2,:));
+fprintf(FID, '\\hline \n \\end{tabular*} \n');
+fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
+fprintf(FID, 'Replication of Table 1 of Imrohoroglu (1989) using grid size $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', n_a, n_s, n_z);
+fprintf(FID, 'Note that these are simply evaluated at the mean of the utility, not as an expectation across agent distribution of their invididual costs');
+fprintf(FID, '}} \\end{minipage}');
+fclose(FID);
+
+
+%% Create Table 2
+
+FilenameString=['./SavedOutput/LatexInputs/Imrohoroglu1989_Table2.tex'];
+FID = fopen(FilenameString, 'w');
+fprintf(FID, 'Properties of the Equilibrium \\\\ \n');
+fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcc} \\hline \\hline \n');
+fprintf(FID, ' & Economies with an & Economies with \\\\ \n');
+fprintf(FID, ' & Intermediation & Only a Storage \\\\ \n');
+fprintf(FID, 'Time Average of & Technology & Technology \\\\  \\hline \n');
+fprintf(FID, 'Assets Borrowed & %1.3f & %1.3f \\\\ \n', Table2(1,:));
+fprintf(FID, 'Assets Stored   & %1.3f & %1.3f \\\\ \n', Table2(2,:));
+fprintf(FID, 'Assets Saved    & %1.3f & %1.3f \\\\ \n', Table2(3,:));
+fprintf(FID, 'Income          & %1.3f & %1.3f \\\\ \n', Table2(4,:));
+fprintf(FID, 'Consumption     & %1.3f & %1.3f \\\\ \n', Table2(5,:));
+fprintf(FID, '\\hline \n \\end{tabular*} \n');
+fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
+fprintf(FID, 'Replication of Table 2 of Imrohoroglu (1989) using grid sizes $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', n_a, n_s, n_z);
+fprintf(FID, '}} \\end{minipage}');
+fclose(FID);
 
 
 
