@@ -4,8 +4,7 @@
 vfoptions.policy_forceintegertype=1;
 
 % You can change this grid size to see if anything changes
-npoints_basic_a_grid=301; % Page 1373 of Imrohoroglu (1989), uses 301 (codes assume it is an odd number)
-
+npoints_basic_a_grid=501; % Page 1373 of Imrohoroglu (1989), uses 301 (codes assume it is an odd number)
 
 %%
 % Create some matrices to store numbers needed for tables
