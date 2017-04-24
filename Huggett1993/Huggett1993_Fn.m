@@ -29,17 +29,17 @@ n_p=n_q;
 %Create descriptions of SS values as functions of d_grid, a_grid, s_grid &
 %pi_s (used to calculate the integral across the SS dist fn of whatever
 %functions you define here)
-SSvalueParamNames={};
-SSvaluesFn_1 = @(aprime_val,a_val,s_val,p_val) a_val; %We just want the aggregate assets (which is this periods state)
+SSvalueParamNames(1).Names={};
+SSvaluesFn_1 = @(aprime_val,a_val,s_val) a_val; %We just want the aggregate assets (which is this periods state)
 SSvaluesFn={SSvaluesFn_1};
 
 %Now define the functions for the Market Clearance conditions
     %Should be written as LHS of market clearance eqn minus RHS, so that 
     %the closer the value given by the function is to zero, the closer 
     %the market is to clearing.
-MarketPriceParamNames={};
-MarketPriceEqn_1 = @(AggVars,p,params) AggVars; %The requirement that the aggregate assets (lending and borrowing) equal zero
-MarketPriceEqns={MarketPriceEqn_1};
+MarketClearanceParamNames(1).Names={};
+MarketClearanceEqn_1 = @(AggVars,p) AggVars; %The requirement that the aggregate assets (lending and borrowing) equal zero
+MarketClearanceEqns={MarketClearanceEqn_1};
 
 disp('sizes')
 n_a
@@ -62,7 +62,7 @@ PriceParamNames={'q'};
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 heteroagentoptions.pgrid=p_grid;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, SSvaluesFn, MarketPriceEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, MarketPriceParamNames, PriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, SSvaluesFn, MarketClearanceEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, MarketClearanceParamNames, PriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % findeqmtime=toc
 Params.q=p_eqm;
 save ./SavedOutput/Huggett1993Market.mat p_eqm p_eqm_index MarketClearance
@@ -82,7 +82,7 @@ StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
 SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z,p_eqm, Parallel);
 
-eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,Params.q, MarketPriceEqns, Params, MarketPriceParamNames));
+eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,Params.q, MarketClearanceEqns, Params, MarketClearanceParamNames));
 save ./SavedOutput/Huggett1993SSObjects.mat p_eqm Policy StationaryDist
 
 

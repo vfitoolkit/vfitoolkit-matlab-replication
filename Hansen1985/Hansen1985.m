@@ -27,20 +27,23 @@ simoptions.parallel=Parallel;
 
 %% Setup
 
+% The toolkit uses a 'structure' called Params to store the parameter values. 
+% In this basic model this may appear over-complicated, but in more advanced models it is much simpler and more useful.
+
 %Discounting rate
-beta = 0.99;
+Params.beta = 0.99;
 
 %Parameter values
-alpha = 0.36; % alpha (Hansen refers to this as theta)
-A=2;
-h0=0.53;
-B=-A*log(1-h0)/h0;
-rho = 0.95; % rho (Hansen refers to this as gamma)
-delta = 0.025; % delta
-sigma_epsilon=0.00712;
-sigmasq_epsilon=sigma_epsilon^2;
+Params.alpha = 0.36; % alpha (Hansen refers to this as theta)
+Params.A=2;
+Params.h0=0.53;
+Params.B=-Params.A*log(1-Params.h0)/Params.h0;
+Params.rho = 0.95; % rho (Hansen refers to this as gamma)
+Params.delta = 0.025; % delta
+Params.sigma_epsilon=0.00712;
+Params.sigmasq_epsilon=Params.sigma_epsilon^2;
 %Step 1: Compute the steady state
-K_ss=(alpha/(1/beta-1+delta))^(1/(1-alpha))*2/3; % Hansen footnote 15.
+K_ss=(Params.alpha/(1/Params.beta-1+Params.delta))^(1/(1-Params.alpha))*2/3; % Hansen footnote 15.
 
 
 %Create grids (it is very important that each grid is defined as a column vector)
@@ -57,16 +60,16 @@ if AlternativeProductivityShocks==0
     z_sim=zeros(T,1);
     % Calculate the mean and std dev of the normal shock the exponential of
     % which will be a lognormal with mean 1-rho and std dev sigma_epsilon
-    sigma_ln=sqrt(log(1+(sigma_epsilon^2)/((1-rho)^2)));
-    mu_ln=log(1-rho)-(sigma_ln^2)/2;
+    sigma_ln=sqrt(log(1+(Params.sigma_epsilon^2)/((1-Params.rho)^2)));
+    mu_ln=log(1-Params.rho)-(sigma_ln^2)/2;
     % check=exp(mu_ln+sigma_ln*randn(10^4,1)); mean(check); std(check); % Works
-    temp=1-rho; %The unconditional mean of z
+    temp=1-Params.rho; %The unconditional mean of z
     for tt=1:burnin
-        temp=rho*temp+exp(mu_ln+sigma_ln*randn(1,1));
+        temp=Params.rho*temp+exp(mu_ln+sigma_ln*randn(1,1));
     end
     z_sim(1)=temp;
     for tt=2:T
-        z_sim(tt)=rho*z_sim(tt-1)+exp(mu_ln+sigma_ln*randn(1,1));
+        z_sim(tt)=Params.rho*z_sim(tt-1)+exp(mu_ln+sigma_ln*randn(1,1));
     end
     [N,edges,bin] = histcounts(z_sim,n_z);
     z_grid=zeros(n_z,1);
@@ -83,7 +86,7 @@ elseif AlternativeProductivityShocks==1
     q=3;
     tauchenoptions.parallel=Parallel;
     mcmomentsoptions.parallel=Parallel;
-    [z_grid, pi_z]=TauchenMethod(0,sigmasq_epsilon,rho,n_z,q,tauchenoptions); % the AR(1) on log(z)
+    [z_grid, pi_z]=TauchenMethod(0,Params.sigmasq_epsilon,Params.rho,n_z,q,tauchenoptions); % the AR(1) on log(z)
     z_grid=exp(z_grid); % so z is just exp(log(z))
     %Normalize z by dividing it by Expectation_z (so that the resulting process has expectaion equal to 1.
     [Expectation_z,~,~,~]=MarkovChainMoments(z_grid,pi_z,mcmomentsoptions);
@@ -94,19 +97,8 @@ end
 a_grid=sort([linspace(0+0.0001,K_ss-0.0001,n_a-floor(n_a/2)),linspace(0,2*K_ss,floor(n_a/2))])';
 d_grid=linspace(0,1,n_d)';
 
-% z_grid=gpuArray(z_grid);
-% a_grid=gpuArray(a_grid);
-% d_grid=gpuArray(d_grid);
 pi_z=gpuArray(pi_z);
 
-% The toolkit uses a 'structure' called Params to store the parameter values. 
-% In this basic model this will appear over-complicated, but in more advanced models it is much simpler and more useful.
-Params=CreateParamsStrucFromParamsVec({'alpha','beta','delta','A','h0','B','rho','sigmasq_epsilon'}, [alpha,beta,delta,A,h0,B,rho,sigmasq_epsilon]);
-% Rather than use this command you could create all the parameters in this
-% form initially, namely instead of
-% alpha = 0.33;
-% You would use
-% Params.alpha= 0.33;
 
 DiscountFactorParamNames={'beta'};
 
@@ -149,12 +141,12 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
         TimeSeriesIndexes=SimTimeSeriesIndexes_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions);
         
         %Define the functions which we wish to create time series for (from the TimeSeriesIndexes)
-        TimeSeriesFn_1 = @(d_val,aprime_val,a_val,z_val) z_val*(a_val^alpha)*(d_val^(1-alpha)); %Output (from eqn 1)
-        TimeSeriesFn_2 = @(d_val,aprime_val,a_val,z_val) z_val*(a_val^alpha)*(d_val^(1-alpha)) -(aprime_val-(1-delta)*a_val); %Consumption (=output-investment, from eqn 2; this formula is valid for both divisible and indivisible labour)
-        TimeSeriesFn_3 = @(d_val,aprime_val,a_val,z_val) aprime_val-(1-delta)*a_val; %Investment (from eqn 3)
+        TimeSeriesFn_1 = @(d_val,aprime_val,a_val,z_val) z_val*(a_val^Params.alpha)*(d_val^(1-Params.alpha)); %Output (from eqn 1)
+        TimeSeriesFn_2 = @(d_val,aprime_val,a_val,z_val) z_val*(a_val^Params.alpha)*(d_val^(1-Params.alpha)) -(aprime_val-(1-Params.delta)*a_val); %Consumption (=output-investment, from eqn 2; this formula is valid for both divisible and indivisible labour)
+        TimeSeriesFn_3 = @(d_val,aprime_val,a_val,z_val) aprime_val-(1-Params.delta)*a_val; %Investment (from eqn 3)
         TimeSeriesFn_4 = @(d_val,aprime_val,a_val,z_val) a_val; %Capital Stock
         TimeSeriesFn_5 = @(d_val,aprime_val,a_val,z_val) d_val; %Hours
-        TimeSeriesFn_6 = @(d_val,aprime_val,a_val,z_val) (z_val*(a_val^alpha)*(d_val^(1-alpha)))/d_val; %Productivity (measured in data as output divided by hours)
+        TimeSeriesFn_6 = @(d_val,aprime_val,a_val,z_val) (z_val*(a_val^Params.alpha)*(d_val^(1-Params.alpha)))/d_val; %Productivity (measured in data as output divided by hours)
         TimeSeriesFn_7 = @(d_val,aprime_val,a_val,z_val) z_val; %Tech Shock (Hansen 1985 does not report this, just for interest)
         
         
