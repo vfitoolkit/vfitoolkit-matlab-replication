@@ -4,12 +4,15 @@
 vfoptions.policy_forceintegertype=1;
 
 % You can change this grid size to see if anything changes
-npoints_basic_a_grid=501; % Page 1373 of Imrohoroglu (1989), uses 301 (codes assume it is an odd number)
+npoints_basic_a_grid=701; % Page 1373 of Imrohoroglu (1989), uses 301 (codes assume it is an odd number)
+
 
 %%
 % Create some matrices to store numbers needed for tables
 AvgUtility=nan(2,6); % WhichSigma-by-EconomyEnvironment
 AvgConsumption=nan(2,6);
+
+AvgValueFn=nan(2,6);
 
 %Choose one of the following
 %EconomyEnvironment pairs
@@ -23,6 +26,8 @@ AvgConsumption=nan(2,6);
 % (Environment A is storage technology only, B is intermediation, C is perfect insurance)
 % Which of the two values of sigma, the risk aversion parameter, to use.
 %WhichSigma=1
+
+       
 
 for WhichSigma=1:2
     for EconomyEnvironment=1:6
@@ -38,7 +43,7 @@ for WhichSigma=1:2
         % num_d_vars=0; %There is none in Imrohorglu (you only choose aprime, which Case 1 codes assume is chosen anyway)
         
         %Discounting rate
-        Params.beta = 0.995;
+        Params.beta = 0.995; % from pg 1370
         
         %Parameters
         if WhichSigma==1
@@ -48,25 +53,25 @@ for WhichSigma=1:2
         end
         Params.theta=0.25;
         Params.r_l=0; %Interest rate on lending (in environment A, this is the only r)  (pg. 1370)
-        Params.r_b=0.08; %Interest rate on borrowing (pg. 1370)
-        Params.y=1; %Normalization (THIS IS NOT FROM PAPER, I JUST GUESSED)
+        Params.r_b=0.0089; %Interest rate on borrowing is 8 percent (pg. 1370). But this is presumably per-annum, while model period is 6 weeks. I therefore consider compounding and use (1+0.08)^(6/52)-1=0.0089.
+        Params.y=1; %Normalization. See footnote 3 (pg. 1370); can be done as utility fn is homogeneous of degree 1-sigma
         
         s_grid=[1,2]';
-        if EconomyEnvironment==1 || EconomyEnvironment==2 || EconomyEnvironment==3 % Economy with aggregate shocks
+        if EconomyEnvironment==1 || EconomyEnvironment==3 || EconomyEnvironment==5 % Economy with aggregate shocks
             z_grid=[1,2]';
             sz_grid=[s_grid;z_grid];
             pi_sz=[0.9141,0.0234,0.0587, 0.0038; 0.5625, 0.3750, 0.0269, 0.0356; 0.0608, 0.0016, 0.8813, 0.0563; 0.0375, 0.0250, 0.4031, 0.5344]; % From Eqn 14 of Imrohoroglu (1989)
-        elseif EconomyEnvironment==4 || EconomyEnvironment==5 || EconomyEnvironment==6 % Economy without aggregate shocks
+        elseif EconomyEnvironment==2 || EconomyEnvironment==4 || EconomyEnvironment==6 % Economy without aggregate shocks
             z_grid=[1]';
             sz_grid=[s_grid;z_grid];
             pi_sz=[0.9565,0.0435;0.5,0.5]; % From Eqn 15 of Imrohoroglu (1989)
         end
         
-        if EconomyEnvironment==1 || EconomyEnvironment==4 % Environment A
+        if EconomyEnvironment==1 || EconomyEnvironment==2 % Environment A
             a_grid=linspace(0,8,npoints_basic_a_grid)'; % Page 1373 of Imrohoroglu (1989)
-        elseif EconomyEnvironment==2 || EconomyEnvironment==5 % Environment B
+        elseif EconomyEnvironment==3 || EconomyEnvironment==4 % Environment B
             a_grid=linspace(-8,8,2*npoints_basic_a_grid-1)';
-        elseif EconomyEnvironment==3 || EconomyEnvironment==6 % Environment C
+        elseif EconomyEnvironment==5 || EconomyEnvironment==6 % Environment C
             a_grid=0;
         end
         
@@ -91,6 +96,7 @@ for WhichSigma=1:2
         tic;
         V0=ones([n_a,n_sz]);
         [V, Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+
         time=toc;
         
         fprintf('Time to solve the value function iteration was %8.2f seconds. \n', time)
@@ -219,7 +225,7 @@ for WhichSigma=1:2
         SSvalueParamNames(2).Names={'r_l','r_b','y','theta','sigma'};
         SSvalue_Consumption = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ConsFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
         SSvalueParamNames(3).Names={};
-        SSvalue_AssetsBorrowed = @(aprime_val,a_val,s_val,z_val) a_val*(a_val<0);
+        SSvalue_AssetsBorrowed = @(aprime_val,a_val,s_val,z_val) -a_val*(a_val<0);
         SSvalueParamNames(4).Names={};
         SSvalue_AssetsStored = @(aprime_val,a_val,s_val,z_val) a_val;
         SSvalueParamNames(5).Names={};
@@ -234,11 +240,15 @@ for WhichSigma=1:2
         
         AvgUtility(WhichSigma,EconomyEnvironment)=gather(SSvalues_AggVars(1));
         AvgConsumption(WhichSigma,EconomyEnvironment)=gather(SSvalues_AggVars(2));
+        
+        temp=V.*StationaryDist;
+%         temp=reshape(temp,[length(temp),1]); %this line is probably unnecessary
+        AvgValueFn(WhichSigma,EconomyEnvironment)=gather(sum(temp(~isnan(temp))));
                
         if WhichSigma==1
             if EconomyEnvironment==1
                 Table2(1:5,2)=gather([SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)]);%[SSvalue_AssetsBorrowed; SSvalue_AssetsStored; SSvalue_AssetsSaved; SSvalue_Income; SSvalue_Consumption];
-            elseif EconomyEnvironment==2
+            elseif EconomyEnvironment==3
                 Table2(1:5,1)=gather([SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)]);
             end
         end
@@ -252,26 +262,40 @@ end
 
 Table1=nan(2,2);
 % Perfect insurance: cost of aggregate shocks
-Table1(1,1)=(AvgUtility(1,3)/AvgUtility(1,6))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
-Table1(2,1)=(AvgUtility(2,3)/AvgUtility(2,6))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
+Table1(1,1)=(AvgUtility(1,5)/AvgUtility(1,6))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
+Table1(2,1)=(AvgUtility(2,5)/AvgUtility(2,6))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
 % Only storage
-Table1(1,1)=(AvgUtility(1,1)/AvgUtility(1,4))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
-Table1(2,1)=(AvgUtility(2,1)/AvgUtility(2,4))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
+Table1(1,2)=(AvgUtility(1,1)/AvgUtility(1,2))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
+Table1(2,2)=(AvgUtility(2,1)/AvgUtility(2,2))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
+% Comment: am not 100% certain on how these are being calculated, but from
+% reading paper this seems to be what is done. Emailed Imrohoroglu who said
+% that codes have been lost but that calculation is identical to that from
+% her paper on welfare costs of inflation. 
 
+% Table1alt=nan(2,2);
+% % Perfect insurance: cost of aggregate shocks
+% Table1alt(1,1)=(AvgValueFn(1,5)/AvgValueFn(1,6))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
+% Table1alt(2,1)=(AvgValueFn(2,5)/AvgValueFn(2,6))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
+% % Only storage
+% Table1alt(1,2)=(AvgValueFn(1,1)/AvgValueFn(1,2))^(1/(1-1.5))-1; % 1.5 is the value of sigma for this case
+% Table1alt(2,2)=(AvgValueFn(2,1)/AvgValueFn(2,2))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
+% % Note that due to the kind of self-insurance (assets) people have access to, and the
+% % expected length of s=1 vs s=2 this just gives same answers as using
+% % AvgUtility anyway.
 
 FilenameString=['./SavedOutput/LatexInputs/Imrohoroglu1989_Table1.tex'];
 FID = fopen(FilenameString, 'w');
 fprintf(FID, 'Cost of Business Cycles as a Percentage of Consumption \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcc} \\hline \\hline \n');
 fprintf(FID, 'Risk  &  &  \\\\ \n');
-fprintf(FID, 'Aversion & For Economics with & For Economics with \\\\ \n');
+fprintf(FID, 'Aversion & For Economies with & For Economies with \\\\ \n');
 fprintf(FID, 'Parameter & Perfect Insurance & Only a Storage Technology \\\\  \\hline \n');
-fprintf(FID, '$\\sigma=1.5$ & %1.3f & %1.3f \\\\ \n', Table1(1,:));
-fprintf(FID, '$\\sigma=6.2$ & %1.3f & %1.3f \\\\ \n', Table1(2,:));
+fprintf(FID, '$\\sigma=1.5$ & %1.3f & %1.3f \\\\ \n', -100*Table1(1,:));
+fprintf(FID, '$\\sigma=6.2$ & %1.3f & %1.3f \\\\ \n', -100*Table1(2,:));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 1 of Imrohoroglu (1989) using grid size $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', n_a, n_s, n_z);
-fprintf(FID, 'Note that these are simply evaluated at the mean of the utility, not as an expectation across agent distribution of their invididual costs');
+fprintf(FID, 'Replication of Table 1 of Imrohoroglu (1989) using grid size $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', npoints_basic_a_grid, 2, 2);
+fprintf(FID, 'Note that these are simply evaluated at the mean of the utility, not as an expectation across agent distribution of their individual compensating variation based on value function. The later would better capture the heterogeneity of the costs');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -292,7 +316,7 @@ fprintf(FID, 'Income          & %1.3f & %1.3f \\\\ \n', Table2(4,:));
 fprintf(FID, 'Consumption     & %1.3f & %1.3f \\\\ \n', Table2(5,:));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 2 of Imrohoroglu (1989) using grid sizes $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', n_a, n_s, n_z);
+fprintf(FID, 'Replication of Table 2 of Imrohoroglu (1989) using grid sizes $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', npoints_basic_a_grid, 2, 2);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
