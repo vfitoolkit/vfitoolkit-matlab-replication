@@ -89,7 +89,7 @@ n_d=length(N_grid);
 
 DiscountFactorParamNames={'beta'};
 
-ReturnFn=@(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ReturnFn(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment)
+ReturnFn=@(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ReturnFn(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment);
 ReturnFnParamNames={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
 
 %% Solve the model
@@ -400,7 +400,7 @@ fprintf(FID, 'Benefits of Switching to a policy of a zero after-tax real return 
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcccccc} \\hline \n');
 fprintf(FID, 'Current after-tax  & \\multicolumn{6}{c}{Benefits as percent of wealth} \\\\ \\cline{2-7} \n');
 fprintf(FID, 'real return        & \\multicolumn{3}{c}{Measured at Mean} & \\multicolumn{3}{c}{Measured across Stationary Dist} \\\\ \\hline \n');
-fprintf(FID, 'on deposits        & $S$ & $S_1$ & $S_2$ & $M$ & $M_2$ & $M_3$ \\\\ \\hline \n');
+fprintf(FID, 'on deposits        & $S$ & $S_1$ & $S_2$ & $M$ & $M_1$ & $M_2$ \\\\ \\hline \n');
 fprintf(FID, ' %1.2f & %1.2f & %1.2f & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', Table8(1,:));
 fprintf(FID, ' %1.2f & %1.2f & %1.2f & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', Table8(2,:));
 fprintf(FID, ' %1.2f & %1.2f & %1.2f & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', Table8(3,:));
@@ -482,9 +482,9 @@ FID = fopen(FilenameString, 'w');
 fprintf(FID, 'Welfare benefits of switching to a policy of less-negative after-tax real return on deposits \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcccccc} \\hline \n');
 fprintf(FID, ' & &  & & \\multicolumn{3}{c}{Benefits} \\\\ \n');
-fprintf(FID, ' \\multicolumn{2}{c}{Current policy} & \\multicolumn{2}{c}{New policy} & \\multicolumn{3}{c}{(percent of wealth} \\\\ \\cline{1-2} \\cline{3-4} \\cline{5-7} \n');
+fprintf(FID, ' \\multicolumn{2}{c}{Current policy} & \\multicolumn{2}{c}{New policy} & \\multicolumn{3}{c}{(percent of wealth)} \\\\ \\cline{1-2} \\cline{3-4} \\cline{5-7} \n');
 fprintf(FID, 'Inflation & After-tax & Inflation & After-tax & & &  \\\\ \n');
-fprintf(FID, 'on deposits        & $S$ & $S_1$ & $S_2$ & Total & Private & Public \\\\ \\hline \n');
+fprintf(FID, 'on deposits & real return & rate & real return & Total & Private & Public \\\\ \\hline \n');
 fprintf(FID, ' %d\\%% & %1.2f\\%% & %d\\%% & %1.2f\\%% &  &  &  \\\\ \n', Table9(1,1:4));
 fprintf(FID, ' %d & %1.2f & %d & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', Table9(2,:));
 fprintf(FID, ' %d & %1.2f & %d & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', Table9(3,:));
