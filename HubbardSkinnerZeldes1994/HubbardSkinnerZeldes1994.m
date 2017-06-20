@@ -26,6 +26,7 @@ Params.delta=0.03; % rate at which agents discount future
 Params.beta=1/(1+Params.delta);
 Params.r=0.03; % interest rate on assets
 
+% Mortality rates (probability of survival)
 % Table A.1
 Params.dj=[0.00058, 0.00061, 0.00062, 0.00064, 0.00065, 0.00067, 0.00069, 0.00070, 0.00072, 0.00075, 0.00078, 0.00082, 0.00086, 0.00091, 0.00098, 0.00105, 0.00115, 0.00128, 0.00144, 0.00161, 0.00180, 0.00200,...
     0.00221, 0.00242, 0.00266, 0.00292, 0.00320, 0.00349, 0.00380, 0.00413, 0.00450, 0.00490, 0.00533,...
@@ -35,7 +36,7 @@ Params.dj=[0.00058, 0.00061, 0.00062, 0.00064, 0.00065, 0.00067, 0.00069, 0.0007
     0.10323, 0.11367, 0.12484, 0.13677, 0.14938, 0.16289, 0.17721, 0.19234, 0.20828, 0.22418, 0.23980, 0.25495, 0.26937, 0.28284]; % conditional probability of death
 Params.sj=1-Params.dj; % Conditional survival probabilities. Act as a discount rate.
 
-
+% Wage (Earnings) incomes, W
 % Table A.2
 Params.DeterministicWj_working.ft1=[10993-196*WorkingAgeVec+2167*((WorkingAgeVec.^2)/100)-2655*((WorkingAgeVec.^3)/10000)];
 Params.DeterministicWj_working.ft2=[-11833+1421*WorkingAgeVec-137*((WorkingAgeVec.^2)/100)-2186*((WorkingAgeVec.^3)/10000)]; 
@@ -50,20 +51,19 @@ Params.DeterministicWj.ft3=[Params.DeterministicWj_working.ft3, Params.Determini
 % Compare to Fig A.1(a-c): they won't be exactly the same as drop the year
 % fixed effects, but eyeballing suggests they are fine.
 plot(21:1:100, Params.DeterministicWj.ft1, 21:1:100, Params.DeterministicWj.ft2, 21:1:100, Params.DeterministicWj.ft3)
-
-% Stochastic Wj (Table A.4)
+% Stochastic Wj (Table A.4): u_it, an AR(1) in regressions in paper
 Params.w_rho=[0.955; 0.946; 0.955];
 Params.w_sigmasqepsilon=[0.033; 0.025; 0.016];
 Params.w_sigmasqu=Params.w_sigmasqepsilon./(1-Params.w_rho.^2);
 Params.w_sigmasqupsilon=[0.040; 0.021; 0.014]; % Estimated from PSID but not used in model.
-[z1_grid.ft1, pi_z1.ft1]=TauchenMethod(0,Params.w_sigmasqu(1), Params.w_rho(1), n_z(1), Params.q);
-[z1_grid.ft2, pi_z1.ft2]=TauchenMethod(0,Params.w_sigmasqu(2), Params.w_rho(2), n_z(1), Params.q);
-[z1_grid.ft3, pi_z1.ft3]=TauchenMethod(0,Params.w_sigmasqu(3), Params.w_rho(3), n_z(1), Params.q);
-
+[z1_grid.ft1, pi_z1.ft1]=TauchenMethod(0,Params.w_sigmasqepsilon(1), Params.w_rho(1), n_z(1), Params.q);
+[z1_grid.ft2, pi_z1.ft2]=TauchenMethod(0,Params.w_sigmasqepsilon(2), Params.w_rho(2), n_z(1), Params.q);
+[z1_grid.ft3, pi_z1.ft3]=TauchenMethod(0,Params.w_sigmasqepsilon(3), Params.w_rho(3), n_z(1), Params.q);
 % Bottom of pg 103 (45th pg): Wit=exp(log(DeterministicWj)-0.5*sigmasqu+uit)
 % "This specification ensures that when we compare the certainty case with
 % the earnings uncertainty case, we hold the age-conditional means of earnings constant."
 
+% Medical Expenses, M
 % Table A.5
 Params.DeterministicMj_working=[5.373+0.073*WorkingAgeVec-0.753*((WorkingAgeVec.^2)/1000); 4.749+0.106*WorkingAgeVec-1.084*((WorkingAgeVec.^2)/1000); 4.816+0.109*WorkingAgeVec-1.090*((WorkingAgeVec.^2)/1000)];
 Params.DeterministicMj_retired=[14.441-0.200*RetiredAgeVec+1.288*((RetiredAgeVec.^2)/1000); 11.371-0.101*RetiredAgeVec+0.540*((RetiredAgeVec.^2)/1000); 9.553-0.054*RetiredAgeVec-0.297*((RetiredAgeVec.^2)/1000)];
@@ -92,20 +92,42 @@ a_grid=linspace(0,maxa,n_a)'; % Could probably do better by adding more grid nea
 %% Now, create the return function 
 DiscountFactorParamNames={'beta','sj'};
 
-ReturnFn=@(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, DeterministicMj) HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, DeterministicMj)
-ReturnFnParamNames={'gamma','r','Cbar','DeterministicWj', 'DeterministicMj'}; %It is important that these are in same order as they appear in 'HubbardSkinnerZeldes1994_ReturnFn'
+ReturnFn=@(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj)
+ReturnFnParamNames={'gamma','r','Cbar','DeterministicWj', 'w_sigmasqu', 'DeterministicMj'}; %It is important that these are in same order as they appear in 'HubbardSkinnerZeldes1994_ReturnFn'
 
 %% Now solve the value function iteration problem
 
-vfoptions.verbose=0;
+vfoptions.verbose=1;
 tic;
 [V, Policy]=ValueFnIter_Case1_FHorz_PType(0,n_a,n_z,N_j,N_i, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
 toc
+%%
+Policytemp=Policy.ft1;
+figure(2)
+surf(reshape(Policytemp(1,:,8,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+figure(3)
+surf(reshape(Policytemp(1,:,15,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+figure(4)
+surf(reshape(Policytemp(1,:,1,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 
-%% 
+
+%% Simulate Panel Data
 
 
+% Start with a time series simulation (of one life-time starting from a
+% specific seedpoint).
+simoptions.simperiods=80;
+simoptions.seedpoint=[ceil(prod(n_a)/2),ceil(prod(n_z)/2),1];
+Policytemp=Policy.ft1;
+pi_ztemp=pi_z.ft1;
+SimLifeCycle=SimLifeCycleIndexes_FHorz_Case1(Policytemp,0,n_a,n_z,N_j,pi_ztemp, simoptions)
 
+
+% Life-cycle works, now Panel for a given PType
+simoptions.numbersims=10^3;
+SimPanelIndexes_FHorz_Case1(Policytemp,0,n_a,n_z,N_j,pi_ztemp, simoptions);
+
+% Now full panel
 
 
 
