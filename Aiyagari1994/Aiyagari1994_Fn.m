@@ -77,14 +77,14 @@ SSvalueParamNames(1).Names={};
 SSvaluesFn_1 = @(aprime_val,a_val,s_val) a_val; %We just want the aggregate assets (which is this periods state)
 SSvaluesFn={SSvaluesFn_1};
 
-%Now define the functions for the Market Clearance conditions
-    %Should be written as LHS of market clearance eqn minus RHS, so that 
+%Now define the functions for the General Equilibrium conditions
+    %Should be written as LHS of general eqm eqn minus RHS, so that 
     %the closer the value given by the function is to zero, the closer 
-    %the market is to clearing.
+    %the general eqm condition is to holding.
 %Note: length(AggVars) is number_d_vars+number_a_vars and length(p) is number_p_vars
-MarketClearanceParamNames(1).Names={'alpha','delta'};
-MarketClearanceEqn_1 = @(AggVars,p,alpha,delta) p-(alpha*(AggVars^(alpha-1))*(Expectation_l^(1-alpha))-delta); %The requirement that the interest rate corresponds to the agg capital level
-MarketClearanceEqns={MarketClearanceEqn_1};
+GeneralEqmEqnParamNames(1).Names={'alpha','delta'};
+GeneralEqmEqn_1 = @(AggVars,p,alpha,delta) p-(alpha*(AggVars^(alpha-1))*(Expectation_l^(1-alpha))-delta); %The requirement that the interest rate corresponds to the agg capital level
+GeneralEqmEqns={GeneralEqmEqn_1};
 
 disp('sizes')
 n_a
@@ -123,12 +123,12 @@ ReturnFnParamNames={'alpha','delta','mu','r'}; %It is important that these are i
 
 V0=ones(n_a,n_s,'gpuArray'); %(a,s)
 %Use the toolkit to find the equilibrium price index
-PriceParamNames={'r'};
+GEPriceParamNames={'r'};
 
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 heteroagentoptions.pgrid=p_grid;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_s, n_p, pi_s, d_grid, a_grid, s_grid, ReturnFn, SSvaluesFn, MarketClearanceEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, MarketClearanceParamNames, PriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_s, n_p, pi_s, d_grid, a_grid, s_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % findeqmtime=toc
 save ./SavedOutput/Aiyagari1994Market.mat p_eqm p_eqm_index MarketClearance
 
@@ -149,7 +149,7 @@ StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_s,pi_s, simoptions);
 
 SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_s, d_grid, a_grid,s_grid,pi_s,p_eqm, Parallel)
 
-eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,p_eqm,MarketClearanceEqns, Params, MarketClearanceParamNames));
+eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,p_eqm,GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
 save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy StationaryDist
 
 % Calculate savings rate:

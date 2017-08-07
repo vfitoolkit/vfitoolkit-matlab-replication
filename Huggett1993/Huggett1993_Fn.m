@@ -33,13 +33,13 @@ SSvalueParamNames(1).Names={};
 SSvaluesFn_1 = @(aprime_val,a_val,s_val) a_val; %We just want the aggregate assets (which is this periods state)
 SSvaluesFn={SSvaluesFn_1};
 
-%Now define the functions for the Market Clearance conditions
-    %Should be written as LHS of market clearance eqn minus RHS, so that 
+%Now define the functions for the General Equilibrium conditions
+    %Should be written as LHS of general eqm eqn minus RHS, so that 
     %the closer the value given by the function is to zero, the closer 
-    %the market is to clearing.
-MarketClearanceParamNames(1).Names={};
-MarketClearanceEqn_1 = @(AggVars,p) AggVars; %The requirement that the aggregate assets (lending and borrowing) equal zero
-MarketClearanceEqns={MarketClearanceEqn_1};
+    %the general eqm condition is to holding.
+GeneralEqmEqnParamNames(1).Names={};
+GeneralEqmEqn_1 = @(AggVars,p) AggVars; %The requirement that the aggregate assets (lending and borrowing) equal zero
+GeneralEqmEqns={GeneralEqmEqn_1};
 
 disp('sizes')
 n_a
@@ -57,12 +57,12 @@ ReturnFnParamNames={'mu','q'}; %It is important that these are in same order as 
 
 V0=ones(n_a,n_z,'gpuArray'); %(a,s)
 %Use the toolkit to find the equilibrium price index
-PriceParamNames={'q'};
+GEPriceParamNames={'q'};
 
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 heteroagentoptions.pgrid=p_grid;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, SSvaluesFn, MarketClearanceEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, MarketClearanceParamNames, PriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % findeqmtime=toc
 Params.q=p_eqm;
 save ./SavedOutput/Huggett1993Market.mat p_eqm p_eqm_index MarketClearance
@@ -82,7 +82,7 @@ StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
 SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z,p_eqm, Parallel);
 
-eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,Params.q, MarketClearanceEqns, Params, MarketClearanceParamNames));
+eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
 save ./SavedOutput/Huggett1993SSObjects.mat p_eqm Policy StationaryDist
 
 
