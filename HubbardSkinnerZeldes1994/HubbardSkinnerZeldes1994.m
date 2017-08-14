@@ -1,20 +1,39 @@
-% This code replicates the results of Hubbard, Skinner & Zeldes (1994WP) - The importance of precautionary motives in explaining individual and aggregate saving
+%% This code replicates the results of 
+% Hubbard, Skinner & Zeldes (1994) - The importance of precautionary motives in explaining individual and aggregate saving
+% The model detailed in this Carnegie-Rochester Conference Series on Public Policy paper appears to also be exactly the same as that used in
+% Hubbard, Skinner & Zeldes (1994) - Expanding the Life-Cycle Model: Precautionary Saving and Public Policy
+% Hubbard, Skinner & Zeldes (1994) - Precautionary Saving and Social Insurance
+% published in AER:P&P and JPE respecitively. Although I do not replicate all the results of these other two.
 
+% Note that the model includes a floor on consumption. This creates non-convexities in the
+% intertemporal budget constraint and means that basic Euler eqn based methods would not work.
+% HSZ use an Euler eqn based method, but have to add considerable complications in order for it 
+% to still work (see pg 113). This makes it a nice example for our present purposes as discertized VFI methods 
+% of the VFI Toolkit are able to handle such models with no extra effort required.
+
+%% State space variables of the model
 % Age
 % One endogenous variable: assets
 % Two stochastic exogenous variables: income shock, medical expense shock
+% Three fixed types: 
+%  ft1: high-school dropout
+%  ft2: high-school
+%  ft3: university
 
-J=80; % Ages 21 to 100 inclusive.
+%% Declare some parameter values
+
+Params.J=80; % Ages 21 to 100 inclusive.
 WorkingAgeVec=21:1:65;
 RetiredAgeVec=66:100;
+Params.age=[WorkingAgeVec,RetiredAgeVec];
 
 % 
 n_a=250;
 maxa=5*10^5;
 n_z=[15,15]; % income, medical
 N_i=3; % Number of fixed types
-N_j=J; % Number of periods in finite horizon
-Params.q=3; % For tauchen method
+N_j=Params.J; % Number of periods in finite horizon
+Params.q=3; % For tauchen method. They used q=2.5: pg 112 of pdf, "range between 2.5 standard deviations (of the unconditional distribution) above and below..."
 
 Params.gamma=3;
 % Gamma plays three roles:      
@@ -48,17 +67,13 @@ Params.DeterministicWj_retired.ft3=[48123-429*RetiredAgeVec];
 Params.DeterministicWj.ft1=[Params.DeterministicWj_working.ft1, Params.DeterministicWj_retired.ft1];
 Params.DeterministicWj.ft2=[Params.DeterministicWj_working.ft2, Params.DeterministicWj_retired.ft2];
 Params.DeterministicWj.ft3=[Params.DeterministicWj_working.ft3, Params.DeterministicWj_retired.ft3];
-% Compare to Fig A.1(a-c): they won't be exactly the same as drop the year
-% fixed effects, but eyeballing suggests they are fine.
+% Compare to Fig A.1(a-c): they won't be exactly the same as drop the year fixed effects, but eyeballing suggests they are fine.
 plot(21:1:100, Params.DeterministicWj.ft1, 21:1:100, Params.DeterministicWj.ft2, 21:1:100, Params.DeterministicWj.ft3)
 % Stochastic Wj (Table A.4): u_it, an AR(1) in regressions in paper
 Params.w_rho=[0.955; 0.946; 0.955];
 Params.w_sigmasqepsilon=[0.033; 0.025; 0.016];
 Params.w_sigmasqu=Params.w_sigmasqepsilon./(1-Params.w_rho.^2);
 Params.w_sigmasqupsilon=[0.040; 0.021; 0.014]; % Estimated from PSID but not used in model.
-[z1_grid.ft1, pi_z1.ft1]=TauchenMethod(0,Params.w_sigmasqepsilon(1), Params.w_rho(1), n_z(1), Params.q);
-[z1_grid.ft2, pi_z1.ft2]=TauchenMethod(0,Params.w_sigmasqepsilon(2), Params.w_rho(2), n_z(1), Params.q);
-[z1_grid.ft3, pi_z1.ft3]=TauchenMethod(0,Params.w_sigmasqepsilon(3), Params.w_rho(3), n_z(1), Params.q);
 % Bottom of pg 103 (45th pg): Wit=exp(log(DeterministicWj)-0.5*sigmasqu+uit)
 % "This specification ensures that when we compare the certainty case with
 % the earnings uncertainty case, we hold the age-conditional means of earnings constant."
@@ -71,64 +86,64 @@ Params.DeterministicMj=[Params.DeterministicMj_working, Params.DeterministicMj_r
 Params.m_rho=0.901*ones(3,1);
 Params.m_sigmasqepsilon=[0.175; 0.156; 0.153];
 Params.m_sigmasqomega=[0.220; 0.220; 0.220];
-[z2_grid.ft1, pi_z2.ft1]=TauchenMethod(0,Params.m_sigmasqepsilon(1)/(1-Params.m_rho(1)^2), Params.m_rho(1), n_z(2), Params.q);
-[z2_grid.ft2, pi_z2.ft2]=TauchenMethod(0,Params.m_sigmasqepsilon(2)/(1-Params.m_rho(2)^2), Params.m_rho(2), n_z(2), Params.q);
-[z2_grid.ft3, pi_z2.ft3]=TauchenMethod(0,Params.m_sigmasqepsilon(3)/(1-Params.m_rho(3)^2), Params.m_rho(3), n_z(2), Params.q);
-
 % Consumption Floor
 Params.Cbar=7000; % (middle of pg. 111)
 
-%% Grids
-z_grid.ft1=[z1_grid.ft1; z2_grid.ft1];
-z_grid.ft2=[z1_grid.ft2; z2_grid.ft2];
-z_grid.ft3=[z1_grid.ft3; z2_grid.ft3];
+%% Create some outputs to replicate those of HubbardSkinnerZeldes1994
 
-pi_z.ft1=kron(pi_z1.ft1, pi_z2.ft1);
-pi_z.ft2=kron(pi_z1.ft2, pi_z2.ft2);
-pi_z.ft3=kron(pi_z1.ft3, pi_z2.ft3);
+% Note: The annual growth rate of the population is assumed to be 1%.
+Params.n=0.01;
 
-a_grid=linspace(0,maxa,n_a)'; % Could probably do better by adding more grid near zero
+simoptions.numbersims=10^3; % Number of simulations on which panel data (and life-cycle profile) results will be based.
 
-%% Now, create the return function 
-DiscountFactorParamNames={'beta','sj'};
-
-ReturnFn=@(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj)
-ReturnFnParamNames={'gamma','r','Cbar','DeterministicWj', 'w_sigmasqu', 'DeterministicMj'}; %It is important that these are in same order as they appear in 'HubbardSkinnerZeldes1994_ReturnFn'
-
-%% Now solve the value function iteration problem
-
-vfoptions.verbose=1;
-tic;
-[V, Policy]=ValueFnIter_Case1_FHorz_PType(0,n_a,n_z,N_j,N_i, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
-toc
-%%
-Policytemp=Policy.ft1;
-figure(2)
-surf(reshape(Policytemp(1,:,8,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
-figure(3)
-surf(reshape(Policytemp(1,:,15,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
-figure(4)
-surf(reshape(Policytemp(1,:,1,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+PTypeDist=[0.22,0.56,0.22]'; % Hubbard, Skinner & Zeldes (1994) do not appear to report these 
+                             % weights/probabilities anywhere in either of the two papers. 
+                             % I have 'ballparked' them based on alternative sources for 1984 as
+                             % fractions of US population (pg 1 of http://www.russellsage.org/sites/all/files/chartbook/Educational%20Attainment%20and%20Achievement.pdf )
 
 
-%% Simulate Panel Data
+%% Create the replication results
+Table1=struct();
+Table2=nan(12,6);
 
+% Get results for uncertainty model
+deltavec=[0.03,0.1,0.15];
+gammavec=[1,3,5];
+Cbarvec=[1,7000];
+for delta_c=1:length(deltavec)
+    for gamma_c=1:length(gammavec)
+        for Cbar_c=1:2
+            fprintf('Currently solving for delta_c=%d, gamma_c=%d,Cbar_c=%d',delta_c,gamma_c,Cbar_c)
+            Params.Cbar=Cbarvec(Cbar_c);
+            Params.delta=deltavec(delta_c);
+            Params.gamma=gammavec(gamma_c);
+            descriptivestr={['Cbar',num2str(Params.Cbar),'gammma',num2str(Params.gamma),'delta',num2str(100*Params.delta)]};
+            [Table1row.(descriptivestr{:}), Table2temp, Table3temp, LifeCycProfiles]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+            if Params.Cbar==7000 && Params.delta==0.03 && Params.gamma==3
+                Table2(:,1:3)=Table2temp;
+            elseif Params.Cbar==1 && Params.delta==0.1 && Params.gamma==3
+                Table2(:,4:6)=Table2temp;
+            end
+            if Params.Cbar==7000 && Params.delta==0.03 && Params.gamma==3
+                Table3=Table3temp;
+            end
+        end
+    end
+end
 
-% Start with a time series simulation (of one life-time starting from a
-% specific seedpoint).
-simoptions.simperiods=80;
-simoptions.seedpoint=[ceil(prod(n_a)/2),ceil(prod(n_z)/2),1];
-Policytemp=Policy.ft1;
-pi_ztemp=pi_z.ft1;
-SimLifeCycle=SimLifeCycleIndexes_FHorz_Case1(Policytemp,0,n_a,n_z,N_j,pi_ztemp, simoptions)
+% Set Parameters back to defaults
+Params.delta=0.03;
+Params.gamma=3;
+Params.Cbar=7000;
 
+% Get results for 'certain lifetimes' case
+Params.sj=ones(size(Params.sj));
+Params.Cbar=1;
+[Table1row.certainlifetimes, ~, ~, LifeCycProfiles.certainlifetimes]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
 
-% Life-cycle works, now Panel for a given PType
-simoptions.numbersims=10^3;
-SimPanelIndexes_FHorz_Case1(Policytemp,0,n_a,n_z,N_j,pi_ztemp, simoptions);
-
-% Now full panel
-
-
-
+% Get results for 'all certainty' case
+Params.sj=ones(size(Params.sj)); 
+n_z=[1,1];
+Params.Cbar=1;
+[Table1row.allcertain, ~, ~, LifeCycProfiles.allcertain]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
 

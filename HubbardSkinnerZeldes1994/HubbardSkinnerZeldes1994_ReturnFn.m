@@ -17,7 +17,11 @@ c=(1+r)*a+Wj-Mj+TR-aprime;
 F=-Inf; %(l by aprime)
 
 if c>0
-    F=(c.^(1-gamma)-1)/(1-gamma);
+    if gamma~=1
+        F=(c.^(1-gamma)-1)/(1-gamma);
+    else
+        F=log(c);
+    end
 end
 
 % Paper is unclear about whether people at the consumption floor Cbar
