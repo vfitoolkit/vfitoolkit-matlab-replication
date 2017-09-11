@@ -103,11 +103,13 @@ PTypeDist=[0.22,0.56,0.22]'; % Hubbard, Skinner & Zeldes (1994) do not appear to
 
 
 %% Create the replication results
+% Note that we here solve for many parameter/shock cases for which no
+% results are actually reported in paper.
 Table1=struct();
 Table2=nan(12,6);
 
 % Get results for uncertainty model
-deltavec=[0.03,0.1,0.15];
+deltavec=[0.03,0.1,0.015];
 gammavec=[1,3,5];
 Cbarvec=[1,7000];
 for delta_c=1:length(deltavec)
@@ -117,8 +119,10 @@ for delta_c=1:length(deltavec)
             Params.Cbar=Cbarvec(Cbar_c);
             Params.delta=deltavec(delta_c);
             Params.gamma=gammavec(gamma_c);
-            descriptivestr={['Cbar',num2str(Params.Cbar),'gammma',num2str(Params.gamma),'delta',num2str(100*Params.delta)]};
-            [Table1row.(descriptivestr{:}), Table2temp, Table3temp, LifeCycProfiles]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+            descriptivestr=['Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
+            descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
+            descriptivestr={descriptivestr};
+            [Table1row.(descriptivestr{:}), Table2temp, Table3temp, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
             if Params.Cbar==7000 && Params.delta==0.03 && Params.gamma==3
                 Table2(:,1:3)=Table2temp;
             elseif Params.Cbar==1 && Params.delta==0.1 && Params.gamma==3
@@ -136,14 +140,235 @@ Params.delta=0.03;
 Params.gamma=3;
 Params.Cbar=7000;
 
+temp_n_z=n_z;
+% Get results for 'only lifetime uncertain' case
+n_z=[1,1];
+Params.Cbar=7000;
+% [Table1row.allcertain, ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+for delta_c=1:length(deltavec)
+    for gamma_c=1:length(gammavec)
+        for Cbar_c=1:2
+            Params.Cbar=Cbarvec(Cbar_c);
+            Params.delta=deltavec(delta_c);
+            Params.gamma=gammavec(gamma_c);
+            descriptivestr=['onlylifetimeuncertain_','Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
+            descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
+            descriptivestr={descriptivestr};
+            [Table1row.(descriptivestr{:}), ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+        end
+    end
+end
+
 % Get results for 'certain lifetimes' case
 Params.sj=ones(size(Params.sj));
+n_z=temp_n_z;
 Params.Cbar=1;
-[Table1row.certainlifetimes, ~, ~, LifeCycProfiles.certainlifetimes]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+% [Table1row.certainlifetimes, ~, ~, LifeCycProfiles.certainlifetimes]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+for delta_c=1:length(deltavec)
+    for gamma_c=1:length(gammavec)
+        Params.delta=deltavec(delta_c);
+        Params.gamma=gammavec(gamma_c);
+        descriptivestr=['certainlifetimes_','Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
+        descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
+        descriptivestr={descriptivestr};
+        [Table1row.(descriptivestr{:}), ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+    end
+end
 
 % Get results for 'all certainty' case
 Params.sj=ones(size(Params.sj)); 
 n_z=[1,1];
 Params.Cbar=1;
-[Table1row.allcertain, ~, ~, LifeCycProfiles.allcertain]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+% [Table1row.allcertain, ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+for delta_c=1:length(deltavec)
+    for gamma_c=1:length(gammavec)
+        Params.delta=deltavec(delta_c);
+        Params.gamma=gammavec(gamma_c);
+        descriptivestr=['allcertain_','Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
+        descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
+        descriptivestr={descriptivestr};
+        [Table1row.(descriptivestr{:}), ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+    end
+end
+
+
+save ./SavedOutput/HSZ1994_Tables.mat Table1row Table2 Table3 LifeCycProfiles Params
+
+%% Print out results for the three Tables
+
+%Table 1
+FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table1.tex', 'w');
+fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccccccc} \n \\hline \\hline \n');
+fprintf(FID, ' & \\multicolumn{2}{c}{Assumptions} & School & School & College & Aggregate & $\\quad$ & School & School & College & Aggregate \\\\ \n');
+fprintf(FID, 'Certain Lifespan,   & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.certainlifetimes_Cbar1gamma3delta003);
+fprintf(FID, 'earnings, and       & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.certainlifetimes_Cbar1gamma1delta003);
+fprintf(FID, 'out of pocket       & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.certainlifetimes_Cbar1gamma5delta003);
+fprintf(FID, 'medical             & $\\delta=%8.3f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.certainlifetimes_Cbar1gamma3delta0015);
+fprintf(FID, 'expenses            & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.certainlifetimes_Cbar1gamma3delta01);
+fprintf(FID, 'Uncertain Lifespan, & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.Cbar1gamma3delta003);
+fprintf(FID, 'earnings, and       &  & & & & & & & & & & \\\\ \n');
+fprintf(FID, 'medical             &  & & & & & & & & & & \\\\ \n');
+fprintf(FID, 'expenses            &  & & & & & & & & & & \\\\ \n');
+fprintf(FID, '$\\bar{C}=\\$1$     &  & & & & & & & & & & \\\\ \n');
+fprintf(FID, 'Uncertain Lifespan, & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.Cbar7000gamma3delta003);
+fprintf(FID, 'earnings, and       & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.Cbar7000gamma1delta003);
+fprintf(FID, 'medical             & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.Cbar7000gamma5delta003);
+fprintf(FID, 'expenses            & $\\delta=%8.3f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.Cbar7000gamma3delta0015);
+fprintf(FID, '$\\bar{C}=\\$7000$  & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.Cbar7000gamma3delta01);
+fprintf(FID, '\\hline \n \\end{tabular*} \n');
+fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
+fprintf(FID, 'Note: Based on grid size for assets of %d, and shocks of %d and %d. \\\\ \n', n_a, n_z(1), n_z(2));
+fprintf(FID, '}} \\end{minipage}');
+fclose(FID);
+
+
+%Table 2
+FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table2.tex', 'w');
+fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccccc} \n \\hline \\hline \n');
+fprintf(FID, ' & \\multicolumn{3}{c}{PSID} & \\multicolumn{3}{c}{Simulated}  & \\multicolumn{3}{c}{Simulated} \\\\ \n');
+fprintf(FID, ' & \\multicolumn{3}{c}{}     & \\multicolumn{3}{c}{$\\delta=0.03$, Floor=\\$7000}  & \\multicolumn{3}{c}{$\\delta=0.10$, Floor=\\$1} \\\\ \n');
+fprintf(FID, 'Age   & NHS & HS & Col. & NHS & HS & Col. & NHS & HS & Col. \\\\ \n');
+fprintf(FID, '<29   & 0.362 & 0.059 & 0.060 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(1,:));
+fprintf(FID, '30-39 & 0.157 & 0.064 & 0.040 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(2,:));
+fprintf(FID, '40-49 & 0.067 & 0.017 & 0.025 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(3,:));
+fprintf(FID, '50-59 & 0.103 & 0.032 & 0.011 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(4,:));
+fprintf(FID, '60-69 & 0.095 & 0.020 & 0.038 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(5,:));
+fprintf(FID, 'Total & 0.116 & 0.038 & 0.031 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(6,:));
+fprintf(FID, ' & \\multicolumn{9}{c}{For Households with Initial Assets < 0.5 x Average Income}  \\\\ \n');
+fprintf(FID, '<29   & 0.389 & 0.080 & 0.069 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(7,:));
+fprintf(FID, '30-39 & 0.205 & 0.101 & 0.052 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(8,:));
+fprintf(FID, '40-49 & 0.133 & 0.045 & 0.031 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(9,:));
+fprintf(FID, '50-59 & 0.272 & 0.114 & 0.135 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(10,:));
+fprintf(FID, '60-69 & 0.302 & 0.083 & 0.381 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(11,:));
+fprintf(FID, 'Total & 0.252 & 0.087 & 0.060 & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table2(12,:));
+fprintf(FID, '\\hline \n \\end{tabular*} \n');
+fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
+fprintf(FID, 'NHS=No high-school, HS=High-school, Col.=College. Numbers for PSID are those of original study, not part of replication. \\\\ \n');
+fprintf(FID, 'Note: Based on grid size for assets of %d, and shocks of %d and %d. \\\\ \n', n_a, n_z(1), n_z(2));
+fprintf(FID, '}} \\end{minipage}');
+fclose(FID);
+
+% Table 3
+FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table3.tex', 'w');
+fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}ccccc} \n \\hline \\hline \n');
+fprintf(FID, ' Dependent Varialbe & $\\Delta C*$ & $\\Delta ln(C)*$ & $\\Delta ln(C)**$ & $\\Delta ln(C)**$\\\\ \n');
+fprintf(FID, ' & \\multicolumn{4}{c}{$\\delta=0.03$, Floor=\\$7000} \\\\ \n');
+fprintf(FID, '$\\Delta Y$     & %8.3f   & & & \\\\ \n', Table3(1,1));
+fprintf(FID, '                & (%8.2f) & & & \\\\ \n', Table3(2,1));
+fprintf(FID, '$\\Delta ln(Y)$ & & %8.3f & %8.3f & %8.3f \\\\ \n', Table3(3,2:4));
+fprintf(FID, '                & & (%8.2f) & (%8.2f) & (%8.2f) \\\\ \n', Table3(4,2:4));
+fprintf(FID, '$Age$           & & & & %8.3f \\\\ \n', Table3(5,4));
+fprintf(FID, '                & & & & (%8.2f) \\\\ \n', Table3(6,4));
+fprintf(FID, '$Age^2$         & & & & %8.3f  \\\\ \n', Table3(7,4));
+fprintf(FID, '                & & & & (%8.2f)  \\\\ \n', Table3(8,4));
+fprintf(FID, '\\hline \n \\end{tabular*} \n');
+fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
+fprintf(FID, 'Source: Simulated data from model under the benchmark case ($\\delta = 0.03$, $\\gamma = 3$) with a consumption floor of $7000. Absolute values of t-statistics are in parentheses. The Campbell and Mankiw (1989) coefficient (in levels, corresponding to the first column) is 0.469, and the Lusardi (1993) coefficient (in logs, corresponding to columns 2 through 4) is 0.409. \\\\ \n');
+fprintf(FID, '*: Instruments are two and three year lags of consumption and income, as well as age and age-squared. \\\\ \n');
+fprintf(FID, '**: Instruments are one, two and three year lags of consumption and income, as well as age and age-squared. \\\\ \n');
+fprintf(FID, 'Note: Original regressions by Cambell-Mankiw were on aggregate data. Here are on microdata. \\\\ \n');
+fprintf(FID, 'Note: Based on grid size for assets of %d, and shocks of %d and %d. \\\\ \n', n_a, n_z(1), n_z(2));
+fprintf(FID, '}} \\end{minipage}');
+fclose(FID);
+
+%% Generate the Figures
+
+% Figure 1
+figure(1)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft1(1,:,1)/1000)
+hold on
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft2(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft3(1,:,1)/1000)
+hold off
+title({'Average Assets by Age';'All Certain, $1 Floor'})
+legend('No High School Degree', 'High School Degree', 'College')
+xlabel('Age')
+ylabel('Thousands')
+
+% Figure 2a
+figure(2)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft1(1,:,1)/1000)
+hold on
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.ft1(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.ft1(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft1(1,:,1)/1000)
+hold off
+title({'Average Assets by Age';'No High School Degree'})
+legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
+xlabel('Age')
+ylabel('Thousands')
+
+% Figure 2b
+figure(3)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft2(1,:,1)/1000)
+hold on
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.ft2(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.ft2(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft2(1,:,1)/1000)
+hold off
+title({'Average Assets by Age';'High School Degree'})
+legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
+xlabel('Age')
+ylabel('Thousands')
+
+% Figure 2c
+figure(4)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft3(1,:,1)/1000)
+hold on
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.ft3(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.ft3(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft3(1,:,1)/1000)
+hold off
+title({'Average Assets by Age';'College Degree'})
+legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
+xlabel('Age')
+ylabel('Thousands')
+
+
+% Figure 3a
+figure(5)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft1(2,:,1)/1000) % Earnings
+hold on
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft1(2,:,1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft1(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.ft1(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.ft1(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft1(5,:,1)/1000)
+hold off
+title({'Average Assets by Age';'No High School Degree'})
+legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
+xlabel('Age')
+ylabel('Thousands')
+
+% Figure 3b
+figure(6)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft2(2,:,1)/1000) % Earnings
+hold on
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft2(2,:,1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft2(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.ft2(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.ft2(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft2(5,:,1)/1000)
+hold off
+title({'Average Assets by Age';'High School Degree'})
+legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
+xlabel('Age')
+ylabel('Thousands')
+
+% Figure 3c
+figure(7)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft3(2,:,1)/1000) % Earnings
+hold on
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft3(2,:,1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.ft3(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.ft3(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.ft3(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.allcertain_Cbar1gamma3delta003.ft3(5,:,1)/1000)
+hold off
+title({'Average Assets by Age';'College Degree'})
+legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
+xlabel('Age')
+ylabel('Thousands')
+
+
 

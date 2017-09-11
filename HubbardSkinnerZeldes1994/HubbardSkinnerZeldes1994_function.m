@@ -208,12 +208,12 @@ ValuesFn={ValuesFn_Assets, ValuesFn_Earnings, ValuesFn_age, ValuesFn_Income, Val
 simoptions.lifecyclepercentiles=0; % Just mean and min, no percentiles.
 SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_PType_Case1(InitialDist,Policy, ValuesFn,ValuesFnsParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
 
-% Figure: Assets
-figure(1)
-plot(Params.age,SimLifeCycleProfiles.ft1(1,:,1),Params.age,SimLifeCycleProfiles.ft2(1,:,1),Params.age,SimLifeCycleProfiles.ft3(1,:,1))
-% Figure: Earnings
-figure(2)
-plot(Params.age,SimLifeCycleProfiles.ft1(2,:,1),Params.age,SimLifeCycleProfiles.ft2(2,:,1),Params.age,SimLifeCycleProfiles.ft3(2,:,1))
+% % Figure: Assets
+% figure(1)
+% plot(Params.age,SimLifeCycleProfiles.ft1(1,:,1),Params.age,SimLifeCycleProfiles.ft2(1,:,1),Params.age,SimLifeCycleProfiles.ft3(1,:,1))
+% % Figure: Earnings
+% figure(2)
+% plot(Params.age,SimLifeCycleProfiles.ft1(2,:,1),Params.age,SimLifeCycleProfiles.ft2(2,:,1),Params.age,SimLifeCycleProfiles.ft3(2,:,1))
 
 
 % Simulate Panel Data
@@ -307,20 +307,34 @@ for ii=1:size(SimPanelValues,3)
         elseif age<=69
             agebin=5;
         else
-            agebin=6;
+            agebin=0;
         end
         
-        NumberOfHHs(agebin,hhtype)=NumberOfHHs(agebin,hhtype)+1;
-        if (cons/income)>=0.95 && (cons/income)<=1.05
-            HighCorrIncomeCons(agebin,hhtype)=HighCorrIncomeCons(agebin,hhtype)+1;
-        end
-        
-        if assets<income % Is not quite clear from paper which HHs in simulated data are considered to satisfy the 'Initial Assets <0.5*Average Income' criterion.
-            LowAssets_NumberOfHHs(agebin,hhtype)=LowAssets_NumberOfHHs(agebin,hhtype)+1;
+        % Do the needed calculations for each agebin
+        if agebin>0
+            NumberOfHHs(agebin,hhtype)=NumberOfHHs(agebin,hhtype)+1;
             if (cons/income)>=0.95 && (cons/income)<=1.05
-                LowAssets_HighCorrIncomeCons(agebin,hhtype)=LowAssets_HighCorrIncomeCons(agebin,hhtype)+1;
+                HighCorrIncomeCons(agebin,hhtype)=HighCorrIncomeCons(agebin,hhtype)+1;
+            end
+            
+            if assets<income % Is not quite clear from paper which HHs in simulated data are considered to satisfy the 'Initial Assets <0.5*Average Income' criterion.
+                LowAssets_NumberOfHHs(agebin,hhtype)=LowAssets_NumberOfHHs(agebin,hhtype)+1;
+                if (cons/income)>=0.95 && (cons/income)<=1.05
+                    LowAssets_HighCorrIncomeCons(agebin,hhtype)=LowAssets_HighCorrIncomeCons(agebin,hhtype)+1;
+                end
             end
         end
+        % Also do the Total in the sixth row
+        NumberOfHHs(6,hhtype)=NumberOfHHs(6,hhtype)+1;
+        if (cons/income)>=0.95 && (cons/income)<=1.05
+            HighCorrIncomeCons(6,hhtype)=HighCorrIncomeCons(6,hhtype)+1;
+        end
+        if assets<income % Is not quite clear from paper which HHs in simulated data are considered to satisfy the 'Initial Assets <0.5*Average Income' criterion.
+                LowAssets_NumberOfHHs(6,hhtype)=LowAssets_NumberOfHHs(6,hhtype)+1;
+                if (cons/income)>=0.95 && (cons/income)<=1.05
+                    LowAssets_HighCorrIncomeCons(6,hhtype)=LowAssets_HighCorrIncomeCons(6,hhtype)+1;
+                end
+            end
     end
 end
 
