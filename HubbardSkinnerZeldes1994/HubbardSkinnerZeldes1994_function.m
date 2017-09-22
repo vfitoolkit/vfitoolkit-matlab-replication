@@ -44,7 +44,7 @@ N_j=Params.J; % Number of periods in finite horizon
 %         % gamma+1 is the coefficient of relative prudence (Kimball, 1990)
 % 
 % Params.delta=0.03; % rate at which agents discount future
-% Params.beta=1/(1+Params.delta);
+Params.beta=1/(1+Params.delta);
 % Params.r=0.03; % interest rate on assets
 % 
 % % Mortality rates (probability of survival)
@@ -92,9 +92,12 @@ N_j=Params.J; % Number of periods in finite horizon
 % Params.m_rho=0.901*ones(3,1);
 % Params.m_sigmasqepsilon=[0.175; 0.156; 0.153];
 % Params.m_sigmasqomega=[0.220; 0.220; 0.220];
-[z2_grid.ft1, pi_z2.ft1]=TauchenMethod(0,Params.m_sigmasqepsilon(1)/(1-Params.m_rho(1)^2), Params.m_rho(1), n_z(2), Params.q);
-[z2_grid.ft2, pi_z2.ft2]=TauchenMethod(0,Params.m_sigmasqepsilon(2)/(1-Params.m_rho(2)^2), Params.m_rho(2), n_z(2), Params.q);
-[z2_grid.ft3, pi_z2.ft3]=TauchenMethod(0,Params.m_sigmasqepsilon(3)/(1-Params.m_rho(3)^2), Params.m_rho(3), n_z(2), Params.q);
+[z2_grid.ft1, pi_z2.ft1]=TauchenMethod(0, Params.m_sigmasqepsilon(1), Params.m_rho(1), n_z(2), Params.q);
+[z2_grid.ft2, pi_z2.ft2]=TauchenMethod(0, Params.m_sigmasqepsilon(2), Params.m_rho(2), n_z(2), Params.q);
+[z2_grid.ft3, pi_z2.ft3]=TauchenMethod(0, Params.m_sigmasqepsilon(3), Params.m_rho(3), n_z(2), Params.q);
+% [z2_grid.ft1, pi_z2.ft1]=TauchenMethod(0,Params.m_sigmasqepsilon(1)/(1-Params.m_rho(1)^2), Params.m_rho(1), n_z(2), Params.q);
+% [z2_grid.ft2, pi_z2.ft2]=TauchenMethod(0,Params.m_sigmasqepsilon(2)/(1-Params.m_rho(2)^2), Params.m_rho(2), n_z(2), Params.q);
+% [z2_grid.ft3, pi_z2.ft3]=TauchenMethod(0,Params.m_sigmasqepsilon(3)/(1-Params.m_rho(3)^2), Params.m_rho(3), n_z(2), Params.q);
 % 
 % % Consumption Floor
 % Params.Cbar=7000; % (middle of pg. 111)
@@ -113,8 +116,8 @@ a_grid=linspace(0,maxa,n_a)'; % Could probably do better by adding more grid nea
 %% Now, create the return function 
 DiscountFactorParamNames={'beta','sj'};
 
-ReturnFn=@(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj)
-ReturnFnParamNames={'gamma','r','Cbar','DeterministicWj', 'w_sigmasqu', 'DeterministicMj'}; %It is important that these are in same order as they appear in 'HubbardSkinnerZeldes1994_ReturnFn'
+ReturnFn=@(aprime,a,W_z1,M_z2,age,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj, m_sigmasqmew) HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,age,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj, m_sigmasqmew)
+ReturnFnParamNames={'age','gamma','r','Cbar','DeterministicWj', 'w_sigmasqu', 'DeterministicMj', 'm_sigmasqmew'}; %It is important that these are in same order as they appear in 'HubbardSkinnerZeldes1994_ReturnFn'
 
 %% Now solve the value function iteration problem
 
@@ -172,15 +175,32 @@ toc
 
 % I have been unable to find any mention in the paper of how the initial
 % distribution from which agents are born is determined. I therefore simply
-% assume that they are all born with zero assets and the mean income.
+% assume that they are all born with zero assets, the stationary distribution 
+% on income shocks, and the mean shock value on medical expenses.
 % (Paper does specify that all 'newborn' are age 21; ie. first period.)
 % More tricky is what weight to attach to each of the permanent types, this
 % remains unclear. HubbardSkinnerZeldes1994 do not appear to report these
 % numbers in the paper at all.
 
+z1staty.ft1=ones(size(z1_grid.ft1))/length(z1_grid.ft1);
+for ii=1:1000
+    z1staty.ft1=pi_z1.ft1'*z1staty.ft1;
+end
+z1staty.ft2=ones(size(z1_grid.ft2))/length(z1_grid.ft2);
+for ii=1:1000
+    z1staty.ft2=pi_z1.ft2'*z1staty.ft2;
+end
+z1staty.ft3=ones(size(z1_grid.ft3))/length(z1_grid.ft3);
+for ii=1:1000
+    z1staty.ft3=pi_z1.ft3'*z1staty.ft3;
+end
+
 % PTypeDist=[0.25,0.25,0.5]';
 InitialDist=zeros([n_a,n_z,N_i],'gpuArray'); 
-InitialDist(1,ceil(n_z(1)/2),ceil(n_z(2)/2),:)=1*permute(PTypeDist,[4,3,2,1]);
+% InitialDist(1,ceil(n_z(1)/2),ceil(n_z(2)/2),:)=1*permute(PTypeDist,[4,3,2,1]);
+InitialDist(1,:,ceil(n_z(2)/2),1)=z1staty.ft1'*PTypeDist(1);
+InitialDist(1,:,ceil(n_z(2)/2),2)=z1staty.ft2'*PTypeDist(2);
+InitialDist(1,:,ceil(n_z(2)/2),3)=z1staty.ft3'*PTypeDist(3);
 
 %% Life-cycle profiles
 
@@ -205,7 +225,7 @@ ValuesFnsParamNames(9).Names={}; % Gross savings (change in assets)
 ValuesFn_GrossSavings = @(aprime_val,a_val,z1_val,z2_val) aprime_val-a_val;  
 ValuesFn={ValuesFn_Assets, ValuesFn_Earnings, ValuesFn_age, ValuesFn_Income, ValuesFn_Cons, ValuesFn_TR,ValuesFn_AssetIncomeRatio,ValuesFn_SavingsRate,ValuesFn_GrossSavings}; 
 
-simoptions.lifecyclepercentiles=0; % Just mean and min, no percentiles.
+simoptions.lifecyclepercentiles=0; % Just mean and median, no percentiles.
 SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_PType_Case1(InitialDist,Policy, ValuesFn,ValuesFnsParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
 
 % % Figure: Assets

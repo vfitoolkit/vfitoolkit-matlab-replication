@@ -1,4 +1,4 @@
-function F=HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,gamma,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) %i
+function F=HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,age,gamma,r,Cbar,DeterministicWj,w_sigmasqu,DeterministicMj, m_sigmasqmew) %i
 
 %i: education type
 %jj: age (index 1:J; indicates ages 21 to 100)
@@ -8,7 +8,18 @@ function F=HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,gamma,r,Cbar,Det
 % "This specification ensures that when we compare the certainty case with
 % the earnings uncertainty case, we hold the age-conditional means of earnings constant."
 Wj=exp(log(DeterministicWj)-0.5*w_sigmasqu+W_z1);
-Mj=exp(DeterministicMj+M_z2);
+% Paper makes no mention that the equivalent is done to ensure holding
+% age-conditional means of medical expenses constant. I assume that it is.
+Mj=exp(DeterministicMj-0.5*m_sigmasqmew+M_z2);
+% (DeterministicMj is already in logs)
+
+% Paper does not mention earnings uncertainty being shut off in retirement
+% but it appears from the results that it is supposed to be. The
+% calibration describes it as estimated on pre-retirement, so would be
+% in line with that.
+if age>65
+    Wj=exp(log(DeterministicWj));
+end
 
 TR=max(Cbar+Mj-(1+r)*a-Wj,0);
 
