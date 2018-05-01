@@ -80,9 +80,10 @@ disp('Calculating various equilibrium objects')
 
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
-SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z,p_eqm, Parallel);
+SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z, Parallel);
 
-eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
+eqm_MC=real(GeneralEqmConditions_Case1(SSvalues_AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
+
 save ./SavedOutput/Huggett1993SSObjects.mat p_eqm Policy StationaryDist
 
 
