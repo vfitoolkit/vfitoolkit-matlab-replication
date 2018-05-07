@@ -27,7 +27,7 @@ AvgValueFn=nan(2,6);
 % Which of the two values of sigma, the risk aversion parameter, to use.
 %WhichSigma=1
 
-       
+
 
 for WhichSigma=1:2
     for EconomyEnvironment=1:6
@@ -199,7 +199,7 @@ for WhichSigma=1:2
             data = {trace11,trace21,trace45};
             layout = struct('title','Good Times','showlegend', true,'width', 800,... %'title','Good Times'
                 'xaxis', struct('title', 'a_t','domain', [0, 1]), ... 
-                'yaxis', struct('title', 'a_t+1''titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
+                'yaxis', struct('title', 'a_t+1','titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
             response = plotly(data, struct('layout', layout, 'filename', 'Imrohoroglu1989_FigureA1good', 'fileopt', 'overwrite'));
             response.data=data; response.layout=layout;
             saveplotlyfig(response, './SavedOutput/Graphs/Imrohoroglu1989_FigureA1good.pdf')
@@ -212,7 +212,7 @@ for WhichSigma=1:2
             data = {trace11,trace21,trace45};
             layout = struct('title', 'Bad Times','showlegend', true,'width', 800,... %'title','Good Times'
                 'xaxis', struct('title', 'a_t','domain', [0, 1]), ... 
-                'yaxis', struct('title', 'a_t+1''titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
+                'yaxis', struct('title', 'a_t+1','titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0));
             response = plotly(data, struct('layout', layout, 'filename', 'Imrohoroglu1989_FigureA1bad', 'fileopt', 'overwrite'));
             response.data=data; response.layout=layout;
             saveplotlyfig(response, './SavedOutput/Graphs/Imrohoroglu1989_FigureA1bad.pdf')
