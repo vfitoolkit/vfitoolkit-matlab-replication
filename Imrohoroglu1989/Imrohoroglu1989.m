@@ -1,6 +1,8 @@
 % Imrohoroglu (1989) - Cost of Business Cycles with Indivisibilities and Liquidity Constraints
 % Uses plotly to create graphs.
 
+addpath(genpath('./MatlabToolkits/'))
+
 vfoptions.policy_forceintegertype=1;
 
 % You can change this grid size to see if anything changes
@@ -125,10 +127,10 @@ for WhichSigma=1:2
         %% Generate some output following what is reported in Imrohoroglu (1989)
         nsample=10^6; npts=301;
         % Figure 1: Asset holdings (Imrohoroglu gives this figure only for
-        % Environment A) (For EconomyEnvironment's 3 & 6 there is nothing
+        % Environment A) (For EconomyEnvironment's 5 & 6 there is nothing
         % to plot)
         fig1=figure(1);
-        if EconomyEnvironment==1 || EconomyEnvironment==2
+        if EconomyEnvironment==1 || EconomyEnvironment==3
             X21=randsample(a_grid,nsample,true,StationaryDist(:,2,1));
             [freq11,X11i] = ksdensity(a_grid,'weights',gather(StationaryDist(:,1,1)/sum(StationaryDist(:,1,1))),'npoints',npts,'kernel','epanechnikov','bandwidth',0.3); %kernel-smooth estimate of pdf
             [freq21,X21i] = ksdensity(a_grid,'weights',gather(StationaryDist(:,2,1)/sum(StationaryDist(:,2,1))),'npoints',npts,'kernel','epanechnikov','bandwidth',0.3);
@@ -149,7 +151,7 @@ for WhichSigma=1:2
                 X11=randsample(a_grid,nsample,true,StationaryDist(:,1,1)); % create random sample X11 based on StationaryDist
                 [N11,edges11] = histcounts(X11,npts);
                 plot(X11i,freq11*sum(StationaryDist(:,1,1)),edges11(2:end)+edges11(1:end-1)/2,(N11/sum(N11))*sum(StationaryDist(:,1,1)),a_grid,StationaryDist(:,1,1),a_grid,cumsum(StationaryDist(:,1,1)));
-        elseif EconomyEnvironment==4 || EconomyEnvironment==5
+        elseif EconomyEnvironment==2 || EconomyEnvironment==4
             plot(a_grid,StationaryDist(:,1),a_grid,StationaryDist(:,2))
         end
         
@@ -183,9 +185,9 @@ for WhichSigma=1:2
         %
         fig2=figure(2);
         PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_sz,d_grid,a_grid,vfoptions.parallel);
-        if EconomyEnvironment==1 || EconomyEnvironment==2 || EconomyEnvironment==3
+        if EconomyEnvironment==1 || EconomyEnvironment==3 || EconomyEnvironment==5
             plot(a_grid,PolicyValues(1,:,1,1)-a_grid',a_grid,PolicyValues(1,:,1,2)-a_grid',a_grid,PolicyValues(1,:,2,1)-a_grid',a_grid,PolicyValues(1,:,2,2)-a_grid')
-        elseif EconomyEnvironment==4 || EconomyEnvironment==5 || EconomyEnvironment==6
+        elseif EconomyEnvironment==2 || EconomyEnvironment==4 || EconomyEnvironment==6
             plot(a_grid,PolicyValues(1,:,1)-a_grid',a_grid,PolicyValues(1,:,2)-a_grid')
         end
         
