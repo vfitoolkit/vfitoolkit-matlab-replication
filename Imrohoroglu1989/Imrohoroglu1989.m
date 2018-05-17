@@ -1,8 +1,6 @@
 % Imrohoroglu (1989) - Cost of Business Cycles with Indivisibilities and Liquidity Constraints
 % Uses plotly to create graphs.
 
-addpath(genpath('./MatlabToolkits/'))
-
 vfoptions.policy_forceintegertype=1;
 
 % You can change this grid size to see if anything changes
