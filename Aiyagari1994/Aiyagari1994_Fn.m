@@ -147,7 +147,7 @@ Params.r=p_eqm;
 
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_s,pi_s, simoptions);
 
-SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_s, d_grid, a_grid,s_grid,pi_s,p_eqm, Parallel)
+SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_s, d_grid, a_grid,s_grid,Parallel)
 
 eqm_MC=real(MarketClearance_Case1(SSvalues_AggVars,p_eqm,GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
 save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy StationaryDist
@@ -167,7 +167,7 @@ SSvalue_Earnings = @(aprime_val,a_val,s_val,p_val,param) param*s_val;
 SSvalue_Income = @(aprime_val,a_val,s_val,p_val,param) param*s_val+(1+p_val)*a_val;
 SSvalue_Wealth = @(aprime_val,a_val,s_val,p_val,param) a_val;
 SSvaluesFnIneq={SSvalue_Earnings, SSvalue_Income, SSvalue_Wealth};
-SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(StationaryDist, Policy, SSvaluesFnIneq, Params,SSvalueParamNames, n_d, n_a, n_s, d_grid, a_grid, s_grid, pi_s,p_eqm,Parallel);
+SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(StationaryDist, Policy, SSvaluesFnIneq, Params,SSvalueParamNames, n_d, n_a, n_s, d_grid, a_grid, s_grid, Parallel);
 
 % 3.5 The Distributions of Earnings and Wealth
 %  Gini for Earnings
@@ -178,7 +178,7 @@ WealthGini=Gini_from_LorenzCurve(SSvalues_LorenzCurves(3,:));
 % Calculate inverted Pareto coeff, b, from the top income shares as b=1/[log(S1%/S0.1%)/log(10)] (formula taken from Excel download of WTID database)
 % No longer used: Calculate Pareto coeff from Gini as alpha=(1+1/G)/2; ( http://en.wikipedia.org/wiki/Pareto_distribution#Lorenz_curve_and_Gini_coefficient)
 % Recalculte Lorenz curves, now with 1000 points
-SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(StationaryDist, Policy, SSvaluesFnIneq, Params,SSvalueParamNames, n_d, n_a, n_s, d_grid, a_grid, s_grid, pi_s,p_eqm,Parallel,1000);
+SSvalues_LorenzCurves=SSvalues_LorenzCurve_Case1(StationaryDist, Policy, SSvaluesFnIneq, Params,SSvalueParamNames, n_d, n_a, n_s, d_grid, a_grid, s_grid,Parallel,1000);
 EarningsParetoCoeff=1/((log(SSvalues_LorenzCurves(1,990))/log(SSvalues_LorenzCurves(1,999)))/log(10)); %(1+1/EarningsGini)/2;
 IncomeParetoCoeff=1/((log(SSvalues_LorenzCurves(2,990))/log(SSvalues_LorenzCurves(2,999)))/log(10)); %(1+1/IncomeGini)/2;
 WealthParetoCoeff=1/((log(SSvalues_LorenzCurves(3,990))/log(SSvalues_LorenzCurves(3,999)))/log(10)); %(1+1/WealthGini)/2;
