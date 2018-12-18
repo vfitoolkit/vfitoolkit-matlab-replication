@@ -289,43 +289,42 @@ alowerbarstr={'0','-w'};
 % Row 1
 alowerbar_c=1; sigmasqepsilon_c=1; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(1,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(1,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 2
 alowerbar_c=2; sigmasqepsilon_c=1; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(2,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(2,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 3
 alowerbar_c=1; sigmasqepsilon_c=2; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(3,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(3,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 4
 alowerbar_c=2; sigmasqepsilon_c=2; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(4,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(4,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 5
 alowerbar_c=1; sigmasqepsilon_c=1; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(5,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(5,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 6
 alowerbar_c=2; sigmasqepsilon_c=1; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(6,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(6,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 7
 alowerbar_c=1; sigmasqepsilon_c=2; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(7,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(7,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 8
 alowerbar_c=2; sigmasqepsilon_c=2; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table3(8,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table3(8,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 
 %Table 3
 FID = fopen('./SavedOutput/LatexInputs/Huggett1996_Table3.tex', 'w');
 fprintf(FID, '\\center{Wealth Distribution (risk aversion coefficient $\\sigma=$%8.1f) \\\\ \n ', sigmavec(sigma_c));
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lllllllll} \\hline \n');
-fprintf(FID, ' &  & &  &  & \\multicolumn{3}{l}{Percentage wealth in} & \\\\ \n');
-fprintf(FID, 'Credit & Earnings &       & Transfer &         & \\multicolumn{3}{l}{the top} & Zero or \\\\ \n');
-fprintf(FID, 'limit  & shock    &       & wealth   & Wealth  &                              & negative \\\\ \n');
+fprintf(FID, 'Credit & Earnings &       & Transfer &         & \\multicolumn{3}{l}{Percentage wealth in}   & Zero or \\\\ \n');
+fprintf(FID, 'limit  & shock    &       & wealth   & Wealth  & \\multicolumn{3}{l}{the top}                & negative \\\\ \\cline{6-8} \n');
 fprintf(FID, '$\\underbar{a}$  & $\\sigma_{\\epsilon}^2$ & $K/Y$ & ration & Gini & 1\\%% & 5\\%% & 20 \\%% & wealth (\\%%) \\\\ \n');
 fprintf(FID, '\\multicolumn{2}{l}{US Economy} & 3.0 & 0.78--1.32 & 0.72 & 28 & 49 & 75 & 5.8--15.0 \\\\ \n');
 fprintf(FID, '\\multicolumn{9}{l}{\\textit{Certain Lifetimes}} \\\\ \n');
@@ -352,43 +351,42 @@ alowerbarstr={'0','-w'};
 % Row 1
 alowerbar_c=1; sigmasqepsilon_c=1; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(1,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(1,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 2
 alowerbar_c=2; sigmasqepsilon_c=1; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(2,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(2,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 3
 alowerbar_c=1; sigmasqepsilon_c=2; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(3,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(3,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 4
 alowerbar_c=2; sigmasqepsilon_c=2; uncertainlifetime_c=2;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(4,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(4,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 5
 alowerbar_c=1; sigmasqepsilon_c=1; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(5,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(5,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 6
 alowerbar_c=2; sigmasqepsilon_c=1; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(6,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(6,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 7
 alowerbar_c=1; sigmasqepsilon_c=2; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(7,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(7,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 % Row 8
 alowerbar_c=2; sigmasqepsilon_c=2; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
-Table4(8,:)={alowerbarstr{alowerbar_c},sigmaepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
+Table4(8,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 
 %Table 3
 FID = fopen('./SavedOutput/LatexInputs/Huggett1996_Table4.tex', 'w');
 fprintf(FID, '\\center{Wealth Distribution (risk aversion coefficient $\\sigma=$%8.1f) \\\\ \n ', sigmavec(sigma_c));
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lllllllll} \\hline \n');
-fprintf(FID, ' &  & &  &  & \\multicolumn{3}{l}{Percentage wealth in} & \\\\ \n');
-fprintf(FID, 'Credit & Earnings &       & Transfer &         & \\multicolumn{3}{l}{the top} & Zero or \\\\ \n');
-fprintf(FID, 'limit  & shock    &       & wealth   & Wealth  &                              & negative \\\\ \n');
+fprintf(FID, 'Credit & Earnings &       & Transfer &         & \\multicolumn{3}{l}{Percentage wealth in}   & Zero or \\\\ \n');
+fprintf(FID, 'limit  & shock    &       & wealth   & Wealth  & \\multicolumn{3}{l}{the top}                & negative \\\\ \\cline{6-8} \n');
 fprintf(FID, '$\\underbar{a}$  & $\\sigma_{\\epsilon}^2$ & $K/Y$ & ration & Gini & 1\\%% & 5\\%% & 20 \\%% & wealth (\\%%) \\\\ \n');
 fprintf(FID, '\\multicolumn{2}{l}{US Economy} & 3.0 & 0.78--1.32 & 0.72 & 28 & 49 & 75 & 5.8--15.0 \\\\ \n');
 fprintf(FID, '\\multicolumn{9}{l}{\\textit{Certain Lifetimes}} \\\\ \n');
