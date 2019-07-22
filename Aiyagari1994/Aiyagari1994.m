@@ -21,7 +21,7 @@ NCores=PoolDetails.NumWorkers;
 %% Set some basic variables
 
 n_k=2^6;%2^9;
-n_s=15; %21;
+n_z=15; %21;
 n_p=251; %151
 
 %Parameters
@@ -67,7 +67,7 @@ for mu_c=1:3
             Params.rho=rho_vec(rho_c);
             fprintf('Current iteration mu_c=%d, sigma_c=%d, rho_c=%d \n', mu_c,sigma_c,rho_c')
             tic;
-            OutputVector=Aiyagari1994_Fn(n_k,n_s,n_p,Params, Parallel, tauchenoptions, mcmomentsoptions, vfoptions, simoptions);
+            OutputVector=Aiyagari1994_Fn(n_k,n_z,n_p,Params, Parallel, tauchenoptions, mcmomentsoptions, vfoptions, simoptions);
             time1=toc
             % OutputVector=[sqrt(s_variance), s_corr, p_eqm*100, aggsavingsrate, EarningsGini, IncomeGini, WealthGini, EarningsParetoCoeff,IncomeParetoCoeff, WealthParetoCoeff];
             Table1(:,mu_c,sigma_c,rho_c)=[OutputVector(1); OutputVector(2)];
@@ -93,7 +93,7 @@ fprintf(FID, ' %1.1f & %1.2f/%1.2f & %1.2f/%1.2f & %1.2f/%1.2f & %1.2f/%1.2f \\\
 fprintf(FID, ' %1.1f & %1.2f/%1.2f & %1.2f/%1.2f & %1.2f/%1.2f & %1.2f/%1.2f \\\\ \n', sigma_vec(2), Table1(1,1,2,1), Table1(2,1,2,1), Table1(1,1,2,2), Table1(2,1,2,2), Table1(1,1,2,3), Table1(2,1,2,3), Table1(1,1,2,4), Table1(2,1,2,4));
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 1 of Aiyagari (1994) using grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_s, n_p);
+fprintf(FID, 'Replication of Table 1 of Aiyagari (1994) using grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_z, n_p);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -114,7 +114,7 @@ fprintf(FID, ' %1.1f & %1.4f/%1.2f & %1.4f/%1.2f & %1.4f/%1.2f \\\\ \n', rho_vec
 fprintf(FID, ' %1.1f & %1.4f/%1.2f & %1.4f/%1.2f & %1.4f/%1.2f \\\\ \n', rho_vec(4), Table2(1,1,2,4),Table2(2,1,2,4), Table2(1,2,2,4),Table2(2,2,2,4), Table2(1,3,2,4),Table2(2,3,2,4));
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 2 of Aiyagari (1994) using grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_s, n_p');
+fprintf(FID, 'Replication of Table 2 of Aiyagari (1994) using grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_z, n_p');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -137,7 +137,7 @@ fprintf(FID, ' %1.1f & %1.2f/%1.2f/%1.2f & %1.2f/%1.2f/%1.2f & %1.2f/%1.2f/%1.2f
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Aiyagari (1994) reports a few Gini coefficients, but no Table. \n');
-fprintf(FID, 'Uses grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_s, n_p);
+fprintf(FID, 'Uses grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_z, n_p);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -161,7 +161,7 @@ fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Aiyagari (1994) does not report Inverted Pareto coefficients. \n');
 %fprintf(FID, 'Inverted Pareto coefficients, b, are calculated from top earnings/income/wealth shares as b=1/[log(S1\\%%/S0.1\\%%)/log(10)]. \\\\ \n');
-fprintf(FID, 'Uses grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_s, n_p);
+fprintf(FID, 'Uses grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', n_k, n_z, n_p);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -185,7 +185,7 @@ rr=3; fprintf(FID, ' %1.1f & %1.4f & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', rho
 rr=4; fprintf(FID, ' %1.1f & %1.4f & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', rho_vec(rr), Table2(1,mu_ind,2,rr), Table3(1,mu_ind,2,rr), Table3(3,mu_ind,2,rr), Table3(4,mu_ind,2,rr), Table3(6,mu_ind,2,rr) );
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Aiyagari (1994) with $\\mu$=%d using grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', mu_vec(mu_ind), n_k, n_s, n_p');
+fprintf(FID, 'Aiyagari (1994) with $\\mu$=%d using grid sizes $ n_k=%d $, $ n_z=%d $, $ n_p=%d $ \n', mu_vec(mu_ind), n_k, n_z, n_p');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 

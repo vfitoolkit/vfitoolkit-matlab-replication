@@ -117,14 +117,14 @@ StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeights,Policy,n_d,n_
 %% General Equilibrium Conditions (aka. marketclearance)
 
 % Steady State Aggregates (important that ordering of Names and Functions is the same)
-SSvalueParamNames=struct();
-SSvalueParamNames(1).Names={};
-SSvalueParamNames(2).Names={'ej'};
-SSvalueParamNames(3).Names={'wt','rt','ej','tau_phi','tau_pi','tau_c','tau_w','tau_k'};
-SSvaluesFn_1 = @(d_val,aprime_val,a_val,z_val) a_val; % Aggregate assets (which is this periods state)
-SSvaluesFn_2 = @(d_val,aprime_val,a_val,z_val,ej) (1-d_val)*ej; % Aggregate labour supply (in efficiency units)
-SSvaluesFn_3 = @(d_val,aprime_val,a_val,z_val, wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w,tau_k) AuerbachKotlikoff1987_TotalTaxRevenue(d_val,aprime_val,a_val,z_val,wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w,tau_k); % Total tax revenues
-SSvaluesFn={SSvaluesFn_1,SSvaluesFn_2,SSvaluesFn_3};
+FnsToEvaluateParamNames=struct();
+FnsToEvaluateParamNames(1).Names={};
+FnsToEvaluateParamNames(2).Names={'ej'};
+FnsToEvaluateParamNames(3).Names={'wt','rt','ej','tau_phi','tau_pi','tau_c','tau_w','tau_k'};
+FnsToEvaluateFn_1 = @(d_val,aprime_val,a_val,z_val) a_val; % Aggregate assets (which is this periods state)
+FnsToEvaluateFn_2 = @(d_val,aprime_val,a_val,z_val,ej) (1-d_val)*ej; % Aggregate labour supply (in efficiency units)
+FnsToEvaluateFn_3 = @(d_val,aprime_val,a_val,z_val, wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w,tau_k) AuerbachKotlikoff1987_TotalTaxRevenue(d_val,aprime_val,a_val,z_val,wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w,tau_k); % Total tax revenues
+FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_3};
 
 % General Equilibrium Equations
 GeneralEqmEqnParamNames=struct();
@@ -139,7 +139,7 @@ GeneralEqmEqns={GeneralEqmEqn_1,GeneralEqmEqn_2,GeneralEqmEqn_3};
 
 
 %% Test
-SSvalues_AggVars=SSvalues_AggVars_FHorz_Case1(StationaryDist, Policy, SSvaluesFn, Params, SSvalueParamNames, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid, 2); % The 2 is for Parallel (use GPU)
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid, 2); % The 2 is for Parallel (use GPU)
 
 %% Solve for the General Equilibrium
 % Use the toolkit to find the equilibrium price index
@@ -155,7 +155,7 @@ disp('Calculating price vector corresponding to the stationary eqm')
 n_p=[length(wt_grid),length(rt_grid),length(Gt_grid)];
 heteroagentoptions.pgrid=p_grid;
 heteroagentoptions.verbose=1;
-[p_eqm_init,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeights,n_d, n_a, n_z, N_j, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+[p_eqm_init,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeights,n_d, n_a, n_z, N_j, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
 % findeqmtime=toc
 Params.wt=p_eqm_init(1);
 Params.rt=p_eqm_init(2);
@@ -178,27 +178,27 @@ Params.PopnCorrection=gather(1/sum(sum(sum(StationaryDist_init(:,:,1)))));
 
 %% For baseline (initial) steady-state, replicate Table 5.1 and Figure 5.2
 
-SSvalueParamNames(4).Names={'wt','rt','ej','tau_phi','tau_pi','tau_c','tau_w'};
-SSvaluesFn_4 = @(d_val,aprime_val,a_val,z_val,wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w) AuerbachKotlikoff1987_ConsumptionFn(d_val,aprime_val,a_val,z_val,wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w); % Private Consumption
-SSvalueParamNames(5).Names={'delta'};
-SSvaluesFn_5 = @(d_val,aprime_val,a_val,z_val,delta) aprime_val-(1-delta)*a_val; % National Savings rate (gross rate)
-SSvalueParamNames(6).Names={'wt','ej'};
-SSvaluesFn_6 = @(d_val,aprime_val,a_val,z_val,wt,ej) wt*(1-d_val)*ej; % Earnings (pre-tax)
-SSvaluesFn={SSvaluesFn_1,SSvaluesFn_2,SSvaluesFn_3,SSvaluesFn_4,SSvaluesFn_5,SSvaluesFn_6};
-SSvalues_AggVars=SSvalues_AggVars_FHorz_Case1(StationaryDist_init, Policy_init, SSvaluesFn, Params, SSvalueParamNames, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid, 2); % The 2 is for Parallel (use GPU)
-SSvalues_AggVars=Params.PopnCorrection*SSvalues_AggVars; % Renormalize to AK1987 population size
+FnsToEvaluateParamNames(4).Names={'wt','rt','ej','tau_phi','tau_pi','tau_c','tau_w'};
+FnsToEvaluateFn_4 = @(d_val,aprime_val,a_val,z_val,wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w) AuerbachKotlikoff1987_ConsumptionFn(d_val,aprime_val,a_val,z_val,wt,rt,ej,tau_phi,tau_pi,tau_c,tau_w); % Private Consumption
+FnsToEvaluateParamNames(5).Names={'delta'};
+FnsToEvaluateFn_5 = @(d_val,aprime_val,a_val,z_val,delta) aprime_val-(1-delta)*a_val; % National Savings rate (gross rate)
+FnsToEvaluateParamNames(6).Names={'wt','ej'};
+FnsToEvaluateFn_6 = @(d_val,aprime_val,a_val,z_val,wt,ej) wt*(1-d_val)*ej; % Earnings (pre-tax)
+FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_3,FnsToEvaluateFn_4,FnsToEvaluateFn_5,FnsToEvaluateFn_6};
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist_init, Policy_init, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid, 2); % The 2 is for Parallel (use GPU)
+AggVars=Params.PopnCorrection*AggVars; % Renormalize to AK1987 population size
 
 if Params.sigma==1 % Cobb-Douglas
-    Y=Params.A*(SSvalues_AggVars(1)^Params.epsilon)*(SSvalues_AggVars(2)^(1-Params.epsilon));
+    Y=Params.A*(AggVars(1)^Params.epsilon)*(AggVars(2)^(1-Params.epsilon));
 end
 
 % Table 5_1
 FID = fopen('./SavedOutput/LatexInputs/AuerbachKotlikoff_Table5_1.tex', 'w');
 fprintf(FID, 'The Base Case Steady-State \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcclc} \n \\hline \\hline \n');
-fprintf(FID, 'Capital Stock & %8.1f  & \\quad & Private Consumption & %8.2f \\\\ \n \\hline \n', SSvalues_AggVars(1),SSvalues_AggVars(4));
-fprintf(FID, 'Labor Supply  & %8.1f  & & Capital-Output ratio & %8.2f \\\\ \n \\hline \n', SSvalues_AggVars(2),SSvalues_AggVars(1)/Y);
-fprintf(FID, 'Wage & %8.3f  &  & National Savings rate & %8.2f \\%% \\\\ \n \\hline \n',          Params.wt,(Params.delta*SSvalues_AggVars(1))/Y);
+fprintf(FID, 'Capital Stock & %8.1f  & \\quad & Private Consumption & %8.2f \\\\ \n \\hline \n', AggVars(1),AggVars(4));
+fprintf(FID, 'Labor Supply  & %8.1f  & & Capital-Output ratio & %8.2f \\\\ \n \\hline \n', AggVars(2),AggVars(1)/Y);
+fprintf(FID, 'Wage & %8.3f  &  & National Savings rate & %8.2f \\%% \\\\ \n \\hline \n',          Params.wt,(Params.delta*AggVars(1))/Y);
 fprintf(FID, 'Pre-tax interest rate & %8.2f \\%%  &   & Income Tax rate & %8.2f \\%% \\\\ \n \\hline \n', 100*Params.rt,100*Params.tau_phi);
 fprintf(FID, 'National Income & %8.2f  &   & Social Security Tax rate & %8.2f \\%% \\\\ \n \\hline \n', Y,0);
 fprintf(FID, 'Government Consumption & %8.2f  &   & Social Security replacement rate & %8.2f \\%% \\\\ \n \\hline \n', Params.PopnCorrection*Params.Gt,0);
@@ -208,7 +208,7 @@ fprintf(FID, 'Note: Based on grid sizes of $n_l=%d$ for leisure, and $n_a=%d$ fo
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
-SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_Case1(jequaloneDist,Policy_init, SSvaluesFn,SSvalueParamNames,Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,pi_z, simoptions);
+SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_Case1(jequaloneDist,Policy_init, FnsToEvaluate,FnsToEvaluateParamNames,Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,pi_z, simoptions);
 
 % Figure 5.2
 figure(1)
@@ -245,7 +245,7 @@ disp('Calculating price vector corresponding to the final stationary eqm')
 n_p=[length(wt_grid),length(rt_grid),length(tauc_grid)];
 heteroagentoptions.pgrid=p_grid;
 heteroagentoptions.verbose=1;
-[p_eqm_final,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeights,n_d, n_a, n_z, N_j, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+[p_eqm_final,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeights,n_d, n_a, n_z, N_j, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
 
 Params.wt=p_eqm_final(1);
 Params.rt=p_eqm_final(2);
@@ -294,7 +294,7 @@ transpathoptions.verbose=1;
 
 %%
 vfoptions.policy_forceintegertype=1
-PricePathNew=TransitionPath_Case1_Fhorz(PricePath0, PricePathNames, ParamPath, ParamPathNames, T, V_final, StationaryDist_init, n_d, n_a, n_z, N_j, pi_z, d_grid,a_grid,z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, AgeWeights, SSvalueParamNames, GeneralEqmEqnParamNames,transpathoptions);
+PricePathNew=TransitionPath_Case1_Fhorz(PricePath0, PricePathNames, ParamPath, ParamPathNames, T, V_final, StationaryDist_init, n_d, n_a, n_z, N_j, pi_z, d_grid,a_grid,z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, AgeWeights, FnsToEvaluateParamNames, GeneralEqmEqnParamNames,transpathoptions);
 
 
 

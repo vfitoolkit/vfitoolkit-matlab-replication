@@ -219,27 +219,27 @@ for WhichSigma=1:2
         end
         
         %%
-        SSvalueParamNames={};
-        SSvalueParamNames(1).Names={'r_l','r_b','y','theta','sigma'};
-        SSvalue_Utility = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ReturnFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
-        SSvalueParamNames(2).Names={'r_l','r_b','y','theta','sigma'};
-        SSvalue_Consumption = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ConsFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
-        SSvalueParamNames(3).Names={};
-        SSvalue_AssetsBorrowed = @(aprime_val,a_val,s_val,z_val) -a_val*(a_val<0);
-        SSvalueParamNames(4).Names={};
-        SSvalue_AssetsStored = @(aprime_val,a_val,s_val,z_val) a_val;
-        SSvalueParamNames(5).Names={};
-        SSvalue_AssetsSaved = @(aprime_val,a_val,s_val,z_val) a_val*(a_val>0);
-        SSvalueParamNames(6).Names={'y','theta'};
-        SSvalue_Earnings = @(aprime_val,a_val,s_val,z_val,y,theta) y*((s_val==1)+theta*(s_val==2));
-        SSvalueParamNames(7).Names={'r_l','r_b','y','theta','sigma'};
-        SSvalue_Income = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_IncomeFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
-        SSvaluesFn={SSvalue_Utility, SSvalue_Consumption, SSvalue_AssetsBorrowed, SSvalue_AssetsStored, SSvalue_AssetsSaved,SSvalue_Earnings,SSvalue_Income};
+        FnsToEvaluateParamNames={};
+        FnsToEvaluateParamNames(1).Names={'r_l','r_b','y','theta','sigma'};
+        FnsToEvaluate_Utility = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ReturnFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
+        FnsToEvaluateParamNames(2).Names={'r_l','r_b','y','theta','sigma'};
+        FnsToEvaluate_Consumption = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ConsFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
+        FnsToEvaluateParamNames(3).Names={};
+        FnsToEvaluate_AssetsBorrowed = @(aprime_val,a_val,s_val,z_val) -a_val*(a_val<0);
+        FnsToEvaluateParamNames(4).Names={};
+        FnsToEvaluate_AssetsStored = @(aprime_val,a_val,s_val,z_val) a_val;
+        FnsToEvaluateParamNames(5).Names={};
+        FnsToEvaluate_AssetsSaved = @(aprime_val,a_val,s_val,z_val) a_val*(a_val>0);
+        FnsToEvaluateParamNames(6).Names={'y','theta'};
+        FnsToEvaluate_Earnings = @(aprime_val,a_val,s_val,z_val,y,theta) y*((s_val==1)+theta*(s_val==2));
+        FnsToEvaluateParamNames(7).Names={'r_l','r_b','y','theta','sigma'};
+        FnsToEvaluate_Income = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_IncomeFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
+        FnsToEvaluate={FnsToEvaluate_Utility, FnsToEvaluate_Consumption, FnsToEvaluate_AssetsBorrowed, FnsToEvaluate_AssetsStored, FnsToEvaluate_AssetsSaved,FnsToEvaluate_Earnings,FnsToEvaluate_Income};
         
-        SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_sz, d_grid, a_grid,sz_grid,vfoptions.parallel);
+        AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_sz, d_grid, a_grid,sz_grid,vfoptions.parallel);
         
-        AvgUtility(WhichSigma,EconomyEnvironment)=gather(SSvalues_AggVars(1));
-        AvgConsumption(WhichSigma,EconomyEnvironment)=gather(SSvalues_AggVars(2));
+        AvgUtility(WhichSigma,EconomyEnvironment)=gather(AggVars(1));
+        AvgConsumption(WhichSigma,EconomyEnvironment)=gather(AggVars(2));
         
         temp=V.*StationaryDist;
 %         temp=reshape(temp,[length(temp),1]); %this line is probably unnecessary
@@ -247,9 +247,9 @@ for WhichSigma=1:2
                
         if WhichSigma==1
             if EconomyEnvironment==1
-                Table2(1:5,2)=gather([SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)]);%[SSvalue_AssetsBorrowed; SSvalue_AssetsStored; SSvalue_AssetsSaved; SSvalue_Income; SSvalue_Consumption];
+                Table2(1:5,2)=gather([AggVars(3),AggVars(4),AggVars(5),AggVars(7),AggVars(2)]);%[SSvalue_AssetsBorrowed; SSvalue_AssetsStored; SSvalue_AssetsSaved; SSvalue_Income; SSvalue_Consumption];
             elseif EconomyEnvironment==3
-                Table2(1:5,1)=gather([SSvalues_AggVars(3),SSvalues_AggVars(4),SSvalues_AggVars(5),SSvalues_AggVars(7),SSvalues_AggVars(2)]);
+                Table2(1:5,1)=gather([AggVars(3),AggVars(4),AggVars(5),AggVars(7),AggVars(2)]);
             end
         end
         

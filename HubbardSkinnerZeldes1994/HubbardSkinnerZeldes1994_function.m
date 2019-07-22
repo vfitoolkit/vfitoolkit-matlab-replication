@@ -204,29 +204,29 @@ InitialDist(1,:,ceil(n_z(2)/2),3)=z1staty.ft3'*PTypeDist(3);
 
 %% Life-cycle profiles
 
-ValuesFnsParamNames=struct();
-ValuesFnsParamNames(1).Names={}; % Assets
-ValuesFn_Assets = @(aprime_val,a_val,z1_val,z2_val) a_val; 
-ValuesFnsParamNames(2).Names={'DeterministicWj','w_sigmasqu'}; % Earnings: Wj
-ValuesFn_Earnings= @(aprime_val,a_val,z1_val,z2_val,DeterministicWj,w_sigmasqu) exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val);
-ValuesFnsParamNames(3).Names={'age'};  % Age
-ValuesFn_age = @(aprime_val,a_val,z1_val,z2_val,age) age;
-ValuesFnsParamNames(4).Names={'r','DeterministicWj','w_sigmasqu'}; % Income: r*a+Wj
-ValuesFn_Income = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val);  
-ValuesFnsParamNames(5).Names={'r','Cbar','DeterministicWj','w_sigmasqu', 'DeterministicMj'}; % Consumption
-ValuesFn_Cons= @(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_ConsumptionFn(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
-ValuesFnsParamNames(6).Names={'r','Cbar','DeterministicWj','w_sigmasqu', 'DeterministicMj'}; % Transfers (Pension & Social Security Income)
-ValuesFn_TR = @(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_TRFn(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
-ValuesFnsParamNames(7).Names={'r','DeterministicWj','w_sigmasqu'}; % Asset-Income Ratio
-ValuesFn_AssetIncomeRatio = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) a_val/(r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val));  
-ValuesFnsParamNames(8).Names={'r','DeterministicWj','w_sigmasqu'}; % Savings Rate (as fraction of income)
-ValuesFn_SavingsRate = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) (aprime_val-a_val)/(r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val));  
-ValuesFnsParamNames(9).Names={}; % Gross savings (change in assets)
-ValuesFn_GrossSavings = @(aprime_val,a_val,z1_val,z2_val) aprime_val-a_val;  
-ValuesFn={ValuesFn_Assets, ValuesFn_Earnings, ValuesFn_age, ValuesFn_Income, ValuesFn_Cons, ValuesFn_TR,ValuesFn_AssetIncomeRatio,ValuesFn_SavingsRate,ValuesFn_GrossSavings}; 
+FnsToEvaluateParamNames=struct();
+FnsToEvaluateParamNames(1).Names={}; % Assets
+FnsToEvaluate_Assets = @(aprime_val,a_val,z1_val,z2_val) a_val; 
+FnsToEvaluateParamNames(2).Names={'DeterministicWj','w_sigmasqu'}; % Earnings: Wj
+FnsToEvaluate_Earnings= @(aprime_val,a_val,z1_val,z2_val,DeterministicWj,w_sigmasqu) exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val);
+FnsToEvaluateParamNames(3).Names={'age'};  % Age
+FnsToEvaluate_age = @(aprime_val,a_val,z1_val,z2_val,age) age;
+FnsToEvaluateParamNames(4).Names={'r','DeterministicWj','w_sigmasqu'}; % Income: r*a+Wj
+FnsToEvaluate_Income = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val);  
+FnsToEvaluateParamNames(5).Names={'r','Cbar','DeterministicWj','w_sigmasqu', 'DeterministicMj'}; % Consumption
+FnsToEvaluate_Cons= @(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_ConsumptionFn(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
+FnsToEvaluateParamNames(6).Names={'r','Cbar','DeterministicWj','w_sigmasqu', 'DeterministicMj'}; % Transfers (Pension & Social Security Income)
+FnsToEvaluate_TR = @(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_TRFn(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
+FnsToEvaluateParamNames(7).Names={'r','DeterministicWj','w_sigmasqu'}; % Asset-Income Ratio
+FnsToEvaluate_AssetIncomeRatio = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) a_val/(r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val));  
+FnsToEvaluateParamNames(8).Names={'r','DeterministicWj','w_sigmasqu'}; % Savings Rate (as fraction of income)
+FnsToEvaluate_SavingsRate = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) (aprime_val-a_val)/(r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val));  
+FnsToEvaluateParamNames(9).Names={}; % Gross savings (change in assets)
+FnsToEvaluate_GrossSavings = @(aprime_val,a_val,z1_val,z2_val) aprime_val-a_val;  
+FnsToEvaluate={FnsToEvaluate_Assets, FnsToEvaluate_Earnings, FnsToEvaluate_age, FnsToEvaluate_Income, FnsToEvaluate_Cons, FnsToEvaluate_TR,FnsToEvaluate_AssetIncomeRatio,FnsToEvaluate_SavingsRate,FnsToEvaluate_GrossSavings}; 
 
 simoptions.lifecyclepercentiles=0; % Just mean and median, no percentiles.
-SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_PType_Case1(InitialDist,Policy, ValuesFn,ValuesFnsParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
+SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_PType_Case1(InitialDist,Policy, FnsToEvaluate,FnsToEvaluateParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
 
 % % Figure: Assets
 % figure(1)
@@ -238,7 +238,7 @@ SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_PType_Case1(InitialDist,Policy, 
 
 % Simulate Panel Data
 % Same variables as we used for the life-cycle profiles.
-SimPanelValues=SimPanelValues_FHorz_PType_Case1(InitialDist,Policy, ValuesFn,ValuesFnsParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
+SimPanelValues=SimPanelValues_FHorz_PType_Case1(InitialDist,Policy, FnsToEvaluate,FnsToEvaluateParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
 
 
 %% Table 1: Asset-Income ratio and Savings Rate (aggregate and conditional on fixed-type)

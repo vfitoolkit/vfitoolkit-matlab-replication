@@ -29,9 +29,9 @@ n_p=n_q;
 %Create descriptions of SS values as functions of d_grid, a_grid, s_grid &
 %pi_s (used to calculate the integral across the SS dist fn of whatever
 %functions you define here)
-SSvalueParamNames(1).Names={};
-SSvaluesFn_1 = @(aprime_val,a_val,s_val) a_val; %We just want the aggregate assets (which is this periods state)
-SSvaluesFn={SSvaluesFn_1};
+FnsToEvaluateParamNames(1).Names={};
+FnsToEvaluateFn_1 = @(aprime_val,a_val,s_val) a_val; %We just want the aggregate assets (which is this periods state)
+FnsToEvaluate={FnsToEvaluateFn_1};
 
 %Now define the functions for the General Equilibrium conditions
     %Should be written as LHS of general eqm eqn minus RHS, so that 
@@ -62,7 +62,7 @@ GEPriceParamNames={'q'};
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 heteroagentoptions.pgrid=p_grid;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % findeqmtime=toc
 Params.q=p_eqm;
 save ./SavedOutput/Huggett1993Market.mat p_eqm p_eqm_index MarketClearance
@@ -80,9 +80,9 @@ disp('Calculating various equilibrium objects')
 
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
-SSvalues_AggVars=SSvalues_AggVars_Case1(StationaryDist, Policy, SSvaluesFn,Params, SSvalueParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z, Parallel);
+AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z, Parallel);
 
-eqm_MC=real(GeneralEqmConditions_Case1(SSvalues_AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
+eqm_MC=real(GeneralEqmConditions_Case1(AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
 
 save ./SavedOutput/Huggett1993SSObjects.mat p_eqm Policy StationaryDist
 

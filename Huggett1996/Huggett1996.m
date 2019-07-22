@@ -176,15 +176,15 @@ Params.fractionretired=sum(Params.mewj.*Params.bvec); % Note: bvec is really jus
 
 %% Set up the General Equilibrium conditions (on assets/interest rate, assuming a representative firm with Cobb-Douglas production function)
 
-% Steady State Aggregates (important that ordering of Names and Functions is the same)
-SSvaluesParamNames=struct();
-SSvaluesParamNames(1).Names={};
-SSvaluesFn_1 = @(aprime_val,a_val,z_val) a_val; % Aggregate assets (which is this periods state)
-SSvaluesParamNames(2).Names={'ybarj'};
-SSvaluesFn_2 = @(aprime_val,a_val,z_val,ybarj) exp(z_val+ybarj); % Aggregate labour supply (in efficiency units)
-SSvaluesParamNames(3).Names={'sj','r','tau'};
-SSvaluesFn_3 = @(aprime_val,a_val,z_val,sj,r,tau) (1-sj)*aprime_val*(1+r*(1-tau)); % Total accidental bequests
-SSvaluesFn={SSvaluesFn_1,SSvaluesFn_2,SSvaluesFn_3};
+% Aggregate Variables (important that ordering of Names and Functions is the same)
+FnsToEvaluateParamNames=struct();
+FnsToEvaluateParamNames(1).Names={};
+FnsToEvaluateFn_1 = @(aprime_val,a_val,z_val) a_val; % Aggregate assets (which is this periods state)
+FnsToEvaluateParamNames(2).Names={'ybarj'};
+FnsToEvaluateFn_2 = @(aprime_val,a_val,z_val,ybarj) exp(z_val+ybarj); % Aggregate labour supply (in efficiency units)
+FnsToEvaluateParamNames(3).Names={'sj','r','tau'};
+FnsToEvaluateFn_3 = @(aprime_val,a_val,z_val,sj,r,tau) (1-sj)*aprime_val*(1+r*(1-tau)); % Total accidental bequests
+FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_3};
 % Note that the aggregate labour supply is actually entirely exogenous and so I could just precompute it, but am feeling lazy.
 
 % General Equilibrium Equations
@@ -222,7 +222,7 @@ for sigma_c=1:2
                     Params.beta=0.994;
                     Params.sj=ones(size(Params.dj));
                 end
-                OutputResults=Huggett1996_Fn(Params, n_a,n_z,N_j, a_grid, ReturnFn, DiscountFactorParamNames, ReturnFnParamNames, AgeWeightsParamNames, SSvaluesFn, SSvaluesParamNames, GEPriceParamNames, GeneralEqmEqns, GeneralEqmEqnParamNames, simoptions,vfoptions,CheckUniquenessOfGE);
+                OutputResults=Huggett1996_Fn(Params, n_a,n_z,N_j, a_grid, ReturnFn, DiscountFactorParamNames, ReturnFnParamNames, AgeWeightsParamNames, FnsToEvaluate, FnsToEvaluateParamNames, GEPriceParamNames, GeneralEqmEqns, GeneralEqmEqnParamNames, simoptions,vfoptions,CheckUniquenessOfGE);
                 FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults=OutputResults;
                 counter=[sigma_c, alowerbar_c, sigmasqepsilon_c, uncertainlifetime_c];
                 save ./SavedOutput/Huggett1996_Counter.mat counter
