@@ -454,7 +454,7 @@ fprintf(FID, '$\\quad$ Acquired ability & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f 
 fprintf(FID, '$\\quad$ Earnings         & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n ', TableColumn(1).StdDevLogEarnings, TableColumn(8).StdDevLogEarnings, TableColumn(10).StdDevLogEarnings, TableColumn(11).StdDevLogEarnings, TableColumn(13).StdDevLogEarnings);
 fprintf(FID, 'Other aggregate statistics    & & & & & \\\\ \n ');
 fprintf(FID, '$\\quad$ College enrollment         & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n ', TableColumn(1).CollegeEnrollmentRate, TableColumn(8).CollegeEnrollmentRate, TableColumn(10).CollegeEnrollmentRate, TableColumn(11).CollegeEnrollmentRate, TableColumn(13).CollegeEnrollmentRate);
-fprintf(FID, '$\\quad$ Private early/GDP (as \\%) & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n ', 100*TableColumn(1).PrivateEarlyEducDivGDP, 100*TableColumn(8).PrivateEarlyEducDivGDP, 100*TableColumn(10).PrivateEarlyEducDivGDP, 100*TableColumn(11).PrivateEarlyEducDivGDP, 100*TableColumn(13).PrivateEarlyEducDivGDP);
+fprintf(FID, '$\\quad$ Private early/GDP (as \\%%) & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n ', 100*TableColumn(1).PrivateEarlyEducDivGDP, 100*TableColumn(8).PrivateEarlyEducDivGDP, 100*TableColumn(10).PrivateEarlyEducDivGDP, 100*TableColumn(11).PrivateEarlyEducDivGDP, 100*TableColumn(13).PrivateEarlyEducDivGDP);
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Note: All other parameters are the same as in the benchmark economy; public expenditures in early education adjusted to balance the government budget. \\\\ \n');
