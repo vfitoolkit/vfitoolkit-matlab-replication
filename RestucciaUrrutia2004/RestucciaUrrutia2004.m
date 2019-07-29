@@ -382,16 +382,16 @@ TableColumn(1)=RestucciaUrrutia2004_TableColumnFn(jequaloneDist,AgeWeightParamNa
 % Table 5
 rho_vec=[0.1,0.2,0.3];
 for rho_c=1:length(rho_vec)
-    Params.rho=rho_vec(rho_c);
+    Params.rho_b=rho_vec(rho_c);
     TableColumn(rho_c+1)=RestucciaUrrutia2004_TableColumnFn(jequaloneDist,AgeWeightParamNames,n_d, n_a, n_z, N_j, n_p, AgeDependentGridParamNames, d_gridfn, a_gridfn, z_gridfn,Phi_aprime, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 end
-Params.rho=0.2; % Return to baseline value
-sigmapi_vec=[0.4,0.48,0.6];
-for sigmapi_c=1:length(sigmapi_vec)
-    Params.sigmapi=sigmapi_vec(sigmapi_c);
-    TableColumn(sigmapi_c+4)=RestucciaUrrutia2004_TableColumnFn(jequaloneDist,AgeWeightParamNames,n_d, n_a, n_z, N_j, n_p, AgeDependentGridParamNames, d_gridfn, a_gridfn, z_gridfn,Phi_aprime, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+Params.rho_b=0.2; % Return to baseline value
+sigmab_vec=[0.4,0.48,0.6];
+for sigmab_c=1:length(sigmab_vec)
+    Params.sigma_b=sigmab_vec(sigmab_c);
+    TableColumn(sigmab_c+4)=RestucciaUrrutia2004_TableColumnFn(jequaloneDist,AgeWeightParamNames,n_d, n_a, n_z, N_j, n_p, AgeDependentGridParamNames, d_gridfn, a_gridfn, z_gridfn,Phi_aprime, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 end
-Params.sigmapi=0.48; % Return to baseline value
+Params.sigma_b=0.48; % Return to baseline value
 
 save ./SavedOutput/RestucciaUrrutia2004_3.mat TableColumn
 
@@ -594,21 +594,21 @@ saveas(gcf,'./SavedOutput/Graphs/RestucciaUrrutia2004_Figure3.png')
 
 % Figure 4
 figure(4)
-subplot(2,2,1); bar(TableColumn(1).FigureData.CollegeDropout)
+subplot(2,2,1); bar(TableColumn(1).FigureData.CollegeDropoutRate)
 title('Benchmark')
 ylim([0,60])
 ylabel('Percent of Quintile')
-subplot(2,2,2); bar(TableColumn(18).FigureData.CollegeDropout)
+subplot(2,2,2); bar(TableColumn(18).FigureData.CollegeDropoutRate)
 title('Flat College Subsidy')
 ylim([0,60])
-subplot(2,2,3); bar(TableColumn(16).FigureData.CollegeDropout)
+subplot(2,2,3); bar(TableColumn(16).FigureData.CollegeDropoutRate)
 title('Increase Early Expenditure')
 ylim([0,60])
 ylabel('Percent of Quintile')
-subplot(2,2,4); bar(TableColumn(17).FigureData.CollegeDropout)
+subplot(2,2,4); bar(TableColumn(17).FigureData.CollegeDropoutRate)
 title('Increase College Subsidy')
 ylim([0,60])
 saveas(gcf,'./SavedOutput/Graphs/RestucciaUrrutia2004_Figure4.png')
 
 % TableColumn.FigureData.CollegeEnrollment
-% TableColumn.FigureData.CollegeCompletion
+% TableColumn.FigureData.CollegeCompletionRate
