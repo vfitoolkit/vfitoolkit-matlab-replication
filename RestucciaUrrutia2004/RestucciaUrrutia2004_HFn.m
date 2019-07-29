@@ -11,10 +11,12 @@ function hout=RestucciaUrrutia2004_HFn(bhatprime,sprime,h,bhat,s,b,thetahat,earn
 % agej: age (takes values of 1,2)
 
 % Return function of young.
-hout=h;
+hout=h; % This covers case of agej==1
 if agej==2
     q_bhat=min(phi0*(1+bhat)^phi1,1);
-    if s==1 && thetahat>q_bhat % Partial college
+    if s==0 % Does not attend college
+        hout=h+bhat;
+    elseif s==1 && thetahat>q_bhat % Partial college
         hout=h+(plowerbar*bhat)*(1-nlowerbar); % Note: h1'=plowerbar*bhat (in notation of Restuccia & Urrutia, 2005)
     elseif s==1 && thetahat<=q_bhat % Completed college
         hout=h+(pupperbar*bhat)*(1-nupperbar); % Note: h1'=pupperbar*bhat (in notation of Restuccia & Urrutia, 2005)

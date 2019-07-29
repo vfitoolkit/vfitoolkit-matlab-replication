@@ -313,7 +313,7 @@ if n_p>0
 end
 [p_eqm,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case2_FHorz(jequaloneDist,AgeWeightParamNames,n_d, n_a, n_z, N_j, n_p, AgeDependentGridParamNames, d_gridfn, a_gridfn, z_gridfn,Phi_aprime, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 Params.g=p_eqm(1);
-save ./SavedOutput/RestucciaUrrutia2004.mat Params p_eqm
+save ./SavedOutput/RestucciaUrrutia2004.mat Params p_eqm p_eqm_index GeneralEqmEqnsValues
 
 % plot(heteroagentoptions.p_grid,GeneralEqmEqnsValues)
 
