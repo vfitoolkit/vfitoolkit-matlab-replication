@@ -207,17 +207,19 @@ PhiaprimeParamNames={'agej','plowerbar','pupperbar','zeta','psi0','psi1','log_lb
 
 %%
 vfoptions.dynasty=1;
-vfoptions.lowmemory=1
+vfoptions.lowmemory=1;
 vfoptions.verbose=1;
 vfoptions.policy_forceintegertype=2; % Policy was not being treated as integers (one of the elements was 10^(-15) different from an integer)
 
-
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
+
+vfoptions.dynasty_howards=5
 
 disp('Test ValueFnIter')
 tic;
 [V, Policy]=ValueFnIter_Case2_FHorz(n_d,n_a,n_z,N_j, d_gridfn, a_gridfn, z_gridfn, AgeDependentGridParamNames, Phi_aprime, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, vfoptions);
-toc
+timer.vfi=toc
+
 % CHALLENGES: Need both for each generation to care about the next, and to
 % allow the dimensionality of the problem to depend on age. These should
 % both be set up within ValeFnIter_Case2_Fhorz. Caring about next
@@ -254,7 +256,8 @@ simoptions.phiaprimedependsonage=vfoptions.phiaprimedependsonage;
 
 simoptions.verbose=1;
 
-simoptions.parallel=3
+simoptions.dynasty_storeP=1; % Implements a more memory intensive but faster approach.
+simoptions.parallel=3;
 
 %% Test
 disp('Test StationaryDist')
@@ -262,7 +265,7 @@ disp('Test StationaryDist')
 % simoptions.dynasty=1
 tic;
 StationaryDist=StationaryDist_FHorz_Case2(jequaloneDist,AgeWeightParamNames,Policy,n_d,n_a,n_z,N_j,d_gridfn, a_gridfn, z_gridfn,AgeDependentGridParamNames, Phi_aprime,Case2_Type,Params,PhiaprimeParamNames,simoptions);
-toc
+timer.statydist=toc
 
 %% Set up the General Equilibrium conditions (on assets/interest rate, assuming a representative firm with Cobb-Douglas production function)
 
@@ -365,7 +368,8 @@ save ./SavedOutput/RestucciaUrrutia2004_2.mat V Policy StationaryDist
 load ./SavedOutput/RestucciaUrrutia2004_2.mat V Policy StationaryDist
 % The following are all just based off the baseline model
 RestucciaUrrutia2004_Tables1to4 % Actually includes Figures 1 and 2 as well
-simoptions.parallel=3; % This is what it was prior to RestucciaUrrutia2004_Table1to4, but it gets changed by RestucciaUrrutia2004_Table1to4.
+
+% simoptions.parallel=3; % This is what it was prior to RestucciaUrrutia2004_Table1to4, but it gets changed by RestucciaUrrutia2004_Table1to4.
 
 
 %%

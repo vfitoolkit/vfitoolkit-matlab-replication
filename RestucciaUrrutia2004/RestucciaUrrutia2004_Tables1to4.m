@@ -81,9 +81,9 @@ FnsToEvaluateFn_15 = @(d1_val,d2_val,a1_val,a2_val,a3_val,z1_val,z2_val,z3_val,a
 FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_3,FnsToEvaluateFn_4,FnsToEvaluateFn_5,FnsToEvaluateFn_6,FnsToEvaluateFn_7,FnsToEvaluateFn_8,FnsToEvaluateFn_9,FnsToEvaluateFn_10,FnsToEvaluateFn_11,FnsToEvaluateFn_12,FnsToEvaluateFn_13,FnsToEvaluateFn_14,FnsToEvaluateFn_15};
 
 % options.agegroupings=1:1:N_j; % for each age, this is anyway the default
-simoptions.parallel=3;
+% simoptions.parallel=3;
 AgeConditionalStats=LifeCycleProfiles_FHorz_Case2(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,n_d,n_a,n_z,N_j,d_gridfn,a_gridfn,z_gridfn, simoptions, AgeDependentGridParamNames);
-simoptions.parallel=2;
+% simoptions.parallel=2;
 % The following are elements of Table 1 that are really age-contional moments
 Table1.StdDevLogEarnings=gather(AgeConditionalStats(13).StdDeviation(2));
 Table1.FractionOfNonCollege=gather(AgeConditionalStats(3).Mean(2)); % fraction of agej=2 population with s=0
@@ -149,9 +149,9 @@ FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_3,FnsToEvalua
 % earnings is same as that in Table 1 this has presumably also been
 % calcuated as conditional on agej==2. I assume this is true of all the
 % numbers here.
-simoptions.parallel=3;
+% simoptions.parallel=3;
 AgeConditionalStats=LifeCycleProfiles_FHorz_Case2(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,n_d,n_a,n_z,N_j,d_gridfn,a_gridfn,z_gridfn, simoptions, AgeDependentGridParamNames);
-simoptions.parallel=2;
+% simoptions.parallel=2;
 % The following are elements of Table 2 that are really age-contional moments
 Table2.StdDevLogEarnings=gather(AgeConditionalStats(1).StdDeviation(2));
 Table2.StdDevLogAcquiredAbility=gather(AgeConditionalStats(2).StdDeviation(2));
@@ -439,9 +439,9 @@ FnsToEvaluateParamNames(11).Names={'agej','nlowerbar','nupperbar','f','psi0','ps
 FnsToEvaluateFn_11 = @(d1_val,d2_val,a1_val,a2_val,a3_val,z1_val,z2_val,z3_val,agej,nlowerbar,nupperbar,f,psi0,psi1) RestucciaUrrutia2004_F(d1_val,d2_val,a1_val,a2_val,a3_val,z1_val,z2_val,z3_val,agej,nlowerbar,nupperbar,f,psi0,psi1); % F (a3_val==1, is that the state s=1 for old)
 FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_3,FnsToEvaluateFn_4,FnsToEvaluateFn_5,FnsToEvaluateFn_6,FnsToEvaluateFn_7,FnsToEvaluateFn_8,FnsToEvaluateFn_9,FnsToEvaluateFn_10,FnsToEvaluateFn_11};
 
-simoptions.parallel=3;
+% simoptions.parallel=3;
 AgeConditionalStats=LifeCycleProfiles_FHorz_Case2(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,n_d,n_a,n_z,N_j,d_gridfn,a_gridfn,z_gridfn, simoptions, AgeDependentGridParamNames);
-simoptions.parallel=2;
+% simoptions.parallel=2;
 
 %% Table 4
 % Uniform lump-sum transfer of 30 percent of the total college tuition cost
@@ -494,9 +494,9 @@ for h_c=1:n_h
 end
 
 % Use this 'StationaryDist including transfers' to calculate moments for Table 4
-simoptions.parallel=3;
+% simoptions.parallel=3;
 AgeConditionalStats_withTransfer=LifeCycleProfiles_FHorz_Case2(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,n_d,n_a,n_z,N_j,d_gridfn,a_gridfn,z_gridfn, simoptions, AgeDependentGridParamNames);
-simoptions.parallel=2;
+% simoptions.parallel=2;
 % The early education expenditure decision is 'e': 5
 % Change in early education is 'bhat': 8
 % The college enrollment decision is 's': 6
