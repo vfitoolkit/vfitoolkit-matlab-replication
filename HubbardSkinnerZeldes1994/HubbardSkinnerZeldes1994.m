@@ -247,7 +247,7 @@ fprintf(FID, 'expenses            & $\\delta=%8.3f$, & $\\gamma=%d$ & %8.2f & %8
 fprintf(FID, '$\\bar{C}=\\$7000$  & $\\delta=%8.2f$, & $\\gamma=%d$ & %8.2f & %8.2f & %8.2f & %8.2f & & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table1row.Cbar7000gamma3delta01);
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d and %d. \\\\ \n', n_a, n_z(1), n_z(2));
+fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d and %d.\n', n_a, n_z(1), n_z(2));
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -275,13 +275,13 @@ fprintf(FID, 'Total & 0.252 & 0.087 & 0.060 & %8.3f & %8.3f & %8.3f & %8.3f & %8
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'NHS=No high-school, HS=High-school, Col.=College. Numbers for PSID are those of original study, not part of replication. \\\\ \n');
-fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d and %d. \\\\ \n', n_a, n_z(1), n_z(2));
+fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d and %d. \n', n_a, n_z(1), n_z(2));
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 % Table 3
 FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table3.tex', 'w');
-fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}ccccc} \n \\hline \\hline \n');
+fprintf(FID, '\\begin{tabular*}{0.9\\textwidth}{@{\\extracolsep{\\fill}}ccccc} \n \\hline \\hline \n');
 fprintf(FID, ' Dependent Varialbe & $\\Delta C*$ & $\\Delta ln(C)*$ & $\\Delta ln(C)**$ & $\\Delta ln(C)**$\\\\ \n');
 fprintf(FID, ' & \\multicolumn{4}{c}{$\\delta=0.03$, Floor=\\$7000} \\\\ \n');
 fprintf(FID, '$\\Delta Y$     & %8.3f   & & & \\\\ \n', Table3(1,1));
@@ -298,7 +298,7 @@ fprintf(FID, 'Source: Simulated data from model under the benchmark case ($\\del
 fprintf(FID, '*: Instruments are two and three year lags of consumption and income, as well as age and age-squared. \\\\ \n');
 fprintf(FID, '**: Instruments are one, two and three year lags of consumption and income, as well as age and age-squared. \\\\ \n');
 fprintf(FID, 'Note: Original regressions by Cambell-Mankiw were on aggregate data. Here are on microdata. \\\\ \n');
-fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d and %d. \\\\ \n', n_a, n_z(1), n_z(2));
+fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d and %d. \n', n_a, n_z(1), n_z(2));
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 

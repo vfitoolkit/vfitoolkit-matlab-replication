@@ -260,7 +260,7 @@ FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table6.t
 fprintf(FID, 'Values of the Targeted Ratios and Aggregates in the United States and in the Benchmark Model Economies \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccccc} \n \\hline \\hline \n');
 fprintf(FID, ' & $K/Y$ & $I/Y$ & $G/Y$ & $Tr/Y$ & $T_E/Y$ & $mean(h)$ & $CV_C/CV_H$ & $e_{40/20}$ & $\rho(f,s)$ \\\\ \n \\hline \n');
-fprintf(FID, ' Target (United States) & 3.13  & 18.6\\%%  & 20.2\\%%  & 4.9\\%%   & 0.20\\%%  & 30.0\\%%  & 3.00  &  1.30 & 0.40  \\\\ \n');
+fprintf(FID, ' Target (USA) & 3.13  & 18.6\\%%  & 20.2\\%%  & 4.9\\%%   & 0.20\\%%  & 30.0\\%%  & 3.00  &  1.30 & 0.40  \\\\ \n');
 fprintf(FID, ' Benchmark              & %8.2f & %8.1f\\%% & %8.1f\\%% & %8.1f\\%% & %8.2f\\%% & %8.1f\\%% & %8.2f & %8.2f & %8.2f \\\\ \n', Table6variables);
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
@@ -310,7 +310,7 @@ fprintf(FID, ' Benchmark     & %8.2f & %8.2f  & %8.2f & %8.2f & %8.2f & %8.2f & 
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 % fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 % fprintf(FID, 'Note:  \\\\ \n');
-fprintf(FID, '}} \\end{minipage}');
+% fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 % Calculate Distributions of Consumption for Table 8
@@ -350,11 +350,11 @@ fprintf(FID, '\\quad Nondurables   & 0.32  & 6.87 & 12.27 & 17.27 & 23.33 & 40.2
 fprintf(FID, '\\quad Nondurables+* & 0.30  & 7.19 & 12.96 & 17.80 & 23.77 & 38.28 & 9.43 &  9.69 & 3.77 \\\\ \n');
 fprintf(FID, '\\multicolumn{10}{l}{Benchmark:} \\\\ \n');
 fprintf(FID, '\\multicolumn{10}{l}{\\quad Wealthiest} \\\\ \n');
-fprintf(FID, '\\quad 1\\% Excluded & %8.2f & %8.2f  & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table8variables(1,:));
+fprintf(FID, '\\quad 1\\%% Excluded & %8.2f & %8.2f  & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table8variables(1,:));
 fprintf(FID, '\\quad Entire Sample & %8.2f & %8.2f  & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table8variables(2,:));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, '*: Includes imputed services of consumer durables. \\\\ \n');
+fprintf(FID, '*: Includes imputed services of consumer durables. \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 

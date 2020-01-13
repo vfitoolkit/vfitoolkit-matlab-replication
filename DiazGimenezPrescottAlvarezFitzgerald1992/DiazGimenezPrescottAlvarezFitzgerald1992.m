@@ -490,7 +490,7 @@ fprintf(FID, ' %d & %1.2f & %d & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', Table9(
 fprintf(FID, ' %d & %1.2f & %d & %1.2f & %1.2f & %1.2f & %1.2f \\\\ \n', Table9(3,:));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 9 of Diaz-Gimenez, Prescott, Alvarez \\& Fitzgerald (1992) using grid sizes $n_a=%d $, $ n_s=%d $ \\\\ \n', n_A, n_s);
+fprintf(FID, 'Replication of Table 9 of Diaz-Gimenez, Prescott, Alvarez \\& Fitzgerald (1992) using grid sizes $n_a=%d $, $ n_s=%d $. \n', n_A, n_s);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 

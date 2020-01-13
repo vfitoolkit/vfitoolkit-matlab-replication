@@ -204,7 +204,7 @@ fprintf(FID, 'National Income & %8.2f  &   & Social Security Tax rate & %8.2f \\
 fprintf(FID, 'Government Consumption & %8.2f  &   & Social Security replacement rate & %8.2f \\%% \\\\ \n \\hline \n', Params.PopnCorrection*Params.Gt,0);
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Based on grid sizes of $n_l=%d$ for leisure, and $n_a=%d$ for assets. \\\\ \n', n_d, n_a);
+fprintf(FID, 'Note: Based on grid sizes of $n_l=%d$ for leisure, and $n_a=%d$ for assets. \n', n_d, n_a);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 

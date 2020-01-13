@@ -269,7 +269,7 @@ Table1(1,2)=(AvgUtility(1,1)/AvgUtility(1,2))^(1/(1-1.5))-1; % 1.5 is the value 
 Table1(2,2)=(AvgUtility(2,1)/AvgUtility(2,2))^(1/(1-6.2))-1; % 6.2 is the value of sigma for this case
 % Comment: am not 100% certain on how these are being calculated, but from
 % reading paper this seems to be what is done. Emailed Imrohoroglu who said
-% that codes have been lost but that calculation is identical to that from
+% that codes have been lost but that the calculation is identical to that from
 % her paper on welfare costs of inflation. 
 
 % Table1alt=nan(2,2);
@@ -294,7 +294,7 @@ fprintf(FID, '$\\sigma=1.5$ & %1.3f & %1.3f \\\\ \n', -100*Table1(1,:));
 fprintf(FID, '$\\sigma=6.2$ & %1.3f & %1.3f \\\\ \n', -100*Table1(2,:));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 1 of Imrohoroglu (1989) using grid size $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', npoints_basic_a_grid, 2, 2);
+fprintf(FID, 'Replication of Table 1 of Imrohoroglu (1989) using grid size $n_a=%d $, $ n_s=%d $, $ n_z=%d $. \\\\ \n', npoints_basic_a_grid, 2, 2);
 fprintf(FID, 'Note that these are simply evaluated at the mean of the utility, not as an expectation across agent distribution of their individual compensating variation based on value function. The later would better capture the heterogeneity of the costs');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
@@ -316,7 +316,7 @@ fprintf(FID, 'Income          & %1.3f & %1.3f \\\\ \n', Table2(4,:));
 fprintf(FID, 'Consumption     & %1.3f & %1.3f \\\\ \n', Table2(5,:));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Replication of Table 2 of Imrohoroglu (1989) using grid sizes $n_a=%d $, $ n_s=%d $, $ n_z=%d $ \\\\ \n', npoints_basic_a_grid, 2, 2);
+fprintf(FID, 'Replication of Table 2 of Imrohoroglu (1989) using grid sizes $n_a=%d $, $ n_s=%d $, $ n_z=%d $. \n', npoints_basic_a_grid, 2, 2);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
