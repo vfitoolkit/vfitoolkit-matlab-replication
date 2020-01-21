@@ -127,7 +127,7 @@ fprintf(FID, '(viii) std(log earnings) & 0.60 & %8.2f & $\\sigma_b$ & %8.2f \\\\
 fprintf(FID, '(ix) Intergenerational correlation of earnings & 0.40 & %8.2f & $\\rho_b$ & %8.2f \\\\ \n ', Table1.IntergenerationalCorrelationOfEarnings, Params.rho_b);
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Data column is copy of original from Restuccia \\& Urrutia (2004), is not part of the replication. \\\\ \n');
+fprintf(FID, 'Note: Data column is copy of original from Restuccia \\& Urrutia (2004), is not part of the replication. \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -193,7 +193,7 @@ fprintf(FID, 'Intergenerational correlation: & %8.2f & %8.2f & %8.2f \\\\ \n ', 
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Note: In model notation these columns are: $b$, $\\hat{b}$, and $wh$. I follow Restuccia \\& Urrutia (2004) in reporting as cross-sectional the number conditional on being an elderly household, not cross-sectional over the whole model economy. \\\\ \n');
-fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \\\\ \n');
+fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -339,7 +339,7 @@ fprintf(FID, 'Medium: & %8.2f & %8.2f & %8.2f \\\\ \n ', 100*Table3matrix(2,:,3)
 fprintf(FID, 'High: & %8.2f & %8.2f & %8.2f \\\\ \n ', 100*Table3matrix(3,:,3));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Earnings, Innate ability, and aquired ability are $wh$, $b$ and $bhat$. The three panels report $e$, $bhat$ and $s$ respectively.  \\\\ \n');
+fprintf(FID, 'Note: Earnings, Innate ability, and aquired ability are $wh$, $b$ and $bhat$. The three panels report $e$, $bhat$ and $s$ respectively. \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -531,7 +531,7 @@ fprintf(FID, 'Parents changing education decisions: & %8.2f & %8.2f \\\\ \n ', 1
 fprintf(FID, '$\\quad$ (percent of parents in age group) &  & \\\\ \n ');
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Clockwise from top-left, these are percent change in e, F-kappaF, s, and bhat. \\\\ \n');
+fprintf(FID, 'Note: Clockwise from top-left, these are percent change in e, F-kappaF, s, and bhat. \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
