@@ -339,7 +339,7 @@ fprintf(FID, '%s & %8.3f & %8.1f & %8.2f & %8.2f & %8.1f & %8.1f & %8.1f & %8.1f
 fprintf(FID, '%s & %8.3f & %8.1f & %8.2f & %8.2f & %8.1f & %8.1f & %8.1f & %8.1f \\\\ \n', Table3{8,:});
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d. \\\\ \n', n_a, n_z);
+fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d. \n', n_a, n_z);
 fprintf(FID, '}} \\end{minipage} }');
 fclose(FID);
 
@@ -381,7 +381,7 @@ alowerbar_c=2; sigmasqepsilon_c=2; uncertainlifetime_c=1;
 OutputResults=FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults;
 Table4(8,:)={alowerbarstr{alowerbar_c},sigmasqepsilonvec(sigmasqepsilon_c),OutputResults.KdivY, OutputResults.TransferWealthRatio, OutputResults.WealthGini, OutputResults.TopWealthShares(3), OutputResults.TopWealthShares(2), OutputResults.TopWealthShares(1), OutputResults.FractionWithZeroOrNegAssets};
 
-%Table 3
+%Table 4
 FID = fopen('./SavedOutput/LatexInputs/Huggett1996_Table4.tex', 'w');
 fprintf(FID, '\\center{Wealth Distribution (risk aversion coefficient $\\sigma=$%8.1f) \\\\ \n ', sigmavec(sigma_c));
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lllllllll} \\hline \n');
@@ -401,7 +401,7 @@ fprintf(FID, '%s & %8.3f & %8.1f & %8.2f & %8.2f & %8.1f & %8.1f & %8.1f & %8.1f
 fprintf(FID, '%s & %8.3f & %8.1f & %8.2f & %8.2f & %8.1f & %8.1f & %8.1f & %8.1f \\\\ \n', Table4{8,:});
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d. \\\\ \n', n_a, n_z);
+fprintf(FID, 'Note: Based on baseline grid size for assets of %d, and shocks of %d. \n', n_a, n_z);
 fprintf(FID, '}} \\end{minipage} }');
 fclose(FID);
 

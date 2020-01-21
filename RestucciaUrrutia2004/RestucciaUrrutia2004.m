@@ -420,7 +420,7 @@ fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Note: All other parameters are the same as in the benchmark economy; public expenditures in early education adjusted to balance the government budget. \\\\ \n');
 fprintf(FID, 'Note: In model notation these columns are: $b$, $\\hat{b}$, and $wh$. I follow Restuccia \\& Urrutia (2004) in reporting as cross-sectional the number conditional on being an elderly household, not cross-sectional over the whole model economy. \\\\ \n');
-fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \\\\ \n');
+fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -463,7 +463,7 @@ fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Note: All other parameters are the same as in the benchmark economy; public expenditures in early education adjusted to balance the government budget. \\\\ \n');
 fprintf(FID, 'Note: In model notation these columns are: $b$, $\\hat{b}$, and $wh$. I follow Restuccia \\& Urrutia (2004) in reporting as cross-sectional the number conditional on being an elderly household, not cross-sectional over the whole model economy. \\\\ \n');
-fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \\\\ \n');
+fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -511,7 +511,7 @@ fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Note: Same parameters as in the benchmark economy; public expenditures in early education adjusted to balance the government budget. \\\\ \n');
 fprintf(FID, 'Note: In model notation these columns are: $b$, $\\hat{b}$, and $wh$. I follow Restuccia \\& Urrutia (2004) in reporting as cross-sectional the number conditional on being an elderly household, not cross-sectional over the whole model economy. \\\\ \n');
-fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \\\\ \n');
+fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
@@ -574,7 +574,7 @@ fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
 fprintf(FID, 'Note: All other parameters are the same as in the benchmark economy; public expenditures in early education adjusted to balance the government budget. \\\\ \n');
 fprintf(FID, 'Note: In model notation these columns are: $b$, $\\hat{b}$, and $wh$. I follow Restuccia \\& Urrutia (2004) in reporting as cross-sectional the number conditional on being an elderly household for $b$ and $wh$ (young for $\\hat{b}$), not cross-sectional over the whole model economy. \\\\ \n');
-fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \\\\ \n');
+fprintf(FID, 'Restuccia \\& Urrutia (2004) explain calculation of intergenerational correlation of earnings at bottom of pg 1363. I assume the intergeneration correlations of (log) innate and acquired ability are calculated by the analagous regressions (with modification for acquired ability as is only observed for old). \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
