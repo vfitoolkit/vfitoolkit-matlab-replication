@@ -297,7 +297,7 @@ fprintf(FID, '$B$ & Bond supply & %8.1f  & Liquid assets (flow of funds) \\\\ \n
 fprintf(FID, '$phi$ & Borrowing limit & %8.3f  & Total gross debt (flow of funds) \\\\ \n', Params.phi);
 fprintf(FID, '\\hline \\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: values of $B$ and $phi$ differ from those in Guerrieri \& Lorenzoni (2017). The actual model parameters are reported here, while those in paper are the parameter divided by annual output (annual output equals 4 times quarterly output; model is quarterly). \\\\ \n');
+fprintf(FID, 'Note: values of $B$ and $phi$ differ from those in Guerrieri \& Lorenzoni (2017). The actual model parameters are reported here, while those in paper are the parameter divided by annual output (annual output equals 4 times quarterly output; model is quarterly). \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
