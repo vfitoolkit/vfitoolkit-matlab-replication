@@ -292,8 +292,8 @@ if ChrisEdmondCalib==1
     GeneralEqmEqnParamNames(1).Names={'A'};
     GeneralEqmEqn_1 = @(AggVars,GEprices,A) AggVars/A-GEprices(1); %The requirement that the price is determined by the demand eqn (or equivalently, can think of this as goods market clearance)
     GeneralEqmEqnParamNames(2).Names={'beta','ce'};
-    GeneralEqmEqn_Entry = @(EValueFn,GEprices,beta,ce) beta*EValueFn-ce; % Free entry conditions (expected returns equal zero in eqm); note that the first 'General eqm price' is ce, the fixed-cost of entry.
-    % The general eqm conditions look slightly different to more standard @(EValueFn,p,params)
+    GeneralEqmEqn_Entry = @(ValueFn,GEprices,beta,ce) beta*ValueFn-ce; % Free entry conditions (expected returns equal zero in eqm); note that the first 'General eqm price' is ce, the fixed-cost of entry.
+    % The general eqm conditions look slightly different to more standard @(ValueFn,p,params)
     % This is because 'p' is the name of a parameter, and so have used 'GEprices'
     % instead of my usual 'p' to refer to the general equilibrium prices (parameter 'p' is actually GEprices(1))
     GeneralEqmEqns={GeneralEqmEqn_1, GeneralEqmEqn_Entry};
