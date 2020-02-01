@@ -292,8 +292,8 @@ if ChrisEdmondCalib==1
     GeneralEqmEqnParamNames(1).Names={'A'};
     GeneralEqmEqn_1 = @(AggVars,GEprices,A) AggVars/A-GEprices(1); %The requirement that the price is determined by the demand eqn (or equivalently, can think of this as goods market clearance)
     GeneralEqmEqnParamNames(2).Names={'beta','ce'};
-    GeneralEqmEqn_Entry = @(EValueFn,GEprices,beta,ce) beta*EValueFn-ce; % Free entry conditions (expected returns equal zero in eqm); note that the first 'General eqm price' is ce, the fixed-cost of entry.
-    % The general eqm conditions look slightly different to more standard @(EValueFn,p,params)
+    GeneralEqmEqn_Entry = @(ValueFn,GEprices,beta,ce) beta*ValueFn-ce; % Free entry conditions (expected returns equal zero in eqm); note that the first 'General eqm price' is ce, the fixed-cost of entry.
+    % The general eqm conditions look slightly different to more standard @(ValueFn,p,params)
     % This is because 'p' is the name of a parameter, and so have used 'GEprices'
     % instead of my usual 'p' to refer to the general equilibrium prices (parameter 'p' is actually GEprices(1))
     GeneralEqmEqns={GeneralEqmEqn_1, GeneralEqmEqn_Entry};
@@ -311,11 +311,11 @@ disp('Calculating price vector corresponding to the stationary eqm')
 [p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 % findeqmtime=toc
 if ChrisEdmondCalib==0
-    Params.ce=p_eqm(1);
-    Params.Ne=p_eqm(2);
+    Params.ce=p_eqm.ce;
+    Params.Ne=p_eqm.Ne;
 else
-    Params.p=p_eqm(1);
-    Params.Ne=p_eqm(2);
+    Params.p=p_eqm.p;
+    Params.Ne=p_eqm.Ne;
 end
 
 %% Calculate some relevant things in eqm
