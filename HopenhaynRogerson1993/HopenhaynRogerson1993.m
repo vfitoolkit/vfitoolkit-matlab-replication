@@ -311,11 +311,11 @@ disp('Calculating price vector corresponding to the stationary eqm')
 [p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 % findeqmtime=toc
 if ChrisEdmondCalib==0
-    Params.ce=p_eqm(1);
-    Params.Ne=p_eqm(2);
+    Params.ce=p_eqm.ce;
+    Params.Ne=p_eqm.Ne;
 else
-    Params.p=p_eqm(1);
-    Params.Ne=p_eqm(2);
+    Params.p=p_eqm.p;
+    Params.Ne=p_eqm.Ne;
 end
 
 %% Calculate some relevant things in eqm
