@@ -2,7 +2,7 @@
 % Note: Most of the run time is spent creating the
 % discretization of the shock process [AR(1) shock with log-normal
 % innovations means standard methods cannot be used].
-n_d=51;  % decide whether to work
+n_d=101;  % decide whether to work
 n_a=501; % assets
 n_z=31;  % tech shock
 AlternativeProductivityShocks=0
@@ -103,7 +103,7 @@ pi_z=gpuArray(pi_z);
 DiscountFactorParamNames={'beta'};
 
 ReturnFn=@(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy) Hansen1985_ReturnFn(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy);
-ReturnFnParams={'alpha', 'delta', 'A', 'B', 'Economy'}; 
+ReturnFnParamNames={'alpha', 'delta', 'A', 'B', 'Economy'}; 
 
 %% Solve Model and Generate Table 1 of Hansen (1985)
 
@@ -116,9 +116,8 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
     Params.Economy=Economy;
     %% Solve
     disp('Solve value fn problem')
-    V0=ones([n_a,n_z],'gpuArray'); %(a,z)
-    [V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, DiscountFactorParamNames, ReturnFn,vfoptions,Params,ReturnFnParams);
-
+%     V0=ones([n_a,n_z],'gpuArray'); %(a,z)
+    [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames,ReturnFnParamNames,vfoptions);
     disp('Sim time series')
 
     %No need for asyptotic distribution.

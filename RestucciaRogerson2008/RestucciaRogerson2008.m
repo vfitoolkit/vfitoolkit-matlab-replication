@@ -11,7 +11,9 @@
 % more generally when using VFI Toolkit.
 
 % For explanation of model, the calibration choices, and what the policy
-% experiments are aiming to understand, see paper.
+% experiments are aiming to understand, see paper. (This replication solves
+% the model hundreds of times more than necessary, as solves many
+% combinations of parameters/policies for which no results are reported in paper.)
 
 % We will consider there to be 'two types of agents', namely firms and potential entrants.
 % The importance of (existing) firms is obvious.
@@ -181,13 +183,8 @@ ReturnFn=@(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,
 ReturnFnParamNames={'w','r','alpha','gamma','taurate','subsidyrate','cf'}; %It is important that these are in same order as they appear in 'RestucciaRogerson2008_ReturnFn'
 
 % Check that everything is working so far by solving the value function
-if Parallel==1
-    V0=zeros([n_a,n_z]);
-    vfoptions.parallel=Parallel;
-else
-    V0=zeros([n_a,n_z],'gpuArray');
-end
-[V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+vfoptions.parallel=Parallel;
+[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
 
 % If you wanted to look at the value fn
 % figure(2)
@@ -304,7 +301,7 @@ n_p=0;
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 % NOTE: EntryExitParamNames has to be passed as an additional input compared to the standard case.
-[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(V0, 0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
+[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 % findeqmtime=toc
 Params.w=p_eqm.w;
 Params.ebar=p_eqm.ebar;
@@ -313,7 +310,7 @@ Params.ebar=p_eqm.ebar;
 % I get w=1.9074, ebar is all ones.
 
 % Calculate some things in the general eqm
-[V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions, Params, EntryExitParamNames);
 
 % Impose the labour market clearance, which involves calculating Ne. See
@@ -363,7 +360,7 @@ FnsToEvaluateParamNames(3).Names={'alpha','gamma','r','w','taurate','subsidyrate
 FnsToEvaluateFn_output = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^((alpha+gamma)/(1-gamma-alpha))*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
 FnsToEvaluate={FnsToEvaluateFn_kbar, FnsToEvaluateFn_nbar, FnsToEvaluateFn_output};
 
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_Case1_Mass(StationaryDist.pdf,StationaryDist.mass, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames,EntryExitParamNames, n_d, n_a, n_z, [], a_grid, z_grid, Parallel,simoptions);
+ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_Case1_Mass(StationaryDist.mass, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames,EntryExitParamNames, n_d, n_a, n_z, [], a_grid, z_grid, Parallel,simoptions);
 
 ProbDensityFns=EvalFnOnAgentDist_pdf_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, [], a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
 
@@ -497,15 +494,10 @@ ReturnFn.labourtax =@(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,s
 % Start with all the results for output tax (that is, everything except Tables 8 and 9)
 taxbase_c=1; % Output tax
 fixedsubsidy_c=0; % Setting to 1 allows to overrule standard behaviour and fix the subsidy rate rather than optimizing it as is the default.
-for fractiontaxed_c=[1,3,5,7,9]%1:length(fractiontaxedvec)
-    % fractiontaxed_c=5
-    
+for fractiontaxed_c=1:length(fractiontaxedvec) %[1,3,5,7,9]%    
     fractiontaxed=fractiontaxedvec(fractiontaxed_c);
-%     for index_taus=0:1 % Set to 1 if tax only experiments
-        index_taus=1
+    for index_taus=0:1 % Set to 1 if tax only experiments
         for TaxProductivityCorrelation=1:2 % Note: 3 is never actually reported in any results Tables.
-            % index_taus=0
-            % TaxProductivityCorrelation=1
             
             if TaxProductivityCorrelation==1 % Uncorrelated
                 pistar_tau=[1-fractiontaxed;0;fractiontaxed]; % [Subsidy, nothing, tax]
@@ -526,8 +518,7 @@ for fractiontaxed_c=[1,3,5,7,9]%1:length(fractiontaxedvec)
                 Params.upsilon(:,1)=0; % and eliminate subsidies
             end
             
-%             for tau_c=1:length(tauratevec)
-            tau_c=5
+            for tau_c=1:length(tauratevec)
                 Params.taurate=tauratevec(tau_c);
                 % Will use initial guess of
                 Params.subsidyrate=0.5*Params.taurate; % Note: is zero when tax rate is zero
@@ -550,15 +541,15 @@ for fractiontaxed_c=[1,3,5,7,9]%1:length(fractiontaxedvec)
                     FullFnsToEvaluate{5}=FnsToEvaluateFn_outputofnontaxed.(taxbasevec{taxbase_c});
                 end
                 
-                fprintf('Now running RestucciaRogerson2008 for comination: \n')
+                fprintf('Now running RestucciaRogerson2008 for combination: \n')
                 [fixedsubsidy_c+1, TaxProductivityCorrelation, fractiontaxed_c,index_taus+1, taxbase_c, tau_c]
                 Params.subsidyrate
                 sum(Params.upsilon,1)
                             
-                FullResults(fixedsubsidy_c+1, TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, V0, vfoptions, simoptions, heteroagentoptions)
-%             end
+                FullResults(fixedsubsidy_c+1, TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
+            end
         end
-%     end
+    end
 end
 
 % Do the parts for the other tax bases seperately as these are quite different.
@@ -596,7 +587,7 @@ for TaxProductivityCorrelation=1:2 % Note: 3 is never actually reported in any r
         
         fprintf('Now running RestucciaRogerson2008 for comination: \n')
         [fixedsubsidy_c+1,TaxProductivityCorrelation, fractiontaxed_c,index_taus+1, taxbase_c, tau_c]
-        FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, V0, vfoptions, simoptions, heteroagentoptions)
+        FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
     end
 end
 
@@ -630,7 +621,7 @@ for tau_c=[1,6]
             
             fprintf('Now running RestucciaRogerson2008 for comination: \n')
             [fixedsubsidy_c+1,TaxProductivityCorrelation, fractiontaxed_c,index_taus+1, taxbase_c, tau_c]
-            FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, V0, vfoptions, simoptions, heteroagentoptions)
+            FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
         end
     end
 end

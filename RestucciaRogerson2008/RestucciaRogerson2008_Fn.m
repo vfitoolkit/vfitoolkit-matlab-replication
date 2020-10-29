@@ -1,4 +1,4 @@
-function Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn,DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, V0, vfoptions, simoptions, heteroagentoptions)
+function Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn,DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions)
 % Only substantial change from the baseline codes is the need to determine
 % Params.subsidyrate in general eqm so as to get K to equal Kbaseline.
 % Note that "if Params.upsilon(:,1)>0" means that this is only done when
@@ -51,7 +51,7 @@ end
 n_p=0;
 disp('Calculating price vector corresponding to the stationary eqm')
 % NOTE: EntryExitParamNames has to be passed as an additional input compared to the standard case.
-[p_eqm,~, ~]=HeteroAgentStationaryEqm_Case1(V0, 0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
+[p_eqm,~, ~]=HeteroAgentStationaryEqm_Case1(0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 Params.w=p_eqm.w;
 Params.ebar=p_eqm.ebar;
 if sum(Params.upsilon(:,1))>0 && fixedsubsidy_c==0  % If using subsidies
@@ -60,7 +60,7 @@ if sum(Params.upsilon(:,1))>0 && fixedsubsidy_c==0  % If using subsidies
 end
 
 % Calculate some things in the general eqm
-[V,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions, Params, EntryExitParamNames);
 
 if sum(Params.upsilon(:,1))==0 || fixedsubsidy_c==1 % If no subsidies (or subsidy is fixed)
