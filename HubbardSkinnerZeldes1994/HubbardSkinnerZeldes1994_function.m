@@ -17,10 +17,10 @@ function [Table1row, Table2, Table3, SimLifeCycleProfiles]=HubbardSkinnerZeldes1
 % Age
 % One endogenous variable: assets
 % Two stochastic exogenous variables: income shock, medical expense shock
-% Three fixed types: 
-%  ft1: high-school dropout
-%  ft2: high-school
-%  ft3: university
+% Three permanent types: 
+%  pt1: high-school dropout
+%  pt2: high-school
+%  pt3: university
 
 %%
 
@@ -59,27 +59,27 @@ Params.beta=1/(1+Params.delta);
 % 
 % % Wage (Earnings) incomes, W
 % % Table A.2
-% Params.DeterministicWj_working.ft1=[10993-196*WorkingAgeVec+2167*((WorkingAgeVec.^2)/100)-2655*((WorkingAgeVec.^3)/10000)];
-% Params.DeterministicWj_working.ft2=[-11833+1421*WorkingAgeVec-137*((WorkingAgeVec.^2)/100)-2186*((WorkingAgeVec.^3)/10000)]; 
-% Params.DeterministicWj_working.ft3=[72270-5579*WorkingAgeVec+19200*((WorkingAgeVec.^2)/100)-18076*((WorkingAgeVec.^3)/10000)];
+% Params.DeterministicWj_working.pt1=[10993-196*WorkingAgeVec+2167*((WorkingAgeVec.^2)/100)-2655*((WorkingAgeVec.^3)/10000)];
+% Params.DeterministicWj_working.pt2=[-11833+1421*WorkingAgeVec-137*((WorkingAgeVec.^2)/100)-2186*((WorkingAgeVec.^3)/10000)]; 
+% Params.DeterministicWj_working.pt3=[72270-5579*WorkingAgeVec+19200*((WorkingAgeVec.^2)/100)-18076*((WorkingAgeVec.^3)/10000)];
 % % Table A.3
-% Params.DeterministicWj_retired.ft1=[17861-133*RetiredAgeVec]; 
-% Params.DeterministicWj_retired.ft2=[29733-245*RetiredAgeVec]; 
-% Params.DeterministicWj_retired.ft3=[48123-429*RetiredAgeVec];
-% Params.DeterministicWj.ft1=[Params.DeterministicWj_working.ft1, Params.DeterministicWj_retired.ft1];
-% Params.DeterministicWj.ft2=[Params.DeterministicWj_working.ft2, Params.DeterministicWj_retired.ft2];
-% Params.DeterministicWj.ft3=[Params.DeterministicWj_working.ft3, Params.DeterministicWj_retired.ft3];
+% Params.DeterministicWj_retired.pt1=[17861-133*RetiredAgeVec]; 
+% Params.DeterministicWj_retired.pt2=[29733-245*RetiredAgeVec]; 
+% Params.DeterministicWj_retired.pt3=[48123-429*RetiredAgeVec];
+% Params.DeterministicWj.pt1=[Params.DeterministicWj_working.pt1, Params.DeterministicWj_retired.pt1];
+% Params.DeterministicWj.pt2=[Params.DeterministicWj_working.pt2, Params.DeterministicWj_retired.pt2];
+% Params.DeterministicWj.pt3=[Params.DeterministicWj_working.pt3, Params.DeterministicWj_retired.pt3];
 % % Compare to Fig A.1(a-c): they won't be exactly the same as drop the year
 % % fixed effects, but eyeballing suggests they are fine.
-% plot(21:1:100, Params.DeterministicWj.ft1, 21:1:100, Params.DeterministicWj.ft2, 21:1:100, Params.DeterministicWj.ft3)
+% plot(21:1:100, Params.DeterministicWj.pt1, 21:1:100, Params.DeterministicWj.pt2, 21:1:100, Params.DeterministicWj.pt3)
 % % Stochastic Wj (Table A.4): u_it, an AR(1) in regressions in paper
 % Params.w_rho=[0.955; 0.946; 0.955];
 % Params.w_sigmasqepsilon=[0.033; 0.025; 0.016];
 % Params.w_sigmasqu=Params.w_sigmasqepsilon./(1-Params.w_rho.^2);
 % Params.w_sigmasqupsilon=[0.040; 0.021; 0.014]; % Estimated from PSID but not used in model.
-[z1_grid.ft1, pi_z1.ft1]=TauchenMethod(0,Params.w_sigmasqepsilon(1), Params.w_rho(1), n_z(1), Params.q);
-[z1_grid.ft2, pi_z1.ft2]=TauchenMethod(0,Params.w_sigmasqepsilon(2), Params.w_rho(2), n_z(1), Params.q);
-[z1_grid.ft3, pi_z1.ft3]=TauchenMethod(0,Params.w_sigmasqepsilon(3), Params.w_rho(3), n_z(1), Params.q);
+[z1_grid.pt1, pi_z1.pt1]=TauchenMethod(0,Params.w_sigmasqepsilon(1), Params.w_rho(1), n_z(1), Params.q);
+[z1_grid.pt2, pi_z1.pt2]=TauchenMethod(0,Params.w_sigmasqepsilon(2), Params.w_rho(2), n_z(1), Params.q);
+[z1_grid.pt3, pi_z1.pt3]=TauchenMethod(0,Params.w_sigmasqepsilon(3), Params.w_rho(3), n_z(1), Params.q);
 % % Bottom of pg 103 (45th pg): Wit=exp(log(DeterministicWj)-0.5*sigmasqu+uit)
 % % "This specification ensures that when we compare the certainty case with
 % % the earnings uncertainty case, we hold the age-conditional means of earnings constant."
@@ -92,24 +92,24 @@ Params.beta=1/(1+Params.delta);
 % Params.m_rho=0.901*ones(3,1);
 % Params.m_sigmasqepsilon=[0.175; 0.156; 0.153];
 % Params.m_sigmasqomega=[0.220; 0.220; 0.220];
-[z2_grid.ft1, pi_z2.ft1]=TauchenMethod(0, Params.m_sigmasqepsilon(1), Params.m_rho(1), n_z(2), Params.q);
-[z2_grid.ft2, pi_z2.ft2]=TauchenMethod(0, Params.m_sigmasqepsilon(2), Params.m_rho(2), n_z(2), Params.q);
-[z2_grid.ft3, pi_z2.ft3]=TauchenMethod(0, Params.m_sigmasqepsilon(3), Params.m_rho(3), n_z(2), Params.q);
-% [z2_grid.ft1, pi_z2.ft1]=TauchenMethod(0,Params.m_sigmasqepsilon(1)/(1-Params.m_rho(1)^2), Params.m_rho(1), n_z(2), Params.q);
-% [z2_grid.ft2, pi_z2.ft2]=TauchenMethod(0,Params.m_sigmasqepsilon(2)/(1-Params.m_rho(2)^2), Params.m_rho(2), n_z(2), Params.q);
-% [z2_grid.ft3, pi_z2.ft3]=TauchenMethod(0,Params.m_sigmasqepsilon(3)/(1-Params.m_rho(3)^2), Params.m_rho(3), n_z(2), Params.q);
+[z2_grid.pt1, pi_z2.pt1]=TauchenMethod(0, Params.m_sigmasqepsilon(1), Params.m_rho(1), n_z(2), Params.q);
+[z2_grid.pt2, pi_z2.pt2]=TauchenMethod(0, Params.m_sigmasqepsilon(2), Params.m_rho(2), n_z(2), Params.q);
+[z2_grid.pt3, pi_z2.pt3]=TauchenMethod(0, Params.m_sigmasqepsilon(3), Params.m_rho(3), n_z(2), Params.q);
+% [z2_grid.pt1, pi_z2.pt1]=TauchenMethod(0,Params.m_sigmasqepsilon(1)/(1-Params.m_rho(1)^2), Params.m_rho(1), n_z(2), Params.q);
+% [z2_grid.pt2, pi_z2.pt2]=TauchenMethod(0,Params.m_sigmasqepsilon(2)/(1-Params.m_rho(2)^2), Params.m_rho(2), n_z(2), Params.q);
+% [z2_grid.pt3, pi_z2.pt3]=TauchenMethod(0,Params.m_sigmasqepsilon(3)/(1-Params.m_rho(3)^2), Params.m_rho(3), n_z(2), Params.q);
 % 
 % % Consumption Floor
 % Params.Cbar=7000; % (middle of pg. 111)
 
 %% Grids
-z_grid.ft1=[z1_grid.ft1; z2_grid.ft1];
-z_grid.ft2=[z1_grid.ft2; z2_grid.ft2];
-z_grid.ft3=[z1_grid.ft3; z2_grid.ft3];
+z_grid.pt1=[z1_grid.pt1; z2_grid.pt1];
+z_grid.pt2=[z1_grid.pt2; z2_grid.pt2];
+z_grid.pt3=[z1_grid.pt3; z2_grid.pt3];
 
-pi_z.ft1=kron(pi_z1.ft1, pi_z2.ft1);
-pi_z.ft2=kron(pi_z1.ft2, pi_z2.ft2);
-pi_z.ft3=kron(pi_z1.ft3, pi_z2.ft3);
+pi_z.pt1=kron(pi_z1.pt1, pi_z2.pt1);
+pi_z.pt2=kron(pi_z1.pt2, pi_z2.pt2);
+pi_z.pt3=kron(pi_z1.pt3, pi_z2.pt3);
 
 a_grid=linspace(0,maxa,n_a)'; % Could probably do better by adding more grid near zero
 
@@ -130,11 +130,11 @@ toc
 % % These are not part of replications, just to illustrate some uses of VFI Toolkit.
 % % Note that what is being plotted are 'policy indexes', not 'policy values'.
 % figure(2)
-% surf(reshape(Policy.ft1(1,:,8,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+% surf(reshape(Policy.pt1(1,:,8,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 % figure(3)
-% surf(reshape(Policy.ft1(1,:,15,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+% surf(reshape(Policy.pt1(1,:,15,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 % figure(4)
-% surf(reshape(Policy.ft1(1,:,1,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+% surf(reshape(Policy.pt1(1,:,1,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 % 
 % 
 % %% Simulate Panel Data: Illustrations of a few commands. These are going to create some model output.
@@ -147,14 +147,14 @@ toc
 % 
 % % Simulate a single life-cycle (time series), starting from a specific seedpoint. Do just for 'fixed type 1'.
 % simoptions.seedpoint=[ceil(prod(n_a)/2),ceil(prod(n_z)/2),1];
-% SimLifeCycle_ft1=SimLifeCycleIndexes_FHorz_Case1(Policy.ft1,0,n_a,n_z,N_j,pi_z.ft1, simoptions);
+% SimLifeCycle_pt1=SimLifeCycleIndexes_FHorz_Case1(Policy.pt1,0,n_a,n_z,N_j,pi_z.pt1, simoptions);
 % 
 % simoptions.numbersims=10^3;
 % 
 % % Simulate a panel dataset for a given PType, with initial conditions drawn from a distribution.
 % InitialDist=zeros([n_a,n_z],'gpuArray'); 
 % InitialDist(ceil(n_a/2),ceil(n_z(1)/2),ceil(n_z(2)/2))=1;
-% SimPanel_ft1=SimPanelIndexes_FHorz_Case1(InitialDist,Policy.ft1,0,n_a,n_z,N_j,pi_z.ft1, simoptions);
+% SimPanel_pt1=SimPanelIndexes_FHorz_Case1(InitialDist,Policy.pt1,0,n_a,n_z,N_j,pi_z.pt1, simoptions);
 % 
 % 
 % % Simulate a panel dataset, with initial conditions drawn from a distribution.
@@ -182,25 +182,25 @@ toc
 % remains unclear. HubbardSkinnerZeldes1994 do not appear to report these
 % numbers in the paper at all.
 
-z1staty.ft1=ones(size(z1_grid.ft1))/length(z1_grid.ft1);
+z1staty.pt1=ones(size(z1_grid.pt1))/length(z1_grid.pt1);
 for ii=1:1000
-    z1staty.ft1=pi_z1.ft1'*z1staty.ft1;
+    z1staty.pt1=pi_z1.pt1'*z1staty.pt1;
 end
-z1staty.ft2=ones(size(z1_grid.ft2))/length(z1_grid.ft2);
+z1staty.pt2=ones(size(z1_grid.pt2))/length(z1_grid.pt2);
 for ii=1:1000
-    z1staty.ft2=pi_z1.ft2'*z1staty.ft2;
+    z1staty.pt2=pi_z1.pt2'*z1staty.pt2;
 end
-z1staty.ft3=ones(size(z1_grid.ft3))/length(z1_grid.ft3);
+z1staty.pt3=ones(size(z1_grid.pt3))/length(z1_grid.pt3);
 for ii=1:1000
-    z1staty.ft3=pi_z1.ft3'*z1staty.ft3;
+    z1staty.pt3=pi_z1.pt3'*z1staty.pt3;
 end
 
 % PTypeDist=[0.25,0.25,0.5]';
 InitialDist=zeros([n_a,n_z,N_i],'gpuArray'); 
 % InitialDist(1,ceil(n_z(1)/2),ceil(n_z(2)/2),:)=1*permute(PTypeDist,[4,3,2,1]);
-InitialDist(1,:,ceil(n_z(2)/2),1)=z1staty.ft1'*PTypeDist(1);
-InitialDist(1,:,ceil(n_z(2)/2),2)=z1staty.ft2'*PTypeDist(2);
-InitialDist(1,:,ceil(n_z(2)/2),3)=z1staty.ft3'*PTypeDist(3);
+InitialDist(1,:,ceil(n_z(2)/2),1)=z1staty.pt1'*PTypeDist(1);
+InitialDist(1,:,ceil(n_z(2)/2),2)=z1staty.pt2'*PTypeDist(2);
+InitialDist(1,:,ceil(n_z(2)/2),3)=z1staty.pt3'*PTypeDist(3);
 
 %% Life-cycle profiles
 
@@ -230,10 +230,10 @@ SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_PType_Case1(InitialDist,Policy, 
 
 % % Figure: Assets
 % figure(1)
-% plot(Params.age,SimLifeCycleProfiles.ft1(1,:,1),Params.age,SimLifeCycleProfiles.ft2(1,:,1),Params.age,SimLifeCycleProfiles.ft3(1,:,1))
+% plot(Params.age,SimLifeCycleProfiles.pt1(1,:,1),Params.age,SimLifeCycleProfiles.pt2(1,:,1),Params.age,SimLifeCycleProfiles.pt3(1,:,1))
 % % Figure: Earnings
 % figure(2)
-% plot(Params.age,SimLifeCycleProfiles.ft1(2,:,1),Params.age,SimLifeCycleProfiles.ft2(2,:,1),Params.age,SimLifeCycleProfiles.ft3(2,:,1))
+% plot(Params.age,SimLifeCycleProfiles.pt1(2,:,1),Params.age,SimLifeCycleProfiles.pt2(2,:,1),Params.age,SimLifeCycleProfiles.pt3(2,:,1))
 
 
 % Simulate Panel Data
@@ -255,12 +255,12 @@ ageweights=ageweights./sum(ageweights); % Normalize to sum to 1
 % Note that these are what we already calculated for the life-cycle profiles, so rather 
 % than get them from panel data simulation we can just get them from there. 
 % [The life-cycle profiles command is anyway internally based on a simulated panel data].
-AssetsByAgeAndFixedType=[SimLifeCycleProfiles.ft1(1,:,1);SimLifeCycleProfiles.ft2(1,:,1);SimLifeCycleProfiles.ft3(1,:,1)];
-EarningsByAgeAndFixedType=[SimLifeCycleProfiles.ft1(2,:,1);SimLifeCycleProfiles.ft2(2,:,1);SimLifeCycleProfiles.ft3(2,:,1)];
-IncomeByAgeAndFixedType=[SimLifeCycleProfiles.ft1(4,:,1);SimLifeCycleProfiles.ft2(4,:,1);SimLifeCycleProfiles.ft3(4,:,1)];
-ConsumptionByAgeAndFixedType=[SimLifeCycleProfiles.ft1(5,:,1);SimLifeCycleProfiles.ft2(5,:,1);SimLifeCycleProfiles.ft3(5,:,1)];
-TransfersByAgeAndFixedType=[SimLifeCycleProfiles.ft1(6,:,1);SimLifeCycleProfiles.ft2(6,:,1);SimLifeCycleProfiles.ft3(6,:,1)];
-GrossSavingsByAgeAndFixedType=[SimLifeCycleProfiles.ft1(9,:,1); SimLifeCycleProfiles.ft2(9,:,1); SimLifeCycleProfiles.ft3(9,:,1)];
+AssetsByAgeAndFixedType=[SimLifeCycleProfiles.pt1(1,:,1);SimLifeCycleProfiles.pt2(1,:,1);SimLifeCycleProfiles.pt3(1,:,1)];
+EarningsByAgeAndFixedType=[SimLifeCycleProfiles.pt1(2,:,1);SimLifeCycleProfiles.pt2(2,:,1);SimLifeCycleProfiles.pt3(2,:,1)];
+IncomeByAgeAndFixedType=[SimLifeCycleProfiles.pt1(4,:,1);SimLifeCycleProfiles.pt2(4,:,1);SimLifeCycleProfiles.pt3(4,:,1)];
+ConsumptionByAgeAndFixedType=[SimLifeCycleProfiles.pt1(5,:,1);SimLifeCycleProfiles.pt2(5,:,1);SimLifeCycleProfiles.pt3(5,:,1)];
+TransfersByAgeAndFixedType=[SimLifeCycleProfiles.pt1(6,:,1);SimLifeCycleProfiles.pt2(6,:,1);SimLifeCycleProfiles.pt3(6,:,1)];
+GrossSavingsByAgeAndFixedType=[SimLifeCycleProfiles.pt1(9,:,1); SimLifeCycleProfiles.pt2(9,:,1); SimLifeCycleProfiles.pt3(9,:,1)];
 
 AssetsByFixedType=sum(AssetsByAgeAndFixedType.*ageweights,2);
 Assets_Agg=sum(PTypeDist.*AssetsByFixedType);
