@@ -258,7 +258,7 @@ FnsToEvaluateParamNames(1).Names={'alpha'};%,'p'};
 % Note: With entry-exit the mass of the distribution of agents often
 % matters. So it becomes an extra input arguement in all functions to be evaluated.
 % FnsToEvaluateFn_1 = @(aprime_val,a_val,z_val,agentmass,alpha,p) p*z_val*(aprime_val^alpha); % Total output
-FnsToEvaluateFn_1 = @(aprime_val,a_val,z_val,agentmass,alpha,p) z_val*(aprime_val^alpha); % Real output
+FnsToEvaluateFn_1 = @(aprime_val,a_val,z_val,agentmass,alpha) z_val*(aprime_val^alpha); % Real output
 FnsToEvaluate={FnsToEvaluateFn_1};
 
 % Just to test: (note, is same command as usual, just need to include the optional extra inputs 'simoptions' and 'EntryExitParamNames' which contains all the needed info about entry/exit)

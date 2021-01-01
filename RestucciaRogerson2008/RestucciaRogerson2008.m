@@ -296,7 +296,7 @@ GeneralEqmEqns={GeneralEqmEqn_CondlEntry,GeneralEqmEqn_Entry};
 % here just after computing the general equilibrium.
 % Obviously endogenizing labour supply would change this, and this 'short-cut' version would no longer work.
 
-heteroagentoptions.verbose=1;
+heteroagentoptions.verbose=0;
 n_p=0;
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
