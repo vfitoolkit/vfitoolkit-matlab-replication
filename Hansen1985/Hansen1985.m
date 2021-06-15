@@ -2,28 +2,18 @@
 % Note: Most of the run time is spent creating the
 % discretization of the shock process [AR(1) shock with log-normal
 % innovations means standard methods cannot be used].
-n_d=101;  % decide whether to work
-n_a=501; % assets
-n_z=31;  % tech shock
+n_d=751;  % decide whether to work
+n_a=3001; % assets
+n_z=91;  % tech shock
 AlternativeProductivityShocks=0
 
+% 101, 501, 31 % 151, 751, 51
+vfoptions.lowmemory=2
 
-%% Setup for server
-addpath(genpath('./MatlabToolkits/'))
-% % Following commented code is just for personal use. Relates to running codes on server.
-% try % Server has 16 cores, but is shared with other users, so use max of 8.
-%     PoolDetails=parpool(8)
-% catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
-%     PoolDetails=parpool
-% end
-% %PoolDetails=gcp;
-% NCores=PoolDetails.NumWorkers;
-
-%% Some Toolkit options
-Parallel=2; % Use GPU
-
-vfoptions.parallel=Parallel;
-simoptions.parallel=Parallel;
+% Because the model output is based on just 100 simulations (following Hansen (1985)) the random number seed matters.
+% rng(1)
+% (Nowadays you should use more like 10,000 simulations but in the 1980s 100 simulations would 
+% already be pushing the limited computational power available.)
 
 %% Setup
 
@@ -108,7 +98,8 @@ ReturnFnParamNames={'alpha', 'delta', 'A', 'B', 'Economy'};
 %% Solve Model and Generate Table 1 of Hansen (1985)
 
 % Hansen footnote (b) of Table 1 says statistics are based on 100 simulations of 115 periods each.
-NSims=100;  %Number of simulations
+% I instead use 10,000 simulations to ensure that results are not 'random' (not impacted by the seed of the random number generator)
+NSims=10000;  %Number of simulations
 simoptions.simperiods=115;
 StdBusCycleStats=zeros(2,7,2,NSims,'gpuArray');
 
@@ -121,10 +112,8 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
     disp('Sim time series')
 
     %No need for asyptotic distribution.
-    %simperiods=simoptions.simperiods;
     %simoptions.simperiods=10^4; simoptions.iterate=1;
     %StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions);
-    %simoptions.simperiods=simperiods;
     %plot(1:1:n_z, N/sum(N), 1:1:n_z, sum(StationaryDist,1)) % Can see that the z discretization is working as two lines are identical.
     
     if AlternativeProductivityShocks==0

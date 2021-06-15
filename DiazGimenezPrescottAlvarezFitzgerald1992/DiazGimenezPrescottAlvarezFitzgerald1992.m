@@ -49,9 +49,10 @@ Params.e=Params.epsilon_inflation-1; %pricing/inflation process on reserves
 
 
 %% Create grids for s,z,a (A & K), and transition matrices for s & z
-n_A=800; %number taken from tech append II, pg 26
+n_A=1000; %800 is the original number taken from tech append II, pg 26. Note that n_A also determines the top of the grid.
 A_grid=linspace(-2.7,(2.7/245)*(n_A-1)-2.7,n_A)'; %so we n_A points
 [~,n_A_zero]=min(abs(A_grid-0)); % find index that corresponds to zero assets (the minus zero is redundant here, but used to make exposition clearer)
+A_grid(n_A_zero)=0; % With the original 800 grid points this line is redundant as the grid was designed to include 0, but to use larger grid size we have to ensure that there is still a zero value
 K_grid=[0;3]; %household capital stocks (pg 550) (house + consumer durables + small business capital)
 n_K=2;
 
@@ -94,9 +95,8 @@ ReturnFnParamNames={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','m
 
 %% Solve the model
 tic;
-V0=ones([n_a,n_sz]);
 vfoptions.policy_forceintegertype=1;
-[V, Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
+[V, Policy]=ValueFnIter_Case1(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
 time=toc;
 
 fprintf('Time to solve the value function iteration was %8.2f seconds. \n', time)
@@ -208,12 +208,12 @@ if Experiment==0
     %functions you define here)
     FnsToEvaluateParamNames=struct();
     FnsToEvaluateParamNames(1).Names={};
-    FnsToEvaluateParamNames(2).Names={'e'};
-    FnsToEvaluateParamNames(3).Names={'e'};
-    FnsToEvaluateParamNames(4).Names={'e'};
     FnsToEvaluateFn_1 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val) a2_val; % Capital (Housing Stock)
+    FnsToEvaluateParamNames(2).Names={'e'};
     FnsToEvaluateFn_2 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,e) (1+e)*a1_val*(a1_val>0); % Deposits
+    FnsToEvaluateParamNames(3).Names={'e'};
     FnsToEvaluateFn_3 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,e) -(1+e)*a1_val*(a1_val<0); % Loans
+    FnsToEvaluateParamNames(4).Names={'e'};
     FnsToEvaluateFn_4 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,e) (1+e)*a1_val+a2_val; % Net Worth: here just as a double-check as should equal Capital+Deposits-Loans
     % Reserves: equals reserve requirement rho, multiplied by Deposits
     % Gov Debt: equals Deposits-Loans (by banks balance sheet)
@@ -224,22 +224,22 @@ if Experiment==0
     
     FnsToEvaluateParamNames=struct();
     FnsToEvaluateParamNames(1).Names={'phi'};
-    FnsToEvaluateParamNames(2).Names={'gamma'};
-    FnsToEvaluateParamNames(3).Names={'eta_d','eta_l'};
-    FnsToEvaluateParamNames(4).Names={'w1','w2'};
-    FnsToEvaluateParamNames(5).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
-    FnsToEvaluateParamNames(6).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
-    FnsToEvaluateParamNames(7).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
-    FnsToEvaluateParamNames(8).Names={};
-    FnsToEvaluateParamNames(9).Names={'omega'};
     FnsToEvaluateFn_1 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi) a2prime_val*(a2prime_val-a2_val>0)-phi*a2_val*(a2prime_val-a2_val<0); % Investment (Housing investment)
+    FnsToEvaluateParamNames(2).Names={'gamma'};
     FnsToEvaluateFn_2 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,gamma) gamma*(a2_val==0); % Imputed rents of non-homeowners
+    FnsToEvaluateParamNames(3).Names={'eta_d','eta_l'};
     FnsToEvaluateFn_3 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,eta_d,eta_l) eta_d*a1_val*(a1_val>0)-eta_l*a1_val*(a1_val<0); % Banking Value Added
+    FnsToEvaluateParamNames(4).Names={'w1','w2'};
     FnsToEvaluateFn_4 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,w1,w2) w1*(s_val==1)*d_val+w2*(s_val==2)*d_val; % Wage income
+    FnsToEvaluateParamNames(5).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
     FnsToEvaluateFn_5 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
+    FnsToEvaluateParamNames(6).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
     FnsToEvaluateFn_6 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) (s_val==1||s_val==2)*DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of workers
+    FnsToEvaluateParamNames(7).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
     FnsToEvaluateFn_7 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) (s_val==1||s_val==2)*(a2_val>0)*DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
+    FnsToEvaluateParamNames(8).Names={};
     FnsToEvaluateFn_8 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val) a2_val*(s_val==1||s_val==2); % Capital (Housing Stock) owned by workers
+    FnsToEvaluateParamNames(9).Names={'omega'};
     FnsToEvaluateFn_9 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,omega) omega*(s_val==3); % Pension income
     FnsToEvaluate={FnsToEvaluateFn_1, FnsToEvaluateFn_2, FnsToEvaluateFn_3, FnsToEvaluateFn_4, FnsToEvaluateFn_5, FnsToEvaluateFn_6, FnsToEvaluateFn_7, FnsToEvaluateFn_8, FnsToEvaluateFn_9};
     AggVars2=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
@@ -424,7 +424,7 @@ for ii=1:3
     
     V0=ones([n_a,n_sz]);
     vfoptions.policy_forceintegertype=1;
-    [V, Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
+    [V, Policy]=ValueFnIter_Case1(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
     
     StationaryDist=DiazGimenezPrescottAlvarezFitzgerald1992_StationaryDist(Policy,Params,n_d,n_a,n_s,n_z,n_sz,n_A_zero,pi_sz);
     

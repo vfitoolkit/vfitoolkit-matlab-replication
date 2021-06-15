@@ -3,26 +3,11 @@
 % than just solving the fixed-point problem on interest rates directly by using optimization. This is done for robustness reasons and because these codes were written as part of a paper on
 % a convergent algorithm for solving Bewley-Huggett-Aiyagari-models.
 
-
-
-Parallel=2 %GPU
-
-
-% A few lines needed for running on the Server
-addpath(genpath('./MatlabToolkits/'))
-try % Server has 16 cores, but is shared with other users, so use max of 8.
-    parpool(8)
-catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
-    parpool
-end
-PoolDetails=gcp;
-NCores=PoolDetails.NumWorkers;
-
 %% Set some basic variables
 
-n_k=2^6;%2^9;
-n_z=15; %21;
-n_p=251; %151
+n_k=2^10;%2^9;
+n_z=27; %21;
+n_p=451; %151
 
 %Parameters
 Params.beta=0.96; %Model period is one-sixth of a year
@@ -33,26 +18,12 @@ mu_vec=[1,3,5]; % {1,3,5}
 sigma_vec=[0.2,0.4]; % {0.2,0.4}
 rho_vec=[0,0.3,0.6,0.9]; % {0,0.3,0.6,0.9}
 
-Params.q=3; %Footnote 33 of Aiyagari(1993WP, pg 25) implicitly says that he uses q=3
+Params.q=3; %Hyperparameter for Tauchen method to approximate AR(1). Footnote 33 of Aiyagari(1993WP, pg 25) implicitly says that he uses q=3
 
-%% Some Toolkit options (most are just being set to what would anyway be their defaults)
-tauchenoptions.parallel=Parallel;
-
-mcmomentsoptions.T=10^4;
-mcmomentsoptions.Tolerance=10^(-9);
-mcmomentsoptions.parallel=tauchenoptions.parallel;
-
-vfoptions.lowmemory=0;
-vfoptions.parallel=Parallel;
-vfoptions.returnmatrix=Parallel;
-%vfoptions.verbose=1
-
-simoptions.iterate=1
-simoptions.ncores=NCores; % Number of CPU cores
-simoptions.burnin=10000;
-simoptions.simperiods=50000;
-simoptions.parallel=Parallel; %Use GPU
-
+%% Some Toolkit options
+vfoptions.lowmemory=1;
+simoptions.ncores=feature('numcores'); % Number of CPU cores
+simoptions.parallel=4; % Use sparse matrices
 
 %% Solve the model a bunch of times
 Table1=zeros(2,3,2,4);
@@ -67,7 +38,7 @@ for mu_c=1:3
             Params.rho=rho_vec(rho_c);
             fprintf('Current iteration mu_c=%d, sigma_c=%d, rho_c=%d \n', mu_c,sigma_c,rho_c')
             tic;
-            OutputVector=Aiyagari1994_Fn(n_k,n_z,n_p,Params, Parallel, tauchenoptions, mcmomentsoptions, vfoptions, simoptions);
+            OutputVector=Aiyagari1994_Fn(n_k,n_z,n_p,Params, vfoptions, simoptions);
             time1=toc
             % OutputVector=[sqrt(s_variance), s_corr, p_eqm*100, aggsavingsrate, EarningsGini, IncomeGini, WealthGini, EarningsParetoCoeff,IncomeParetoCoeff, WealthParetoCoeff];
             Table1(:,mu_c,sigma_c,rho_c)=[OutputVector(1); OutputVector(2)];

@@ -44,14 +44,11 @@
 % permanent type. This is wasteful, but not much because the small size of 
 % the problem to be solved means we can just solve them all at the same time anyway.)
 
-parpool
-% PoolDetails=gcp;
-% NCores=PoolDetails.NumWorkers;
 Parallel=1; % 1 for (parallel) CPUs, 2 for GPU
 
 %% Set some basic variables
 
-n_s=100; % Firm-specific Productivity level
+n_s=200; % Firm-specific Productivity level
 n_tau=3; % Negative (subsidy), zero, and positive (tax).
 
 %Parameters

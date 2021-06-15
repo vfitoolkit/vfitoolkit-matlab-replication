@@ -1,6 +1,5 @@
 % Replicates the results (and more) of Castaneda, Diaz-Gimenez, and Rios-Rull (2003)
-% Takes quite a while to run, simply because two of the moments (out of 40
-% odd) take a long time to simulate. Actual solution of the model itself is
+% Takes quite a while to run, simply because two of the moments (out of 40 odd) take a long time to simulate. Actual solution of the model itself is
 % fast enough.
 % Figures use plotly
 %
@@ -14,32 +13,26 @@
 % Note: The algorithm used for calculating the general equilibrium is not what you would want to use normally for solving this model. It finds the general equilibrium using a discrete grid on interest rates, rather
 % than just solving the fixed-point problem on interest rates directly by using optimization. This is done for robustness reasons; see my paper on BHA models.
 
-Parallel=2 %GPU
-
-% A few lines needed for running on the Server
+% A line needed to run on the server
 addpath(genpath('./MatlabToolkits/'))
-addpath(genpath('../MatlabToolkits/'))
-try % Server has 20 cores, but is shared with other users, so use max of 16.
-    parpool(16)
-    gpuDevice(1)
-catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
-    parpool
-end
-PoolDetails=gcp;
-NCores=PoolDetails.NumWorkers
 
 SkipGE=0 % Just a placeholder I am using to work on codes without rerunning the GE step.
 
 %% Set some basic variables
 
-n_l=21;
+n_l=151;
+n_k=2501;
 n_r=551; % Two General Eqm variables: interest rate r, tax rate a3.
-n_a3=21; %parameter 'a3', only used if trying to find GE on grid
 % Note: d1 is l (labour supply), d2 is a (assets)
 
 % Some Toolkit options
-simoptions.ncores=NCores; % Number of CPU cores
-vfoptions=struct(); % Just use default options
+vfoptions.parallel=2;
+vfoptions.lowmemory=1;
+simoptions.parallel=3;
+simoptions.ncores=feature('numcores'); % Number of CPU cores
+% vfoptions=struct(); % Just use default options
+
+% vfoptions.lowmemory=1 % Needed to solve with grids this big (can use [101,1501] with lowmemory=0)
 
 
 %% Parameters
@@ -86,20 +79,13 @@ Params.Gamma_ee_41=0.1066; Params.Gamma_ee_42=0.0049; Params.Gamma_ee_43=0.0611;
 
 %% Create the grids
 
-[e_grid,Gamma,gammastar,gammastarfull]=CastanedaDiazGimenezRiosRull2003_Create_Exog_Shock(Params);
+[e_grid,Gamma,gammastar,gammastarfull]=CastanedaDiazGimenezRiosRull2003_Create_Exog_Shock(Params,vfoptions);
 
 l_grid=linspace(0,Params.elle,n_l)';
-
-% A rough grid I use on laptop
-if NCores>4
-    % Next line gives my more accurate grid
-    k_grid=[0:0.02:1, 1.05:0.05:2, 2.1:0.1:50, 50.5:0.5:100, 104:4:2000]';
-else
-    k_grid=[0:0.03:1,1.05:0.08:2,2.1:0.2:10,10.5:0.8:100,104:6:1500]';
-end    
-n_k=length(k_grid);
-% The next lines gives the values they used
+k_grid=2500*(linspace(0,1,n_k).^3)'; % Note that the upper limit on my asset grid is larger than the 1500 in CDGRR2003, but a look at the stationary distribution shows noone gets this high (although the policy functions would get them there the exogenous shock for s==4 is not persistent enough)
+% The next line gives the values used by CDGRR2003
 % k_grid=[0:0.02:1,1.05:0.05:2,2.1:0.1:10,10.5:0.5:100,104:4:1500]';
+% n_k=length(k_grid);
 
 % Bring model into the notational conventions used by the toolkit
 d_grid=[l_grid; k_grid]; % Is a 'Case 2' value function problem
@@ -107,20 +93,18 @@ a_grid=k_grid;
 z_grid=linspace(1,2*Params.J,2*Params.J)'; %(age (& determines retirement))
 pi_z=Gamma;
 
-r_grid=linspace(0,1/Params.beta-1,n_r)';
-a3_grid=linspace(0.9*Params.a3,1.1*Params.a3,n_a3)';
-p_grid=[r_grid; a3_grid];
+% r_grid=linspace(0,1/Params.beta-1,n_r)';
+% a3_grid=linspace(0.9*Params.a3,1.1*Params.a3,n_a3)';
+% p_grid=[r_grid; a3_grid];
 
 n_d=[n_l,n_k];
 n_a=n_k;
 n_z=length(z_grid);
-n_p=[n_r,n_a3];
 
 disp('sizes')
 n_d
 n_a
 n_z
-n_p
 
 %% Set up the model itself
 GEPriceParamNames={'r','a3'};
@@ -135,7 +119,7 @@ ReturnFnParamNames={'r','sigma1','sigma2','chi','elle','theta','delta','e1','e2'
 Case2_Type=2;
 vfoptions.phiaprimematrix=1;
 PhiaprimeParamNames={};
-Phi_aprimeMatrix=CastanedaDiazGimenezRiosRull2003_PhiaprimeMatrix(n_d,n_z,k_grid,Params.J,Params.zlowerbar,Params.tauE);
+Phi_aprimeMatrix=CastanedaDiazGimenezRiosRull2003_PhiaprimeMatrix(n_d,n_z,k_grid,Params.J,Params.zlowerbar,Params.tauE,vfoptions);
 
 % Create descriptions of SS values as functions of d_grid, a_grid, s_grid & pi_s (used to calculate the integral across the SS dist fn of whatever
 %     functions you define here)
@@ -156,22 +140,19 @@ FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_IncomeTaxReve
 % GeneralEqmParamNames: the names of the parameters/prices that are being determined in general equilibrium
 % GeneralEqmEqnParamNames: the names of parameters that are needed to evaluate the GeneralEqmEqns (these parameters themselves are not
 %     determined as part of general eqm)
-% GeneralEqmEqns: the general equilibrium equations. These typically include Market Clearance condtions, but often also things such as
-%     Government Budget balance.
+% GeneralEqmEqns: the general equilibrium equations. These typically include Market Clearance condtions, but often also things such asGovernment Budget balance.
 GeneralEqmEqnParamNames(1).Names={'theta','delta'};
 %The requirement that the interest rate equals the marginal product of capital
-GeneralEqmEqn_1 = @(AggVars,p,theta,delta) p(1)-(theta*(AggVars(1)^(theta-1))*(AggVars(2)^(1-theta))-delta); 
+GeneralEqmEqn_1 = @(AggVars,GEprices,theta,delta) GEprices(1)-(theta*(AggVars(1)^(theta-1))*(AggVars(2)^(1-theta))-delta); 
 % Government budget balance
 GeneralEqmEqnParamNames(2).Names={'G'};
-GeneralEqmEqn_2 = @(AggVars,p,G) G+AggVars(4)-AggVars(3)-AggVars(5); % The roles of 'a3', which is contained in p(2), is already captured in the total revenue of income taxes (AggVars(3))
+GeneralEqmEqn_2 = @(AggVars,GEprices,G) G+AggVars(4)-AggVars(3)-AggVars(5); % The roles of 'a3', which is contained in p(2), is already captured in the total revenue of income taxes (AggVars(3))
 
 GeneralEqmEqns={GeneralEqmEqn_1,GeneralEqmEqn_2};
 
 %% Test a few commands out before getting into the main part of General equilibrium
 % Params.r=0.045; %Params.a3
-% V0=zeros(n_a,n_z,'gpuArray');
-% vfoptions.policy_forceintegertype=1
-% [V, Policy]=ValueFnIter_Case2(V0, n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, vfoptions);
+% [V, Policy]=ValueFnIter_Case2(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, vfoptions);
 % StationaryDist=StationaryDist_Case2(Policy,Phi_aprimeMatrix,Case2_Type,n_d,n_a,n_z,pi_z,simoptions);
 
 %% Solve the baseline model
@@ -181,26 +162,28 @@ if SkipGE==0
 %     heteroagentoptions.pgrid=p_grid;
     Params.r=0.045; %Params.a3
     heteroagentoptions.verbose=1;
-    V0=zeros(n_a,n_z,'gpuArray');
-%     [p_eqm,p_eqm_index,MarketClearance]=HeteroAgentStationaryEqm_Case2(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid,Phi_aprimeMatrix, Case2_Type, ReturnFn, FnsToEvaluateFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
-    [p_eqm,p_eqm_index,MarketClearance]=HeteroAgentStationaryEqm_Case2(V0, n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid,Phi_aprimeMatrix, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,p_eqm_index,MarketClearance]=HeteroAgentStationaryEqm_Case2(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid,Phi_aprimeMatrix, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
     
     % Evaluate a few objects at the equilibrium
-    Params.r=p_eqm(1);
-    Params.a3=p_eqm(2);
+    Params.r=p_eqm.r;
+    Params.a3=p_eqm.a3;
     Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
-    
-    [V, Policy]=ValueFnIter_Case2(V0, n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, vfoptions);
+        
+    [V, Policy]=ValueFnIter_Case2(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, vfoptions);
     
     StationaryDist=StationaryDist_Case2(Policy,Phi_aprimeMatrix,Case2_Type,n_d,n_a,n_z,pi_z,simoptions);
-    
-    save ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm MarketClearance V Policy a_grid StationaryDist
-else
-    load ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm MarketClearance V Policy a_grid StationaryDist
-end
-Params.r=p_eqm(1);
-Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
+        
+    save ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params MarketClearance a_grid V Policy StationaryDist
 
+else
+    load ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params MarketClearance a_grid V Policy StationaryDist
+
+    Params.r=p_eqm.r;
+    Params.a3=p_eqm.a3;
+    Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
+end
+
+fprintf('HERE WE ARE 1 \n')
 
 %% Reproduce Tables
 % Tables 3, 4, & 5 simply report the calibrated parameters. 
@@ -226,21 +209,21 @@ FnsToEvaluateFn_EstateTaxRev  = @(d1_val,d2_val,a_val,s_val,J,p_gg,zlowerbar,tau
 FnsToEvaluateParamNames(8).Names={'J','r','theta','delta','omega','e1','e2','e3','e4','a0','a1','a2','a3'};
 FnsToEvaluateFn_Consumption = @(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_ConsumptionFn(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
 FnsToEvaluate={FnsToEvaluateFn_K,FnsToEvaluateFn_I,FnsToEvaluateFn_L,FnsToEvaluateFn_H,FnsToEvaluateFn_IncomeTaxRevenue,FnsToEvaluateFn_Pensions,FnsToEvaluateFn_EstateTaxRev,FnsToEvaluateFn_Consumption};
-AggVars=EvalFnOnAgentDist_AggVars_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,2); % The 2 is for Parallel (use GPU)
+AggVars=EvalFnOnAgentDist_AggVars_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid);
 
 Y=(AggVars(1)^Params.theta)*(AggVars(3)^(1-Params.theta));
 
 Table6variables(1)=AggVars(1)/Y; % K/Y
-Table6variables(2)=AggVars(2)/Y; % I/Y
-Table6variables(3)=(AggVars(5)+AggVars(7)-AggVars(6))/Y; % G/Y: G=T-Tr=(Income Tax Revenue+ Estate Tax Revenue) - Pensions
-Table6variables(4)=AggVars(6)/Y; % Tr/Y
-Table6variables(5)=AggVars(7)/Y; % T_E/Y
-Table6variables(6)=AggVars(4)/Params.elle; % h
+Table6variables(2)=100*AggVars(2)/Y; % I/Y as %age
+Table6variables(3)=100*(AggVars(5)+AggVars(7)-AggVars(6))/Y; % G/Y  as %age: G=T-Tr=(Income Tax Revenue+ Estate Tax Revenue) - Pensions
+Table6variables(4)=100*AggVars(6)/Y; % Tr/Y  as %age
+Table6variables(5)=100*AggVars(7)/Y; % T_E/Y  as %age
+Table6variables(6)=100*AggVars(4)/Params.elle; % h  as %age
 
 FnsToEvaluateParamNames(1).Names={}; % FnsToEvaluateFn_H
 FnsToEvaluateParamNames(2).Names={'J','r','theta','delta','omega','e1','e2','e3','e4','a0','a1','a2','a3'}; % FnsToEvaluateFn_Consumption
 FnsToEvaluate={FnsToEvaluateFn_H, FnsToEvaluateFn_Consumption};
-MeanMedianStdDev=EvalFnOnAgentDist_MeanMedianStdDev_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,2); % The 2 is for Parallel (use GPU)
+MeanMedianStdDev=EvalFnOnAgentDist_MeanMedianStdDev_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid);
 
 Table6variables(7)=gather((MeanMedianStdDev(2,1)/MeanMedianStdDev(2,3))/(MeanMedianStdDev(1,1)/MeanMedianStdDev(1,3))); % Coefficient of Variation=std deviation divided by mean. 
 
@@ -275,7 +258,7 @@ FnsToEvaluateParamNames(1).Names={'e1','e2','e3','e4'}; % L
 FnsToEvaluateParamNames(2).Names={}; % K
 FnsToEvaluateParamNames(3).Names={'J','r','theta','delta','omega','e1','e2','e3','e4','a0','a1','a2','a3'}; % FnsToEvaluateFn_Consumption
 FnsToEvaluate={FnsToEvaluateFn_L,FnsToEvaluateFn_K ,FnsToEvaluateFn_Consumption}; % Note: Since we are looking at Lorenz curve of earnings we can ignore 'w' as a multiplicative scalar so will have no effect on Lorenz curve of earnings (beyond influence on d1)
-StationaryDist_LorenzCurves=EvalFnOnAgentDist_LorenzCurve_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,2); % The 2 is for Parallel (use GPU)
+StationaryDist_LorenzCurves=EvalFnOnAgentDist_LorenzCurve_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid);
 
 
 
@@ -317,19 +300,21 @@ fclose(FID);
 Table8variables=nan(2,9,'gpuArray');
 % Calculate cutoff for wealthiest 1%
 temp=cumsum(sum(StationaryDist,2)); % cdf on wealth dimension alone
-[~,cutoff_wealth1percent]=max(temp>0.99); % index
-cutoff_wealth1percent=k_grid(cutoff_wealth1percent); % value
+[thisshouldequal99,cutoff_wealth1percent_index]=max(temp>0.99); % index
+cutoff_wealth1percent=k_grid(cutoff_wealth1percent_index); % value
 Params.cutoff_wealth1percent=cutoff_wealth1percent;
 FnsToEvaluateParamNames(1).Names={'J','r','theta','delta','omega','e1','e2','e3','e4','a0','a1','a2','a3','cutoff_wealth1percent'}; % FnsToEvaluateFn_Consumption_ExWealthiest1percent
 FnsToEvaluateFn_Consumption_ExWealthiest1percent = @(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3,cutoff_wealth1percent) CDGRR2003_ConsumptionFn_ExWealthiest1percent(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3,cutoff_wealth1percent);
 FnsToEvaluate={FnsToEvaluateFn_Consumption_ExWealthiest1percent};
-StationaryDist_LorenzCurves_ExWealthiest1percent=EvalFnOnAgentDist_LorenzCurve_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,2); % The 2 is for Parallel (use GPU)
+evalfnoptions.exclude.condn='equal';
+evalfnoptions.exclude.values=-Inf; % 'FnsToEvaluateFn_Consumption_ExWealthiest1percent' returns a value of -Inf for the wealthiest 1%, so we want to exclude these.
+LorenzCurves_ExWealthiest1percent=EvalFnOnAgentDist_LorenzCurve_Case2(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,evalfnoptions);
 %  Gini for Consumption_ExWealthiest1percent
-Table8variables(1,1)=Gini_from_LorenzCurve(StationaryDist_LorenzCurves_ExWealthiest1percent(1,:));
+Table8variables(1,1)=Gini_from_LorenzCurve(LorenzCurves_ExWealthiest1percent(1,:));
 %  Consumption_ExWealthiest1percent Lorenz Curve: Quintiles (%) 
-Table8variables(1,2:6)=100*(StationaryDist_LorenzCurves_ExWealthiest1percent(1,[20,40,60,80,100])-StationaryDist_LorenzCurves_ExWealthiest1percent(1,[1,21,41,61,81]));
+Table8variables(1,2:6)=100*(LorenzCurves_ExWealthiest1percent(1,[20,40,60,80,100])-LorenzCurves_ExWealthiest1percent(1,[1,21,41,61,81]));
 %  Consumption_ExWealthiest1percent Lorenz Curve: 90-95, 95-99, and 99-100 (%)
-Table8variables(1,7:9)=100*(StationaryDist_LorenzCurves_ExWealthiest1percent(1,[95,99,100])-StationaryDist_LorenzCurves_ExWealthiest1percent(1,[90,95,99]));
+Table8variables(1,7:9)=100*(LorenzCurves_ExWealthiest1percent(1,[95,99,100])-LorenzCurves_ExWealthiest1percent(1,[90,95,99]));
 %  Gini for Consumption
 Table8variables(2,1)=Gini_from_LorenzCurve(StationaryDist_LorenzCurves(3,:));
 %  Consumption Lorenz Curve: Quintiles (%) 
@@ -365,7 +350,6 @@ Table9variables=nan(2,5,'gpuArray');
 % Seems like ideal method for mobility would be based on cupolas, but for
 % now just use simulation methods.
 
-
 % Transition Probabilities needed for Table 9
 FnsToEvaluateParamNames(1).Names={'e1','e2','e3','e4'}; % L
 FnsToEvaluateParamNames(2).Names={}; % K
@@ -376,9 +360,8 @@ t=5;
 npoints=5;
 % Number of simulations on which to base results
 NSims=10^7;
-TransitionProbabilities=EvalFnOnAgentDist_RankTransitionProbabilities_Case2(t,NSims,StationaryDist, Policy,Phi_aprimeMatrix, Case2_Type, FnsToEvaluate, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, 2, npoints); % 2 is as using parallel on GPU
+TransitionProbabilities=EvalFnOnAgentDist_RankTransitionProbabilities_Case2(t,NSims,StationaryDist, Policy,Phi_aprimeMatrix, Case2_Type, FnsToEvaluate, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, 2, npoints);
 
-%temporary
 Table9variables=zeros(2,5,'gpuArray');
 for ii=1:5
     Table9variables(1,ii)=TransitionProbabilities(ii,ii,1); % Probability of staying in same quintile, hence ii-ii entry.
@@ -389,7 +372,7 @@ end
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table9.tex', 'w');
 fprintf(FID, 'Earnings and Wealth Persistence in the United States and in the Benchmark Model Economies: Fraction of Households That Remain In The Same Quintile After Five Years \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccc} \n \\hline \\hline \n');
-fprintf(FID, ' & \\multicolumn{5}{c}{(QUINTILE} \\\\ \n');
+fprintf(FID, ' & \\multicolumn{5}{c}{QUINTILE} \\\\ \n');
 fprintf(FID, 'ECONOMY & First  & Second & Third & Fourth & Fifth \\\\ \n \\hline \n');
 fprintf(FID, '& \\multicolumn{5}{c}{A. Earnings Persistence} \\\\ \n \\cline{2-6} \n');
 fprintf(FID, 'United States  & 0.86  & 0.41  & 0.47 & 0.46 & 0.66 \\\\ \n');
@@ -403,13 +386,20 @@ fprintf(FID, 'Note: Based on %d simulations. \\\\ \n', NSims);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
+%% Take a look at a few things
+
+% % Take a look at the policy functions
+% plot(l_grid(shiftdim(Policy(1,:,1:4),1)))
+% plot(a_grid(shiftdim(Policy(2,:,1:4),1)))
+%
+% % Where is everyone on the asset distribution (making sure no-one hits the top)
+% plot(cumsum(sum(StationaryDist,2)))
+
+%% Finished Actual Replication, now do some extra things
 
 
-%% Reproduce Figures
 
-
-
-%% For some other work of mine, look more closely at the very very top end of the wealth distribution and income distribution.
+% % %% For some other work of mine, look more closely at the very very top end of the wealth distribution and income distribution.
 % % npoints=1000; %0; %Decided against going with 10000 points as trying to look at top 0.01% as we have little empirical evidence on what should happen and the model doesn't really 'exist' at that accuracy (there are not even that many grid points on assets anyway)
 % % 
 % % % FnsToEvaluateFn_K = @(d1_val,d2_val,a_val,s_val) a_val; %K
@@ -445,198 +435,198 @@ fclose(FID);
 % % fprintf(FID, 'Note: Wealth distribution is more skewed at the top than the earnings distribution in model of Castaneda, Diaz-Gimenez and Rios-Rull (2003) \\\\ \n');
 % % fprintf(FID, '}} \\end{minipage}');
 % % fclose(FID);
-
-
-%% Comparison of Calibrations
-% The following shows how to use the VFI Toolkit to implement a calibration
-% of this kind. However because the original weights assigned to each
-% moment in CDGRR2003 have been lost to the sands of time this will not
-% actually return the parameter values in CDGRR2003, nor should it be
-% expected to.
-
-% Ordering of following is unimportant. (25 params)
-ParamNamesToEstimate={'beta','sigma2','chi','G','phi1','phi2','omega','a2','zlowerbar','tauE','e2','e3','e4',...
-    'Gamma_ee_12','Gamma_ee_13','Gamma_ee_14','Gamma_ee_21','Gamma_ee_23','Gamma_ee_24','Gamma_ee_31','Gamma_ee_32','Gamma_ee_34','Gamma_ee_41','Gamma_ee_42','Gamma_ee_43'};
-% Additionally 'r' and 'a3' are determined by the general eqm conditions, rather than the calibration.
-
-% Ordering of following is unimportant. (27 targets)
-EstimationTargetNames={'CapitalOutputRatio','GovExpenditureToOutputRatio','TransfersToOutputRatio',...
-    'ShareOfDisposableTimeAllocatedToMarket','EffectiveTaxRateOnAverageHHIncome', 'zlowerbarMinus10timesAverageIncome', 'EstateTaxRevenueAsFractionOfGDP',...
-    'RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked','RatioOfEarningsOldtoYoung','CrossSectionalCorrelationOfIncomeBetweenFathersAndSons',...
-    'EarningsGini', 'WealthGini','EarningsQuintileSharesAsFraction', 'WealthQuintileSharesAsFraction','EarningsTopSharesAsFraction','WealthTopSharesAsFraction'};
-
-% B.2 Macroeconomic Aggregates
-EstimationTargets.CapitalOutputRatio=3.13;
-% EstimationTargets.CapitalIncomeShare=0.376;
-% Params.theta=0.376; % Follows immediately from CapitalIncomeShare
-% EstimationTargets.InvestmentToOutputRatio=0.186;
-% Params.delta=0.0594; % Follows immediately from delta=I/K in stationary general eqm; hence delta=(I/Y)/(K/Y)
-EstimationTargets.GovExpenditureToOutputRatio=0.202;
-EstimationTargets.TransfersToOutputRatio=0.049;
-
-% B.3 Allocation of Time and Consumption
-% Params.elle=3.2;
-EstimationTargets.ShareOfDisposableTimeAllocatedToMarket=0.3;
-EstimationTargets.RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked=3.0;
-% Params.sigma1=1.5; % Based on literature on risk aversion
-
-% B.4 The Age Structure of the Population
-% EstimationTargets.ExpectedDurationOfWorkingLife=45;
-% EstimationTargets.ExpectedDurationOfRetirement=18;
-% These lead us directly to
-% Params.p_eg=0.022; % Note: 1/p_eg=45
-% Params.p_gg=0.934; % Note: 1/(1-p_gg)=15 % Not the 18 that it should be.
-% [Follows from theoretical results on 'survival analysis': the expected duration of process with constant-hazard-rate lambda is 1/lambda. 
-% Here p_eg and (1-p_gg) are the hazard rates. See, e.g., example on middle of pg 3 of http://data.princeton.edu/wws509/notes/c7.pdf ]
-
-% B.5 Life-Cycle Profile of Earnings
-% RatioOfEarningsOldtoYoung: ratio of average earnings for households
-% between ages of 41 & 60 to average earnings of households between ages of 21 & 40.
-EstimationTargets.RatioOfEarningsOldtoYoung=1.303;
-
-% B.6 The Intergenerational Transmission of Earnings Ability
-EstimationTargets.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.4;
-
-% B.7 Income Taxation
-% Params.a0=0.258;
-% Params.a1=0.768;
-EstimationTargets.EffectiveTaxRateOnAverageHHIncome=0.0762;
-% The 'EffectiveTaxRateOnAverageHHIncome' is not reported in Castañeda, Diaz-Gimenez, & Rios-Rull (2003). 
-% The number used here is 
-% According to the 1998 Economic Report of the President, Table B80, revenue from 'Individual Income Taxes' in 1992 was $476 billion.
-% According to the 1998 Economic Report of the President, Table B1, GDP in 1992 was $6244.4 billion
-% So use 0.0762=476/6224 as target.
-% Alternatively,
-% According to the 1998 Economic Report of the President, Table B80, total federal revenue in 1992 was $1091.3 billion.
-% So use 0.1748=1091/6224 as target.
-% Note that this is ratio of aggregate totals, rather than strictly being the mean 
-% effective rate on average income HH which would be a cross-sectional concept.
-% According to the 1992 Survey of Consumer Finances the average HH income was $58916 (pg 837 of CDGRR2003)
-% EstimationTargets: government budget balance
-% EstimationTargets.GovernmentBudgetBalance=0; % This is a General Eqm
-% Condition, so no need to repeat it here.
-
-% B.8 Estate Taxation
-% Params.zlowerbar=10*AverageIncome;
-EstimationTargets.zlowerbarMinus10timesAverageIncome=0;
-EstimationTargets.EstateTaxRevenueAsFractionOfGDP=0.002;
-
-% B.9 Normalization
-% Params.e1=1; % Based on my own experience with variants of this model you are actually
-% better of normalizing Params.e2=1 than Params.e1=1, but as this is a
-% replication I follow them exactly.
-% Normalize the diagonal elements of Gamma_ee (ie., Gamma_ee_11,
-% Gamma_ee_22, Gamma_ee_33, Gamma_ee_44). Choose these as simply setting,
-% e.g., Gamma_ee_11=1-Gamma_ee_12-Gamma_ee_13-Gamma_ee_14 is unlikely to
-% lead us to a negative value of Gamma_ee_11. Thus in terms of maintaining
-% the constraints on Gamma_ee (all elements between zero and one, rows sum
-% to one) required for it to be a transition matrix, we are less likely to
-% be throwing out parameter vectors when estimating because they failed to
-% meet these constraints. This is just a numerical trick that works well in
-% practice as we 'know' that most of the weight of the transition matrix is
-% on the diagonal.
-% Note that this normalization of the diagonal elements of Gamma_ee is
-% actually hard-coded into the how we have written the codes that create
-% the transition matrix.
-% Note also that paper does not actually specify which elements of Gamma_ee were normalized.
-
-% B.10 The Distributions of Earnings and Wealth
-EstimationTargets.EarningsGini=0.63;
-EstimationTargets.WealthGini=0.78;
-EstimationTargets.EarningsQuintileSharesAsFraction=[-0.004,0.0319, 0.1249, 0.2333, 0.6139]; % Quintiles: Bottom to Top
-EstimationTargets.WealthQuintileSharesAsFraction=[-0.0039, 0.0174, 0.0572, 0.1343, 0.7949];
-EstimationTargets.EarningsTopSharesAsFraction=[0.1238,0.1637,0.1476]; % 90-95, 95-99, 99-100.
-EstimationTargets.WealthTopSharesAsFraction=[0.1262,0.2395,0.2955]; % 90-95, 95-99, 99-100.
-
-% The Pension Function
-% Castañeda, Diaz-Gimenez, & Rio-Rull (2003) do not describe the
-% calibration of omega(s). From Table 3 we have that 
-% Params.omega=0.8;
-% suggesting the idea was to target the replacement rate.
-% Actually this is covered by 'Transfers to Output Ratio' as being a target.
-
-% By default the VFI Toolkit estimation commands set bounds on
-% parameter values (lower bound of 1/10th of initial value, upper bound of
-% 10 times initial value). You can set these bounds manually where you wish to do
-% so in the following manner. [First number is lower bound, Second number
-% is upper bound].
-estimationoptions.ParamBounds.beta=[0.8,0.99]; % Reasonable range for discount rate.
-estimationoptions.ParamBounds.r=[0,0.15]; % Seems reasonable range for interest rate.
-estimationoptions.ParamBounds.Gamma_ee_12=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_13=[0,0.2]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_14=[0,0.2]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_21=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_23=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_24=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_31=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_32=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_34=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_41=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_42=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_43=[0,0.3]; % Must be between 0 & 1 as is a probability.
-
-% By default the VFI Toolkit estimation commands assume that you want the
-% distance for each of the targets to be measured as the square difference as a percentage of the
-% target value. You can overrule these as follows.
-estimationoptions.TargetDistanceFns.EarningsQuintileSharesAsFraction='absolute-difference';
-estimationoptions.TargetDistanceFns.WealthQuintileSharesAsFraction='absolute-difference';
-
-% By default the VFI Toolkit weights each of the targets equally (with a
-% value of 1). You can manually increase or decrease these weights as follows.
-estimationoptions.TargetWeights.CapitalIncomeRatio=20;
-% EstimationTargets.TargetWeights.GovernmentBudgetBalance=100; % This is one of the general eqm conditions, so by 
-      % default it gets a weight of 100 when we are using the (default) 'joint-fixed-pt' estimation algorithm.
-% Targets include an excess of inequality stats, so decrease slightly the weights given to these.
-estimationoptions.TargetWeights.EarningsQuintileSharesAsFraction=0.8;
-% estimationoptions.TargetWeights.EarningsTopSharesAsFraction=1; % 90-95, 95-99, 99-100.
-estimationoptions.TargetWeights.WealthQuintileSharesAsFraction=0.8;
-estimationoptions.TargetWeights.WealthTopSharesAsFraction=1.5; % Increased these as they are important part of the purpose of model, and were otherwise being ignored during the calibration (in earlier runs)
-% The data and link to model are not strongest for the following two, so I give them lower weights.
-estimationoptions.TargetWeights.RatioOfEarningsOldtoYoung=0.7;
-estimationoptions.TargetWeights.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.7;
-% An early estimation attempt ended up going off-track and making almost nobody work. Following makes the fraction of time worked estimation target important.
-estimationoptions.TargetWeights.ShareOfDisposableTimeAllocatedToMarket=10;
-
-
-% VFI Toolkit uses CMA-ES algorithm to perform the calibration. You can
-% manually set some of its options if you want.
-estimationoptions.CMAES.MaxIter=1000;
-
-%% Before estimation we need to set some things back to what they were for underlying model
-% Create descriptions of SS values as functions of d_grid, a_grid, s_grid & pi_s (used to calculate the integral across the SS dist fn of whatever
-%     functions you define here)
-FnsToEvaluateParamNames(1).Names={};
-FnsToEvaluateFn_1 = @(d1_val,d2_val,a_val,s_val) a_val; %K
-FnsToEvaluateParamNames(2).Names={'e1','e2','e3','e4'};
-FnsToEvaluateFn_2 = @(d1_val,d2_val,a_val,s_val,e1,e2,e3,e4) d1_val*(e1*(s_val==1)+e2*(s_val==2)+e3*(s_val==3)+e4*(s_val==4)); % Efficiency hours worked: L
-FnsToEvaluateParamNames(3).Names={'J','r','theta','delta','omega','e1','e2','e3','e4','a0','a1','a2','a3'};
-FnsToEvaluateFn_IncomeTaxRevenue = @(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_IncomeTaxRevenueFn(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
-FnsToEvaluateParamNames(4).Names={'J','omega'};
-FnsToEvaluateFn_Pensions = @(d1_val,d2_val,a_val,s_val,J,omega) omega*(s_val>J); % If you are retired you earn pension omega (otherwise it is zero).
-FnsToEvaluateParamNames(5).Names={'J','p_gg','zlowerbar','tauE'};
-FnsToEvaluateFn_EstateTaxRev  = @(d1_val,d2_val,a_val,s_val,J,p_gg,zlowerbar,tauE) (s_val>J)*(1-p_gg)*tauE*max(d2_val-zlowerbar,0); % If you are retired: the probability of dying times the estate tax you would pay
-FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_IncomeTaxRevenue,FnsToEvaluateFn_Pensions,FnsToEvaluateFn_EstateTaxRev};
-
-%% Now we just need to create the 'ModelTargetsFn'. This will be a Matlab function
-% that takes Params as an input and creates ModelTargets as an output.
-% ModelTargets must be a structure containing the model values for the EstimationTargets.
-ModelTargetsFn=@(Params) CDGRR2003_ModelTargetsFn(Params, n_d,n_a,n_z,n_p,a_grid,ReturnFn,ReturnFnParamNames, DiscountFactorParamNames,Case2_Type,PhiaprimeParamNames,FnsToEvaluateParamNames,FnsToEvaluate,GeneralEqmEqnParamNames,GEPriceParamNames,GeneralEqmEqns, vfoptions,simoptions)
-% ModelTargets must also contain the model values for any General Equilibrium conditions.
-GeneralEqmTargetNames={'GE_InterestRate','GE_GovBudgetBalance'};
-
-%% Do the actual calibration
-
-[Params1,fval,counteval,exitflag]=EstimateModel(Params, ParamNamesToEstimate, EstimationTargets, ModelTargetsFn, estimationoptions, GEPriceParamNames, GeneralEqmTargetNames);
-
-save ./SavedOutput/Calib/CDGRR2003_Calib1.mat Params1 fval counteval exitflag
-% load ./SavedOutput/Calib/CDGRR2003_Calib1.mat Params1 fval counteval exitflag
-
-%% Get the model estimation target values based on the estimated parameters.
-ModelTargets=ModelTargetsFn(Params1);
-
-save ./SavedOutput/Calib/CDGRR2003_Calib2.mat ModelTargets
-
-
+% % 
+% % 
+% % %% Comparison of Calibrations
+% % % The following shows how to use the VFI Toolkit to implement a calibration
+% % % of this kind. However because the original weights assigned to each
+% % % moment in CDGRR2003 have been lost to the sands of time this will not
+% % % actually return the parameter values in CDGRR2003, nor should it be
+% % % expected to.
+% % 
+% % % Ordering of following is unimportant. (25 params)
+% % ParamNamesToEstimate={'beta','sigma2','chi','G','phi1','phi2','omega','a2','zlowerbar','tauE','e2','e3','e4',...
+% %     'Gamma_ee_12','Gamma_ee_13','Gamma_ee_14','Gamma_ee_21','Gamma_ee_23','Gamma_ee_24','Gamma_ee_31','Gamma_ee_32','Gamma_ee_34','Gamma_ee_41','Gamma_ee_42','Gamma_ee_43'};
+% % % Additionally 'r' and 'a3' are determined by the general eqm conditions, rather than the calibration.
+% % 
+% % % Ordering of following is unimportant. (27 targets)
+% % EstimationTargetNames={'CapitalOutputRatio','GovExpenditureToOutputRatio','TransfersToOutputRatio',...
+% %     'ShareOfDisposableTimeAllocatedToMarket','EffectiveTaxRateOnAverageHHIncome', 'zlowerbarMinus10timesAverageIncome', 'EstateTaxRevenueAsFractionOfGDP',...
+% %     'RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked','RatioOfEarningsOldtoYoung','CrossSectionalCorrelationOfIncomeBetweenFathersAndSons',...
+% %     'EarningsGini', 'WealthGini','EarningsQuintileSharesAsFraction', 'WealthQuintileSharesAsFraction','EarningsTopSharesAsFraction','WealthTopSharesAsFraction'};
+% % 
+% % % B.2 Macroeconomic Aggregates
+% % EstimationTargets.CapitalOutputRatio=3.13;
+% % % EstimationTargets.CapitalIncomeShare=0.376;
+% % % Params.theta=0.376; % Follows immediately from CapitalIncomeShare
+% % % EstimationTargets.InvestmentToOutputRatio=0.186;
+% % % Params.delta=0.0594; % Follows immediately from delta=I/K in stationary general eqm; hence delta=(I/Y)/(K/Y)
+% % EstimationTargets.GovExpenditureToOutputRatio=0.202;
+% % EstimationTargets.TransfersToOutputRatio=0.049;
+% % 
+% % % B.3 Allocation of Time and Consumption
+% % % Params.elle=3.2;
+% % EstimationTargets.ShareOfDisposableTimeAllocatedToMarket=0.3;
+% % EstimationTargets.RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked=3.0;
+% % % Params.sigma1=1.5; % Based on literature on risk aversion
+% % 
+% % % B.4 The Age Structure of the Population
+% % % EstimationTargets.ExpectedDurationOfWorkingLife=45;
+% % % EstimationTargets.ExpectedDurationOfRetirement=18;
+% % % These lead us directly to
+% % % Params.p_eg=0.022; % Note: 1/p_eg=45
+% % % Params.p_gg=0.934; % Note: 1/(1-p_gg)=15 % Not the 18 that it should be.
+% % % [Follows from theoretical results on 'survival analysis': the expected duration of process with constant-hazard-rate lambda is 1/lambda. 
+% % % Here p_eg and (1-p_gg) are the hazard rates. See, e.g., example on middle of pg 3 of http://data.princeton.edu/wws509/notes/c7.pdf ]
+% % 
+% % % B.5 Life-Cycle Profile of Earnings
+% % % RatioOfEarningsOldtoYoung: ratio of average earnings for households
+% % % between ages of 41 & 60 to average earnings of households between ages of 21 & 40.
+% % EstimationTargets.RatioOfEarningsOldtoYoung=1.303;
+% % 
+% % % B.6 The Intergenerational Transmission of Earnings Ability
+% % EstimationTargets.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.4;
+% % 
+% % % B.7 Income Taxation
+% % % Params.a0=0.258;
+% % % Params.a1=0.768;
+% % EstimationTargets.EffectiveTaxRateOnAverageHHIncome=0.0762;
+% % % The 'EffectiveTaxRateOnAverageHHIncome' is not reported in Castañeda, Diaz-Gimenez, & Rios-Rull (2003). 
+% % % The number used here is 
+% % % According to the 1998 Economic Report of the President, Table B80, revenue from 'Individual Income Taxes' in 1992 was $476 billion.
+% % % According to the 1998 Economic Report of the President, Table B1, GDP in 1992 was $6244.4 billion
+% % % So use 0.0762=476/6224 as target.
+% % % Alternatively,
+% % % According to the 1998 Economic Report of the President, Table B80, total federal revenue in 1992 was $1091.3 billion.
+% % % So use 0.1748=1091/6224 as target.
+% % % Note that this is ratio of aggregate totals, rather than strictly being the mean 
+% % % effective rate on average income HH which would be a cross-sectional concept.
+% % % According to the 1992 Survey of Consumer Finances the average HH income was $58916 (pg 837 of CDGRR2003)
+% % % EstimationTargets: government budget balance
+% % % EstimationTargets.GovernmentBudgetBalance=0; % This is a General Eqm
+% % % Condition, so no need to repeat it here.
+% % 
+% % % B.8 Estate Taxation
+% % % Params.zlowerbar=10*AverageIncome;
+% % EstimationTargets.zlowerbarMinus10timesAverageIncome=0;
+% % EstimationTargets.EstateTaxRevenueAsFractionOfGDP=0.002;
+% % 
+% % % B.9 Normalization
+% % % Params.e1=1; % Based on my own experience with variants of this model you are actually
+% % % better of normalizing Params.e2=1 than Params.e1=1, but as this is a
+% % % replication I follow them exactly.
+% % % Normalize the diagonal elements of Gamma_ee (ie., Gamma_ee_11,
+% % % Gamma_ee_22, Gamma_ee_33, Gamma_ee_44). Choose these as simply setting,
+% % % e.g., Gamma_ee_11=1-Gamma_ee_12-Gamma_ee_13-Gamma_ee_14 is unlikely to
+% % % lead us to a negative value of Gamma_ee_11. Thus in terms of maintaining
+% % % the constraints on Gamma_ee (all elements between zero and one, rows sum
+% % % to one) required for it to be a transition matrix, we are less likely to
+% % % be throwing out parameter vectors when estimating because they failed to
+% % % meet these constraints. This is just a numerical trick that works well in
+% % % practice as we 'know' that most of the weight of the transition matrix is
+% % % on the diagonal.
+% % % Note that this normalization of the diagonal elements of Gamma_ee is
+% % % actually hard-coded into the how we have written the codes that create
+% % % the transition matrix.
+% % % Note also that paper does not actually specify which elements of Gamma_ee were normalized.
+% % 
+% % % B.10 The Distributions of Earnings and Wealth
+% % EstimationTargets.EarningsGini=0.63;
+% % EstimationTargets.WealthGini=0.78;
+% % EstimationTargets.EarningsQuintileSharesAsFraction=[-0.004,0.0319, 0.1249, 0.2333, 0.6139]; % Quintiles: Bottom to Top
+% % EstimationTargets.WealthQuintileSharesAsFraction=[-0.0039, 0.0174, 0.0572, 0.1343, 0.7949];
+% % EstimationTargets.EarningsTopSharesAsFraction=[0.1238,0.1637,0.1476]; % 90-95, 95-99, 99-100.
+% % EstimationTargets.WealthTopSharesAsFraction=[0.1262,0.2395,0.2955]; % 90-95, 95-99, 99-100.
+% % 
+% % % The Pension Function
+% % % Castañeda, Diaz-Gimenez, & Rio-Rull (2003) do not describe the
+% % % calibration of omega(s). From Table 3 we have that 
+% % % Params.omega=0.8;
+% % % suggesting the idea was to target the replacement rate.
+% % % Actually this is covered by 'Transfers to Output Ratio' as being a target.
+% % 
+% % % By default the VFI Toolkit estimation commands set bounds on
+% % % parameter values (lower bound of 1/10th of initial value, upper bound of
+% % % 10 times initial value). You can set these bounds manually where you wish to do
+% % % so in the following manner. [First number is lower bound, Second number
+% % % is upper bound].
+% % estimationoptions.ParamBounds.beta=[0.8,0.99]; % Reasonable range for discount rate.
+% % estimationoptions.ParamBounds.r=[0,0.15]; % Seems reasonable range for interest rate.
+% % estimationoptions.ParamBounds.Gamma_ee_12=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_13=[0,0.2]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_14=[0,0.2]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_21=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_23=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_24=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_31=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_32=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_34=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_41=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_42=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % estimationoptions.ParamBounds.Gamma_ee_43=[0,0.3]; % Must be between 0 & 1 as is a probability.
+% % 
+% % % By default the VFI Toolkit estimation commands assume that you want the
+% % % distance for each of the targets to be measured as the square difference as a percentage of the
+% % % target value. You can overrule these as follows.
+% % estimationoptions.TargetDistanceFns.EarningsQuintileSharesAsFraction='absolute-difference';
+% % estimationoptions.TargetDistanceFns.WealthQuintileSharesAsFraction='absolute-difference';
+% % 
+% % % By default the VFI Toolkit weights each of the targets equally (with a
+% % % value of 1). You can manually increase or decrease these weights as follows.
+% % estimationoptions.TargetWeights.CapitalIncomeRatio=20;
+% % % EstimationTargets.TargetWeights.GovernmentBudgetBalance=100; % This is one of the general eqm conditions, so by 
+% %       % default it gets a weight of 100 when we are using the (default) 'joint-fixed-pt' estimation algorithm.
+% % % Targets include an excess of inequality stats, so decrease slightly the weights given to these.
+% % estimationoptions.TargetWeights.EarningsQuintileSharesAsFraction=0.8;
+% % % estimationoptions.TargetWeights.EarningsTopSharesAsFraction=1; % 90-95, 95-99, 99-100.
+% % estimationoptions.TargetWeights.WealthQuintileSharesAsFraction=0.8;
+% % estimationoptions.TargetWeights.WealthTopSharesAsFraction=1.5; % Increased these as they are important part of the purpose of model, and were otherwise being ignored during the calibration (in earlier runs)
+% % % The data and link to model are not strongest for the following two, so I give them lower weights.
+% % estimationoptions.TargetWeights.RatioOfEarningsOldtoYoung=0.7;
+% % estimationoptions.TargetWeights.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.7;
+% % % An early estimation attempt ended up going off-track and making almost nobody work. Following makes the fraction of time worked estimation target important.
+% % estimationoptions.TargetWeights.ShareOfDisposableTimeAllocatedToMarket=10;
+% % 
+% % 
+% % % VFI Toolkit uses CMA-ES algorithm to perform the calibration. You can
+% % % manually set some of its options if you want.
+% % estimationoptions.CMAES.MaxIter=1000;
+% % 
+% % %% Before estimation we need to set some things back to what they were for underlying model
+% % % Create descriptions of SS values as functions of d_grid, a_grid, s_grid & pi_s (used to calculate the integral across the SS dist fn of whatever
+% % %     functions you define here)
+% % FnsToEvaluateParamNames(1).Names={};
+% % FnsToEvaluateFn_1 = @(d1_val,d2_val,a_val,s_val) a_val; %K
+% % FnsToEvaluateParamNames(2).Names={'e1','e2','e3','e4'};
+% % FnsToEvaluateFn_2 = @(d1_val,d2_val,a_val,s_val,e1,e2,e3,e4) d1_val*(e1*(s_val==1)+e2*(s_val==2)+e3*(s_val==3)+e4*(s_val==4)); % Efficiency hours worked: L
+% % FnsToEvaluateParamNames(3).Names={'J','r','theta','delta','omega','e1','e2','e3','e4','a0','a1','a2','a3'};
+% % FnsToEvaluateFn_IncomeTaxRevenue = @(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_IncomeTaxRevenueFn(d1_val,d2_val,a_val,s_val,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
+% % FnsToEvaluateParamNames(4).Names={'J','omega'};
+% % FnsToEvaluateFn_Pensions = @(d1_val,d2_val,a_val,s_val,J,omega) omega*(s_val>J); % If you are retired you earn pension omega (otherwise it is zero).
+% % FnsToEvaluateParamNames(5).Names={'J','p_gg','zlowerbar','tauE'};
+% % FnsToEvaluateFn_EstateTaxRev  = @(d1_val,d2_val,a_val,s_val,J,p_gg,zlowerbar,tauE) (s_val>J)*(1-p_gg)*tauE*max(d2_val-zlowerbar,0); % If you are retired: the probability of dying times the estate tax you would pay
+% % FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_IncomeTaxRevenue,FnsToEvaluateFn_Pensions,FnsToEvaluateFn_EstateTaxRev};
+% % 
+% % %% Now we just need to create the 'ModelTargetsFn'. This will be a Matlab function
+% % % that takes Params as an input and creates ModelTargets as an output.
+% % % ModelTargets must be a structure containing the model values for the EstimationTargets.
+% % ModelTargetsFn=@(Params) CDGRR2003_ModelTargetsFn(Params, n_d,n_a,n_z,n_p,a_grid,ReturnFn,ReturnFnParamNames, DiscountFactorParamNames,Case2_Type,PhiaprimeParamNames,FnsToEvaluateParamNames,FnsToEvaluate,GeneralEqmEqnParamNames,GEPriceParamNames,GeneralEqmEqns, vfoptions,simoptions)
+% % % ModelTargets must also contain the model values for any General Equilibrium conditions.
+% % GeneralEqmTargetNames={'GE_InterestRate','GE_GovBudgetBalance'};
+% % 
+% % %% Do the actual calibration
+% % 
+% % [Params1,fval,counteval,exitflag]=EstimateModel(Params, ParamNamesToEstimate, EstimationTargets, ModelTargetsFn, estimationoptions, GEPriceParamNames, GeneralEqmTargetNames);
+% % 
+% % save ./SavedOutput/Calib/CDGRR2003_Calib1.mat Params1 fval counteval exitflag
+% % % load ./SavedOutput/Calib/CDGRR2003_Calib1.mat Params1 fval counteval exitflag
+% % 
+% % %% Get the model estimation target values based on the estimated parameters.
+% % ModelTargets=ModelTargetsFn(Params1);
+% % 
+% % save ./SavedOutput/Calib/CDGRR2003_Calib2.mat ModelTargets
+% % 
+% % 
 
 
 

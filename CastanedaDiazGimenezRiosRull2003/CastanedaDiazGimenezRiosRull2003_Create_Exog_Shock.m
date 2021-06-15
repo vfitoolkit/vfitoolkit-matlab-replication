@@ -1,18 +1,36 @@
-function [e,pi_s,gammastar,gammastarfull]=CastanedaDiazGimenezRiosRull2003_Create_Exog_Shock(Params)
+function [e,pi_s,gammastar,gammastarfull]=CastanedaDiazGimenezRiosRull2003_Create_Exog_Shock(Params,vfoptions)
 % Creates the transition matrix on the exogenous shocks.
+
+Parallel=2;
+if exist('vfoptions','var')
+    if isfield(vfoptions,'parallel')
+        if vfoptions.parallel<2
+            Parallel=1;
+        end
+    end
+end
+            
 
 % Note, there are both gammastar and gammastarfull
 
-e=gpuArray([1,Params.e2,Params.e3,Params.e4, zeros(1,Params.J)]); %e(s)
+
+e=[1,Params.e2,Params.e3,Params.e4, zeros(1,Params.J)]; %e(s)
+if Parallel==2
+    e=gpuArray(e);
+end
 
 Gamma_ee_11=1-Params.Gamma_ee_12-Params.Gamma_ee_13-Params.Gamma_ee_14-Params.p_eg;
 Gamma_ee_22=1-Params.Gamma_ee_21-Params.Gamma_ee_23-Params.Gamma_ee_24-Params.p_eg;
 Gamma_ee_33=1-Params.Gamma_ee_31-Params.Gamma_ee_32-Params.Gamma_ee_34-Params.p_eg;
 Gamma_ee_44=1-Params.Gamma_ee_41-Params.Gamma_ee_42-Params.Gamma_ee_43-Params.p_eg;
 
-Gamma_ee=gpuArray([Gamma_ee_11, Params.Gamma_ee_12, Params.Gamma_ee_13, Params.Gamma_ee_14; Params.Gamma_ee_21, Gamma_ee_22, Params.Gamma_ee_23, Params.Gamma_ee_24; Params.Gamma_ee_31, Params.Gamma_ee_32, Gamma_ee_33, Params.Gamma_ee_34; Params.Gamma_ee_41, Params.Gamma_ee_42, Params.Gamma_ee_43, Gamma_ee_44]);
-
-Gamma_ee=Gamma_ee./(sum(Gamma_ee,2)*ones(1,Params.J,'gpuArray')); %This is a normalization of Gamma_ee into a probability matrix
+if Parallel==2
+    Gamma_ee=gpuArray([Gamma_ee_11, Params.Gamma_ee_12, Params.Gamma_ee_13, Params.Gamma_ee_14; Params.Gamma_ee_21, Gamma_ee_22, Params.Gamma_ee_23, Params.Gamma_ee_24; Params.Gamma_ee_31, Params.Gamma_ee_32, Gamma_ee_33, Params.Gamma_ee_34; Params.Gamma_ee_41, Params.Gamma_ee_42, Params.Gamma_ee_43, Gamma_ee_44]);
+    Gamma_ee=Gamma_ee./(sum(Gamma_ee,2)*ones(1,Params.J,'gpuArray')); %This is a normalization of Gamma_ee into a probability matrix
+else
+    Gamma_ee=[Gamma_ee_11, Params.Gamma_ee_12, Params.Gamma_ee_13, Params.Gamma_ee_14; Params.Gamma_ee_21, Gamma_ee_22, Params.Gamma_ee_23, Params.Gamma_ee_24; Params.Gamma_ee_31, Params.Gamma_ee_32, Gamma_ee_33, Params.Gamma_ee_34; Params.Gamma_ee_41, Params.Gamma_ee_42, Params.Gamma_ee_43, Gamma_ee_44];
+    Gamma_ee=Gamma_ee./(sum(Gamma_ee,2)*ones(1,Params.J)); %This is a normalization of Gamma_ee into a probability matrix
+end
 % Gamma_ee=Gamma_ee./(1-p_eg); %this would be equivalent to the normalization in the line above
 
 % Calculate the gammastar's
@@ -56,12 +74,19 @@ p_54=(1-Params.phi2)*p_54_Step1;
 p_64=(1-Params.phi2)*p_64_Step1;
 p_74=(1-Params.phi2)*p_74_Step1;
 p_84=(1-Params.phi2)*p_84_Step1;
+
 %Now put these into the matrix
-Gamma_re=gpuArray([p_51, p_52, p_53, p_54; p_61, p_62, p_63, p_64; p_71, p_72, p_73, p_74; p_81, p_82, p_83, p_84]);
+if Parallel==2
+    Gamma_re=gpuArray([p_51, p_52, p_53, p_54; p_61, p_62, p_63, p_64; p_71, p_72, p_73, p_74; p_81, p_82, p_83, p_84]);
+    Gamma_re=Gamma_re./(sum(Gamma_re,2)*ones(1,Params.J,'gpuArray')); %This is a normalization of Gamma_re into a probability matrix
 
-Gamma_re=Gamma_re./(sum(Gamma_re,2)*ones(1,Params.J,'gpuArray')); %This is a normalization of Gamma_re into a probability matrix
+    pi_s=[Gamma_ee.*(1-Params.p_eg), diag(Params.p_eg*ones(Params.J,1,'gpuArray')); Gamma_re.*(1-Params.p_gg), diag(Params.p_gg*ones(Params.J,1,'gpuArray'))];  %transmatix is (z,zprime) %dim N_s-by-N_s (s by sprime)
+else
+    Gamma_re=[p_51, p_52, p_53, p_54; p_61, p_62, p_63, p_64; p_71, p_72, p_73, p_74; p_81, p_82, p_83, p_84];
+    Gamma_re=Gamma_re./(sum(Gamma_re,2)*ones(1,Params.J)); %This is a normalization of Gamma_re into a probability matrix
 
-pi_s=[Gamma_ee.*(1-Params.p_eg), diag(Params.p_eg*ones(Params.J,1,'gpuArray')); Gamma_re.*(1-Params.p_gg), diag(Params.p_gg*ones(Params.J,1,'gpuArray'))];  %transmatix is (z,zprime) %dim N_s-by-N_s (s by sprime)
+    pi_s=[Gamma_ee.*(1-Params.p_eg), diag(Params.p_eg*ones(Params.J,1)); Gamma_re.*(1-Params.p_gg), diag(Params.p_gg*ones(Params.J,1))];  %transmatix is (z,zprime) %dim N_s-by-N_s (s by sprime)    
+end
 % Make doubly sure that rows sum to exactly one (had a rounding error on
 % very rare occasions, which was only apparent when solving thousands of
 % times as part of calibration codes.

@@ -4,7 +4,7 @@
 vfoptions.policy_forceintegertype=1;
 
 % You can change this grid size to see if anything changes
-npoints_basic_a_grid=701; % Page 1373 of Imrohoroglu (1989), uses 301 (codes assume it is an odd number)
+npoints_basic_a_grid=1501; % Page 1373 of Imrohoroglu (1989), uses 301 (codes assume it is an odd number)
 
 
 %%
@@ -95,7 +95,7 @@ for WhichSigma=1:2
         
         tic;
         V0=ones([n_a,n_sz]);
-        [V, Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+        [V, Policy]=ValueFnIter_Case1(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
 
         time=toc;
         

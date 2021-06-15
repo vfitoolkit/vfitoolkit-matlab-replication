@@ -50,20 +50,7 @@
 
 Params.J=2; % Ages 1 and 2
 
-% A few lines needed for running on the Server
-addpath(genpath('./MatlabToolkits/'))
-% addpath(genpath('./subcodes/'))
-try % Server has 20 cores, but is shared with other users, so use max of 12.
-    parpool(12)
-    gpuDevice(1)
-catch % Desktop has less than 12, so will give error, on desktop it is fine to use all available cores.
-    parpool
-end
-PoolDetails=gcp;
-NCores=PoolDetails.NumWorkers;
-simoptions.ncores=NCores;
-
-% simoptions.parallel=3;
+simoptions.ncores=feature('numcores'); % Number of CPU cores
 
 %% Declare the model parameters
 % Note that w and g will be determined in General equilbrium, so these are really just initial guesses.

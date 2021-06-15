@@ -123,7 +123,8 @@ ReturnFnParamNames={'age','gamma','r','Cbar','DeterministicWj', 'w_sigmasqu', 'D
 
 vfoptions.verbose=1;
 tic;
-[V, Policy]=ValueFnIter_Case1_FHorz_PType(0,n_a,n_z,N_j,N_i, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
+% Don't keep V as it is not needed for anything
+[~, Policy]=ValueFnIter_Case1_FHorz_PType(0,n_a,n_z,N_j,N_i, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
 toc
 
 % %% Draw some policy functions of 'fixed type 1'.
@@ -196,7 +197,7 @@ for ii=1:1000
 end
 
 % PTypeDist=[0.25,0.25,0.5]';
-InitialDist=zeros([n_a,n_z,N_i],'gpuArray'); 
+InitialDist=zeros([n_a,n_z,N_i]); 
 % InitialDist(1,ceil(n_z(1)/2),ceil(n_z(2)/2),:)=1*permute(PTypeDist,[4,3,2,1]);
 InitialDist(1,:,ceil(n_z(2)/2),1)=z1staty.pt1'*PTypeDist(1);
 InitialDist(1,:,ceil(n_z(2)/2),2)=z1staty.pt2'*PTypeDist(2);

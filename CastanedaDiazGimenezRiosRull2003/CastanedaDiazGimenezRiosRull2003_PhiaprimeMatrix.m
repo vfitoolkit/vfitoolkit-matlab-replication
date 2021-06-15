@@ -1,5 +1,15 @@
-function Phi_aprimeKron=CastanedaDiazGimenezRiosRull2003_PhiaprimeMatrix(n_d,n_s,k_grid,J,zlowerbar,tauE)
+function Phi_aprimeKron=CastanedaDiazGimenezRiosRull2003_PhiaprimeMatrix(n_d,n_s,k_grid,J,zlowerbar,tauE,vfoptions)
 % Case2_Type==2: a'(d,z,z')
+
+
+Parallel=2;
+if exist('vfoptions','var')
+    if isfield(vfoptions,'parallel')
+        if vfoptions.parallel<2
+            Parallel=1;
+        end
+    end
+end
 
 N_d=prod(n_d);
 N_s=prod(n_s);
@@ -21,7 +31,9 @@ parfor i=1:N_d
     Phi_aprimeKron(i,:,:)=Phi_aprimeKron_d;
 end
 
-Phi_aprimeKron=gpuArray(Phi_aprimeKron);
+if Parallel==2
+    Phi_aprimeKron=gpuArray(Phi_aprimeKron);
+end
 
 % Was using the following as a check for debugging
 % % Check that is seems find

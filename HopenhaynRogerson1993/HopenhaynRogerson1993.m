@@ -91,7 +91,7 @@ if ChrisEdmondCalib==1
 end
 
 %%
-n_a=401; % Hopenhayn & Rogerson (1993) use 250, this is intended as an approximation of continuous variable, so I use more.
+n_a=601; % Hopenhayn & Rogerson (1993) use 250, this is intended as an approximation of continuous variable, so I use more.
 a_grid=[linspace(0,100,101),((logspace(0,pi,n_a-101)-1)/(pi-1))*(5000-101)+101]'; % Put points on each of 0 to 100, then logarithmically spaced from 101 to 5000 (5000 is as reported by Hopenhayn & Rogerson (1993)).
 if ImposeFootnote5==1
     a_grid=[linspace(0,100,101),((logspace(0,pi,n_a-101-1)-1)/(pi-1))*(5000-101)+101,10^6]'; % One less point in standard grid, instead add the 10^6 point to keep track of the new entrants.
@@ -137,12 +137,7 @@ if ImposeFootnote5==1
 end
 
 % Check that everything is working so far by solving the value function
-if vfoptions.parallel==2
-    V0=zeros(n_a,n_z,'gpuArray');
-else
-    V0=zeros(n_a,n_z);
-end
-[V,Policy,ExitPolicy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+[V,Policy,ExitPolicy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
 
 % When tau=0 there is a cut-off value of z below which all firms exit, and which is independent of n.
 % This can be easily seen graphing the whole of the ExitPolicy, which takes
@@ -308,7 +303,7 @@ n_p=0;
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 % NOTE: EntryExitParamNames has to be passed as an additional input compared to the standard case.
-[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
+[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 % findeqmtime=toc
 if ChrisEdmondCalib==0
     Params.ce=p_eqm.ce;
@@ -319,7 +314,7 @@ else
 end
 
 %% Calculate some relevant things in eqm
-[V,Policy,ExitPolicy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+[V,Policy,ExitPolicy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
 Params.zeta=1-ExitPolicy;
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions,Params,EntryExitParamNames);
 
@@ -358,7 +353,7 @@ ProbDensityFns=EvalFnOnAgentDist_pdf_Case1(StationaryDist, Policy, FnsToEvaluate
 % Note that because of these two moments we want to calculate it makes more
 % sense to have a very large number of two period simulations, and since we
 % just want survivors, we won't want entrants.
-simoptions.noentryinpanel=1; % Don't want entry in this panel data simulation (we are just interested in 'survivors')
+simoptions.entryinpanel=0; % Don't want entry in this panel data simulation (we are just interested in 'survivors')
 simoptions.simperiods=2;
 simoptions.numbersims=10^4;
 SimPanel=SimPanelValues_Case1(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions, EntryExitParamNames);
@@ -368,7 +363,7 @@ GrowthRateEmploy=(SimPanel_Survivors(1,2,:)-SimPanel_Survivors(1,1,:))./SimPanel
 VarianceOfGrowthRate_survivors=var(GrowthRateEmploy);
 SerialCorrelationLogn_survivors=corr(log(shiftdim(SimPanel_Survivors(1,2,:),2)),log(shiftdim(SimPanel_Survivors(1,1,:),2)));
 % We need a simulated panel based on new entrants for some (e.g., for stats by cohort)
-simoptions.noentryinpanel=1; % Don't want further entry in this panel data simulation
+simoptions.entryinpanel=0; % Don't want further entry in this panel data simulation
 simoptions.simperiods=20; % We anyway only need 10 for the stats being reported
 simoptions.numbersims=10^4; % Default is 1000, this was not enough to get stable/smooth estimate of 'hazard rates by cohort'
 EntrantDist.pdf=Params.upsilon;

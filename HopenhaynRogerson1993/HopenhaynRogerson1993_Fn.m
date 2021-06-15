@@ -30,22 +30,16 @@ end
 % instead of my usual 'p' to refer to the general equilibrium prices (parameter 'p' is actually GEprices(1))
 GeneralEqmEqns={GeneralEqmEqn_1, GeneralEqmEqn_Entry};
 
-if vfoptions.parallel==2
-    V0=zeros(n_a,n_z,'gpuArray');
-else
-    V0=zeros(n_a,n_z);
-end
-
 n_p=0;
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 % NOTE: EntryExitParamNames has to be passed as an additional input compared to the standard case.
-[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
+[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 
 Params.p=p_eqm.p;
 Params.Ne=p_eqm.Ne;
 
-[V,Policy,ExitPolicy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+[V,Policy,ExitPolicy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
 Params.zeta=1-ExitPolicy;
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions,Params,EntryExitParamNames);
 
@@ -114,7 +108,7 @@ output.TurnoverRateOfJobs=AggValues(2)/AggValues(1); % the "/StationaryDist.mass
 % sense to have a very large number of two period simulations, and since we
 % just want survivors, we won't want entrants.
 FnsToEvaluate={FnsToEvaluateFn_Emp, FnsToEvaluateFn_Hiring, FnsToEvaluateFn_Firing};
-simoptions.noentryinpanel=1; % Don't want entry in this panel data simulation (we are just interested in 'survivors')
+simoptions.entryinpanel=0; % Don't want entry in this panel data simulation (we are just interested in 'survivors')
 simoptions.simperiods=2;
 simoptions.numbersims=10^4;
 SimPanel=SimPanelValues_Case1(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions, EntryExitParamNames);

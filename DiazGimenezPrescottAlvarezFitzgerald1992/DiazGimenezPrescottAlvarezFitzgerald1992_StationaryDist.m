@@ -19,7 +19,7 @@ function StationaryDist=DiazGimenezPrescottAlvarezFitzgerald1992_StationaryDist(
 simoptions.parallel=2;
 simoptions.tolerance=10^(-9);
 simoptions.maxit=5*10^4;
-PolicyKron=KronPolicyIndexes_Case1(Policy, n_d, n_a, n_sz,simoptions);
+PolicyKron=KronPolicyIndexes_Case1(Policy, n_d, n_a, n_sz);
 
 % Create a stationary dist. Am simply setting it up as if all newborns.
 StationaryDist=zeros([n_a,n_sz],'gpuArray');

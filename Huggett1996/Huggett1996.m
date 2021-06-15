@@ -16,23 +16,9 @@ CheckUniquenessOfGE=0; % If =1, will used grid on prices around the GE to check 
 Params.J=79; % Ages 20 to 98 inclusive.
 
 % Grid sizes to use
-n_a=1501;
+n_a=2001;
 % n_z=19; % income (these 19 points are hardcoded into z_grid and pi_z, done this way due to how Huggett sets them up)
 N_j=Params.J; % Number of periods in finite horizon
-
-% A few lines needed for running on the Server
-addpath(genpath('./MatlabToolkits/'))
-try % Server has 16 cores, but is shared with other users, so use max of 8.
-    parpool(8)
-    gpuDevice(1)
-catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
-    parpool
-end
-PoolDetails=gcp;
-NCores=PoolDetails.NumWorkers;
-simoptions.ncores=NCores;
-
-simoptions.parallel=3;
 
 %% Declare the model parameters
 % Note that r, w, and G will be determined in General equilbrium, so these are really just initial guesses.
@@ -168,8 +154,9 @@ for jj=2:length(Params.mewj)
 end
 Params.mewj=Params.mewj./sum(Params.mewj);
 
-simoptions.nsims=4*10^5;
-simoptions.iterate=1;
+simoptions.ncores=feature('numcores'); % Number of CPU cores
+simoptions.nsims=4*10^5; % The default would be 10^4
+simoptions.parallel=4; % Use sparse matrices on parallel CPU to solve, then transfer answer to GPU
 AgeWeightsParamNames={'mewj'}; % Many finite horizon models apply different weights to different 'ages'; eg., due to survival rates or population growth rates.
 
 Params.fractionretired=sum(Params.mewj.*Params.bvec); % Note: bvec is really just an indicator of retirement

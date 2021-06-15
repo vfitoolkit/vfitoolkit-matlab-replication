@@ -5,25 +5,11 @@
 % a convergent algorithm for solving Bewley-Huggett-Aiyagari-models.
 
 
-Parallel=2 %GPU
-
-
-% A few lines needed for running on the Server
-addpath(genpath('./MatlabToolkits/'))
-try % Server has 16 cores, but is shared with other users, so use max of 8.
-    parpool(8)
-    gpuDevice(2)
-catch % Desktop has less than 8, so will give error, on desktop it is fine to use all available cores.
-    parpool
-end
-PoolDetails=gcp;
-NCores=PoolDetails.NumWorkers;
-
 %% Set some basic variables
 
-n_a=2^9;% Huggett used "between 150 and 350 evenly spaced gridpoints" (and uses linear interpolation)
+n_a=2^10;% Huggett used "between 150 and 350 evenly spaced gridpoints" (and uses linear interpolation)
 n_e=2;
-n_q=551;
+n_q=1551;
 
 %Parameters
 Params.beta=0.99322; %Model period is one-sixth of a year, so implied 'annual beta' is 0.96.
@@ -41,8 +27,7 @@ Params.pieheh=0.925; % Probability of eh given eh
 Params.piehel=0.5; % Probability of eh given el
 
 %% Some Toolkit options
-simoptions.ncores=NCores; % Number of CPU cores
-vfoptions=struct(); % Just use default options
+simoptions.ncores=feature('numcores'); % Number of CPU cores
 
 %% Solve the model a bunch of times
 Tables=struct();
@@ -53,7 +38,7 @@ for alowerbar_c=1:4
         Params.mu=mu_vec(mu_c);
         fprintf('Current iteration alowerbar_c=%d, mu_c=%d \n', alowerbar_c,mu_c)
         tic;
-        Output=Huggett1993_Fn(n_a,n_e,n_q,Params, Parallel, vfoptions, simoptions);
+        Output=Huggett1993_Fn(n_a,n_e,n_q,Params, simoptions);
         time1=toc
         % Output is a structure
         Tables(alowerbar_c,mu_c).q=Output.q;
@@ -107,36 +92,30 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 %% Reproduce Figures 1 & 2 of Huggett (1993)
-load ./Huggett1993Tables.mat Tables TimeTable Figures
+load ./SavedOutput/Huggett1993Tables.mat Tables TimeTable Figures
 % Note that figures depend on plotly
 a_grid=Figures(1,1).a_grid;
 
 % Figure 1
 Policy=Figures(1,1).Policy;
-trace1= struct('x', a_grid,'y', a_grid(Policy(1,:,1)),'name','e_l','type', 'scatter');
-trace2= struct('x', a_grid,'y', a_grid(Policy(1,:,2)),'name','e_h','type', 'scatter');
-trace3= struct('x', a_grid,'y', a_grid,'name','45 deg line','type', 'scatter');
-data = {trace1,trace2, trace3};
-layout = struct('title', 'Optimal Decision Rule','showlegend', true,'width', 800,...
-    'xaxis', struct('domain', [0, 1],'title','Assets (a)','showgrid',false), ...
-    'yaxis', struct('title', 'Decision (next period assets)','showgrid',false,'titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0),...
-    'legend',struct('x',0.8,'y',0.8));
-response = plotly(data, struct('layout', layout, 'filename', 'Huggett1993_Figure1', 'fileopt', 'overwrite'));
-response.data=data; response.layout=layout;
-saveplotlyfig(response, ['./Huggett1993_Figure1.pdf'])
+fig2=figure(2);
+plot(a_grid,a_grid(Policy(1,:,1)),a_grid,a_grid(Policy(1,:,2)),a_grid,a_grid)
+title('Optimal Decision Rule','FontSize',18);
+xlabel('Assets (a)','FontSize',16); ylabel('Decision (next period assets)','FontSize',16);
+legend('e_l','e_h','45 deg line')
+set(fig2, 'Color', 'white');     % white bckgr
+set(fig2, 'Unit', 'centimeters');  % set unit to cm
+set(fig2,'position',[0 0 20 10]);  % set size
+saveas(fig2, ['./SavedOutput/Graphs/Huggett1993_Figure1.png'])
 
 % Figure 2
 StationaryDist=Figures(1,1).StationaryDist;
-trace1= struct('x', a_grid,'y', cumsum(StationaryDist(:,1)),'name','e_l','type', 'scatter');
-trace2= struct('x', a_grid,'y', cumsum(StationaryDist(:,2)),'name','e_h','type', 'scatter');
-data = {trace1,trace2};
-layout = struct('title', 'Stationarty Distribution','showlegend', true,'width', 800,...
-    'xaxis', struct('domain', [0, 1],'title','Assets (a)','showgrid',false), ...
-    'yaxis', struct('title', 'Cumulative Distribution Fn','showgrid',false,'titlefont', struct('color', 'black'),'tickfont', struct('color', 'black'),'side', 'left','position',0),...
-    'legend',struct('x',0.8,'y',0.8));
-response = plotly(data, struct('layout', layout, 'filename', 'Huggett1993_Figure2', 'fileopt', 'overwrite'));
-response.data=data; response.layout=layout;
-saveplotlyfig(response, ['./Huggett1993_Figure2.pdf'])
-
-
-
+fig3=figure(3);
+plot(a_grid,cumsum(StationaryDist(:,1)),a_grid,cumsum(StationaryDist(:,2)))
+title('Stationarty Distribution','FontSize',18);
+xlabel('Assets (a)','FontSize',16); ylabel('Cumulative Distribution Fn','FontSize',16);
+legend('e_l','e_h')
+set(fig3, 'Color', 'white');     % white bckgr
+set(fig3, 'Unit', 'centimeters');  % set unit to cm
+set(fig3,'position',[0 0 20 10]);  % set size
+saveas(fig3, ['./SavedOutput/Graphs/Huggett1993_Figure2.png'])

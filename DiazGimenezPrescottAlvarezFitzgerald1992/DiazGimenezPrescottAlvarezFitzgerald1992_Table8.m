@@ -120,7 +120,7 @@ for ii=1:4
     
     V0=ones([n_a,n_sz]);
     vfoptions.policy_forceintegertype=1;
-    [V, Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
+    [V, Policy]=ValueFnIter_Case1(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
     
     % Since there is no longer the death and rebirth can just use standard VFI
     % Toolkit codes for getting agent distribution.

@@ -1,4 +1,4 @@
-function Output=Huggett1993_Fn(n_a,n_e,n_q,Params,Parallel, vfoptions, simoptions)
+function Output=Huggett1993_Fn(n_a,n_e,n_q,Params,simoptions)
 %This code replicates the results of Huggett (1993) - Uninsured Idiosyncratic Risk and Aggregate Saving
 disp('Running Huggett1993_Fn')
 %% Set up
@@ -55,16 +55,15 @@ ReturnFnParamNames={'mu','q'}; %It is important that these are in same order as 
 
 %% Solve
 
-V0=ones(n_a,n_z,'gpuArray'); %(a,s)
 %Use the toolkit to find the equilibrium price index
 GEPriceParamNames={'q'};
 
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 heteroagentoptions.pgrid=p_grid;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(V0, n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions);
 % findeqmtime=toc
-Params.q=p_eqm;
+Params.q=p_eqm.q;
 save ./SavedOutput/Huggett1993Market.mat p_eqm p_eqm_index MarketClearance
 
 % Equilibrium interest rate (at annual rate; model period is 1/6th of a year)
@@ -74,13 +73,13 @@ Params.r=(1+(1-Params.q)/Params.q)^6-1;
 % %other things associated with the equilibrium
 p_eqm_index
 disp('Calculating various equilibrium objects')
-[~,Policy]=ValueFnIter_Case1(V0, n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames);
+[~,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames);
 
 % PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_s,d_grid,a_grid, Parallel);
 
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z, Parallel);
+AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid);
 
 eqm_MC=real(GeneralEqmConditions_Case1(AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
 
@@ -92,16 +91,13 @@ GraphString=['Huggett1993_MarketClearance_mu', num2str(Params.mu), 'alowerbar', 
 GraphString=strrep(GraphString, '.', '_');
 % Create a graph displaying the market clearance
 fig1=figure(1);
-plot(p_grid,MarketClearance, 'x',p_grid, zeros(n_p,1),p_eqm, 0, 'r o')
+plot(p_grid,MarketClearance, 'x',p_grid, zeros(n_p,1),p_eqm.q, 0, 'r o')
 title(['Market clearance: mu=', num2str(Params.mu), ' alowerbar=', num2str(Params.alowerbar)],'FontSize',18);
 xlabel('p','FontSize',16); ylabel('tilde(p)-p','FontSize',16);
 set(fig1, 'Color', 'white');     % white bckgr
 set(fig1, 'Unit', 'centimeters');  % set unit to cm
 set(fig1,'position',[0 0 20 10]);  % set size
-export_fig(fig1, ...            % figure handle
-    ['./SavedOutput/Graphs/',GraphString,'.pdf'],... % name of output file without extension   %  '-painters', ...            % renderer
-    '-pdf', ...                 % file format
-    '-r300' );                  % resolution
+saveas(fig1,['./SavedOutput/Graphs/',GraphString,'.png'])
 
 %plot(cumsum(sum(StationaryDist,2))) %Plot the asset cdf
 

@@ -1,8 +1,6 @@
 function OutputResults=Huggett1996_Fn(Params, n_a,n_z,N_j, a_grid, ReturnFn, DiscountFactorParamNames, ReturnFnParamNames, AgeWeightsParamNames, SSvaluesFn, SSvalueParamNames, GEPriceParamNames, GeneralEqmEqns, GeneralEqmEqnParamNames, simoptions, vfoptions,CheckUniquenessOfGE)
 % Replication of Huggett (1996) - Wealth Distribution in Life Cycle Economies
 
-simoptions.parallel=4; % Sparse matrix using parallel cpus
-
 %% Need to create appropriate z_grid and pi_z
 Params.sigmasqy=Params.sigmasqepsilon./(1-Params.gamma.^2); 
 % Initial distribution of income
@@ -52,9 +50,9 @@ end
 % used to 'search' can be done with heteroagentoptions.fminalgo)
 heteroagentoptions.verbose=1;
 [p_eqm,~, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, 0, pi_z, 0, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
-Params.r=p_eqm(1);
-Params.b=p_eqm(2);
-Params.T=p_eqm(3);
+Params.r=p_eqm.r;
+Params.b=p_eqm.b;
+Params.T=p_eqm.T;
 fprintf('search finds equilibrium r=%8.2f, b=%8.2f, T=%8.2f \n')
 save ./SavedOutput/Huggett1996.mat Params
 % load ./SavedOutput/Huggett1996.mat Params
@@ -73,9 +71,9 @@ if CheckUniquenessOfGE==1
     heteroagentoptions.pgrid=p_grid;
     heteroagentoptions.verbose=1;
     [p_eqm,p_eqm_index1, GeneralEqmEqnsValues1]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, n_p, pi_z, 0, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
-    Params.r=p_eqm(1);
-    Params.b=p_eqm(2);
-    Params.T=p_eqm(3);
+    Params.r=p_eqm.r;
+    Params.b=p_eqm.b;
+    Params.T=p_eqm.T;
     fprintf('course grid search finds equilibrium r=%8.2f, b=%8.2f, T=%8.2f \n')
     
     % Grid search again, just to be super sure and accurate
@@ -84,9 +82,9 @@ if CheckUniquenessOfGE==1
     T_grid=linspace(0.95,1.05,21)'*Params.T; %good
     p_grid=[r_grid,b_grid, T_grid];
     [p_eqm,p_eqm_index2, GeneralEqmEqnsValues2]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, n_p, pi_z, 0, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
-    Params.r=p_eqm(1);
-    Params.b=p_eqm(2);
-    Params.T=p_eqm(3);
+    Params.r=p_eqm.r;
+    Params.b=p_eqm.b;
+    Params.T=p_eqm.T;
     fprintf('fine grid search finds equilibrium r=%8.2f, b=%8.2f, T=%8.2f \n')
 end
 
@@ -127,7 +125,7 @@ FnsToEvaluateParamNames=struct();
 FnsToEvaluateParamNames(1).Names={}; 
 FnsToEvaluate_TotalWealth = @(aprime_val,a_val,z_val) a_val;
 FnsToEvaluate={FnsToEvaluate_TotalWealth};
-TotalWealth=SSvalues_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid, 2); % The 2 is for Parallel (use GPU)
+TotalWealth=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid);
 % Transfer Wealth Ratio
 TransferWealthRatio=AggregateWealthTransers/TotalWealth;
 
@@ -137,7 +135,7 @@ FnsToEvaluateParamNames=struct();
 FnsToEvaluateParamNames(1).Names={}; % ZeroOrNegAssets
 FnsToEvaluate_ZeroOrNegAssets = @(aprime_val,a_val,z_val) (a_val<=0); % Indicator for ZeroOrNegAssets
 FnsToEvaluate={FnsToEvaluate_ZeroOrNegAssets};
-FractionWithZeroOrNegAssets=100*SSvalues_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid, 2); % The 2 is for Parallel (use GPU)
+FractionWithZeroOrNegAssets=100*EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid);
 
 % Calculate wealth lorenz curve (and thus all percentile shares) and also
 % the that for earnings (in text at bottom of pg 480, top of pg 481, there
@@ -146,10 +144,10 @@ FnsToEvaluateParamNames=struct();
 FnsToEvaluateParamNames(1).Names={};
 FnsToEvaluate_1 = @(aprime_val,a_val,z_val) a_val; % Aggregate assets (which is this periods state)
 FnsToEvaluate={FnsToEvaluate_1};
-SSvalues_LorenzCurves=SSvalues_LorenzCurve_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid,2); % The 2 is for Parallel (use GPU)
-TopWealthShares=100*(1-SSvalues_LorenzCurves([80,95,99],1)); % Need the 20,5, and 1 top shares for Tables of Huggett (1996)
+LorenzCurves=EvalFnOnAgentDist_LorenzCurve_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid);
+TopWealthShares=100*(1-LorenzCurves([80,95,99],1)); % Need the 20,5, and 1 top shares for Tables of Huggett (1996)
 % Calculate the wealth gini
-WealthGini=Gini_from_LorenzCurve(SSvalues_LorenzCurves(:,1));
+WealthGini=Gini_from_LorenzCurve(LorenzCurves(:,1));
 
 AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,0,n_a,n_z,N_j,0,a_grid,z_grid);
 
