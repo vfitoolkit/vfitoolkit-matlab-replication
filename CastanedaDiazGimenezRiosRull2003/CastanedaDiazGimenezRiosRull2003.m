@@ -20,14 +20,13 @@ SkipGE=0 % Just a placeholder I am using to work on codes without rerunning the 
 
 %% Set some basic variables
 
-n_l=151;
-n_k=2501;
+n_l=101;
+n_k=2001;
 n_r=551; % Two General Eqm variables: interest rate r, tax rate a3.
 % Note: d1 is l (labour supply), d2 is a (assets)
 
 % Some Toolkit options
 vfoptions.parallel=2;
-vfoptions.lowmemory=1;
 simoptions.parallel=3;
 simoptions.ncores=feature('numcores'); % Number of CPU cores
 % vfoptions=struct(); % Just use default options
@@ -177,13 +176,7 @@ if SkipGE==0
 
 else
     load ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params MarketClearance a_grid V Policy StationaryDist
-
-    Params.r=p_eqm.r;
-    Params.a3=p_eqm.a3;
-    Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
 end
-
-fprintf('HERE WE ARE 1 \n')
 
 %% Reproduce Tables
 % Tables 3, 4, & 5 simply report the calibrated parameters. 
