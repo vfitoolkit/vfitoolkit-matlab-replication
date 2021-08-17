@@ -14,7 +14,7 @@
 % A few lines I needed for running on the Server
 addpath(genpath('./MatlabToolkits/'))
 
-dopart=[0,1,1,1]; % I divide the code into four chunks so can do it bit by bit
+dopart=[0,0,1,1]; % I divide the code into four chunks so can do it bit by bit
 
 %% State space variables of the model
 % Age
@@ -181,7 +181,7 @@ if dopart(2)==1
     save ./SavedOutput/HSZ1994_Tables_part2.mat Table1row LifeCycProfiles Params -v7.3
 end
 
-if dpart(3)==1
+if dopart(3)==1
 load ./SavedOutput/HSZ1994_Tables_part2.mat Table1row LifeCycProfiles Params
     % Get results for 'certain lifetimes' case
     Params.sj=ones(size(Params.sj));
@@ -231,7 +231,9 @@ n_z=temp_n_z; % Restore this now that we are done looking at all the certainty c
 
 
 %% Print out results for the three Tables
-load ./SavedOutput/HSZ1994_Tables.mat Table1row Table2 Table3 LifeCycProfiles Params
+
+load ./SavedOutput/HSZ1994_Tables_part1.mat Table2 Table3
+load ./SavedOutput/HSZ1994_Tables_part4.mat Table1row LifeCycProfiles Params
 
 %Table 1
 FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table1.tex', 'w');
@@ -314,115 +316,115 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 %% Generate the Figures
-% 
-% % Figure 1
-% figure(1)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(1,1:(end-19),1)/1000)
-% hold on
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(1,1:(end-19),1)/1000)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(1,1:(end-19),1)/1000)
-% hold off
-% title({'Average Assets by Age';'All Certain, $1 Floor'})
-% legend('No High School Degree', 'High School Degree', 'College')
-% xlabel('Age')
-% ylabel('Thousands')
-% saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure1.png')
-% 
-% % Figure 2a
-% figure(2)
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(1,:,1)/1000)
-% hold on
-% plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt1(1,:,1)/1000)
-% plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt1(1,:,1)/1000)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(1,1:(end-19),1)/1000)
-% hold off
-% title({'Average Assets by Age';'No High School Degree'})
-% legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
-% xlabel('Age')
-% ylabel('Thousands')
-% saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2a.png')
-% 
-% 
-% % Figure 2b
-% figure(3)
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(1,:,1)/1000)
-% hold on
-% plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt2(1,:,1)/1000)
-% plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt2(1,:,1)/1000)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(1,1:(end-19),1)/1000)
-% hold off
-% title({'Average Assets by Age';'High School Degree'})
-% legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
-% xlabel('Age')
-% ylabel('Thousands')
-% saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2b.png')
-% 
-% 
-% % Figure 2c
-% figure(4)
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(1,:,1)/1000)
-% hold on
-% plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt3(1,:,1)/1000)
-% plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt3(1,:,1)/1000)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(1,1:(end-19),1)/1000)
-% hold off
-% title({'Average Assets by Age';'College Degree'})
-% legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
-% xlabel('Age')
-% ylabel('Thousands')
-% saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2c.png')
-% 
-% 
-% 
-% % Figure 3a
-% figure(5)
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(2,:,1)/1000) % Earnings
-% hold on
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(2,1:(end-19),1)/1000) % Earnings
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(5,:,1)/1000) % Consumption
-% plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt1(5,:,1)/1000)
-% plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt1(5,:,1)/1000)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(5,1:(end-19),1)/1000)
-% hold off
-% title({'Average Consumption and Earnings by Age';'No High School Degree'})
-% legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
-% xlabel('Age')
-% ylabel('Thousands')
-% saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3a.png')
-% 
-% 
-% % Figure 3b
-% figure(6)
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(2,:,1)/1000) % Earnings
-% hold on
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(2,1:(end-19),1)/1000) % Earnings
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(5,:,1)/1000) % Consumption
-% plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt2(5,:,1)/1000)
-% plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt2(5,:,1)/1000)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(5,1:(end-19),1)/1000)
-% hold off
-% title({'Average Consumption and Earnings by Age';'High School Degree'})
-% legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
-% xlabel('Age')
-% ylabel('Thousands')
-% saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3b.png')
-% 
-% 
-% % Figure 3c
-% figure(7)
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(2,:,1)/1000) % Earnings
-% hold on
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(2,1:(end-19),1)/1000) % Earnings
-% plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(5,:,1)/1000) % Consumption
-% plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt3(5,:,1)/1000)
-% plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt3(5,:,1)/1000)
-% plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(5,1:(end-19),1)/1000)
-% hold off
-% title({'Average Consumption and Earnings by Age';'College Degree'})
-% legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
-% xlabel('Age')
-% ylabel('Thousands')
-% saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3c.png')
+
+% Figure 1
+figure(1)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(1,1:(end-19),1)/1000)
+hold on
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(1,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(1,1:(end-19),1)/1000)
+hold off
+title({'Average Assets by Age';'All Certain, $1 Floor'})
+legend('No High School Degree', 'High School Degree', 'College')
+xlabel('Age')
+ylabel('Thousands')
+saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure1.png')
+
+% Figure 2a
+figure(2)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(1,:,1)/1000)
+hold on
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt1(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt1(1,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(1,1:(end-19),1)/1000)
+hold off
+title({'Average Assets by Age';'No High School Degree'})
+legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
+xlabel('Age')
+ylabel('Thousands')
+saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2a.png')
+
+
+% Figure 2b
+figure(3)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(1,:,1)/1000)
+hold on
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt2(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt2(1,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(1,1:(end-19),1)/1000)
+hold off
+title({'Average Assets by Age';'High School Degree'})
+legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
+xlabel('Age')
+ylabel('Thousands')
+saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2b.png')
+
+
+% Figure 2c
+figure(4)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(1,:,1)/1000)
+hold on
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt3(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt3(1,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(1,1:(end-19),1)/1000)
+hold off
+title({'Average Assets by Age';'College Degree'})
+legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
+xlabel('Age')
+ylabel('Thousands')
+saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2c.png')
+
+
+
+% Figure 3a
+figure(5)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(2,:,1)/1000) % Earnings
+hold on
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(2,1:(end-19),1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt1(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt1(5,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(5,1:(end-19),1)/1000)
+hold off
+title({'Average Consumption and Earnings by Age';'No High School Degree'})
+legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
+xlabel('Age')
+ylabel('Thousands')
+saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3a.png')
+
+
+% Figure 3b
+figure(6)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(2,:,1)/1000) % Earnings
+hold on
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(2,1:(end-19),1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt2(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt2(5,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(5,1:(end-19),1)/1000)
+hold off
+title({'Average Consumption and Earnings by Age';'High School Degree'})
+legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
+xlabel('Age')
+ylabel('Thousands')
+saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3b.png')
+
+
+% Figure 3c
+figure(7)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(2,:,1)/1000) % Earnings
+hold on
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(2,1:(end-19),1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt3(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt3(5,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(5,1:(end-19),1)/1000)
+hold off
+title({'Average Consumption and Earnings by Age';'College Degree'})
+legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
+xlabel('Age')
+ylabel('Thousands')
+saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3c.png')
 
 
 

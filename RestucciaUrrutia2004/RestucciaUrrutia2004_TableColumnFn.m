@@ -3,7 +3,7 @@ function TableColumn=RestucciaUrrutia2004_TableColumnFn(jequaloneDist,AgeWeightP
 
 % Calculate the General Eqm for the current parameter values
 [p_eqm,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case2_FHorz(jequaloneDist,AgeWeightParamNames,n_d, n_a, n_z, N_j, n_p, AgeDependentGridParamNames, d_gridfn, a_gridfn, z_gridfn,Phi_aprime, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
-Params.g=p_eqm(1);
+Params.g=p_eqm.g;
 
 [V, Policy]=ValueFnIter_Case2_FHorz(n_d,n_a,n_z,N_j, d_gridfn, a_gridfn, z_gridfn, AgeDependentGridParamNames, Phi_aprime, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, PhiaprimeParamNames, vfoptions);
 StationaryDist=StationaryDist_FHorz_Case2(jequaloneDist,AgeWeightParamNames,Policy,n_d,n_a,n_z,N_j,d_gridfn, a_gridfn, z_gridfn,AgeDependentGridParamNames, Phi_aprime,Case2_Type,Params,PhiaprimeParamNames,simoptions);
@@ -188,7 +188,7 @@ simoptions.crosssectioncorrelation=1;
 
 FnsToEvaluateParamNames=struct();
 FnsToEvaluateParamNames(1).Names={'w'};
-FnsToEvaluateFn_1 = @(d1_val,d2_val,a1_val,a2_val,a3_val,z1_val,z2_val,z3_val,w) log(w*a1_val); %  (log) Earnings
+FnsToEvaluateFn_1 = @(d1_val,d2_val,a1_val,a2_val,a3_val,z1_val,z2_val,z3_val,w) log(1+w*a1_val); %  (log) Earnings % The "1+" is because otherwise there are some zeros which when log() is taken give -Inf and the correlations are therefore NaN
 FnsToEvaluateParamNames(2).Names={};
 FnsToEvaluateFn_2 = @(d1_val,d2_val,a1_val,a2_val,a3_val,z1_val,z2_val,z3_val) log(a2_val); % bhat,  (log) aquired ability.
 FnsToEvaluateParamNames(3).Names={'agej'};

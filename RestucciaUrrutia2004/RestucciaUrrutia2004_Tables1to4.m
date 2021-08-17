@@ -409,23 +409,25 @@ Figure2.CollegeCompletion=100*[mean(CollegeCompletion(logical(Indicator_Earnings
     mean(CollegeCompletion(logical(Indicator_EarningsQuintile4)));...
     mean(CollegeCompletion(logical(Indicator_EarningsQuintile5)))];
 
+% For Figures 1 and 2
+save ./SavedOutput/RU2004_Figs1and2.mat Figure1 Figure2
 
-% Fig 1
-figure(1);
-bar([Figure1.InnateAbility, Figure1.AcquiredAbility, Figure1.HumanCapital])
-xlabel('Parent Earnings Quintile')
-ylabel('Fraction of Bottom Quintile')
-legend('Innate Ability','Acquired Ability','Human Capital', 'Location','northwest')
-saveas(gcf,'./SavedOutput/Graphs/RestucciaUrrutia2004_Figure1.png')
-
-% Fig 2 (only bottom panel, top panel is from data, not model)
-figure(2)
-bar([Figure2.CollegeEnrollment, Figure2.CollegeCompletion])
-xlabel('Parent Earnings Quintile')
-ylim([0,100])
-ylabel('Percent of Quintile')
-legend('Enrolled','Completed', 'Location','northwest')
-saveas(gcf,'./SavedOutput/Graphs/RestucciaUrrutia2004_Figure2.png')
+% % Fig 1
+% figure(1);
+% bar([Figure1.InnateAbility, Figure1.AcquiredAbility, Figure1.HumanCapital])
+% xlabel('Parent Earnings Quintile')
+% ylabel('Fraction of Bottom Quintile')
+% legend('Innate Ability','Acquired Ability','Human Capital', 'Location','northwest')
+% saveas(gcf,'./SavedOutput/Graphs/RestucciaUrrutia2004_Figure1.png')
+% 
+% % Fig 2 (only bottom panel, top panel is from data, not model)
+% figure(2)
+% bar([Figure2.CollegeEnrollment, Figure2.CollegeCompletion])
+% xlabel('Parent Earnings Quintile')
+% ylim([0,100])
+% ylabel('Percent of Quintile')
+% legend('Enrolled','Completed', 'Location','northwest')
+% saveas(gcf,'./SavedOutput/Graphs/RestucciaUrrutia2004_Figure2.png')
 
 
 %% Stats for Table 4 (table 4 requires comparison to baseline, so calculate the baseline here).
