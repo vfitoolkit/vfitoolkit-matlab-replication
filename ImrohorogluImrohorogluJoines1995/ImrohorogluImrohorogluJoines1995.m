@@ -37,23 +37,23 @@ g_vec=[0,0.022];
 % I save the results in two halves, just in case there are problems halfway through.
 % Following two (commented out) lines allow me to resume
 % load ./SavedOutput/IIJ1995_FullOutput1.mat FullOutput1
-% load ./SavedOutput/IIJ1995_FullOutput2.mat FullOutput2
+load ./SavedOutput/IIJ1995_FullOutput2.mat FullOutput2
 
-for beta_c=1:2
+for beta_c=2:2 % 1:2
     Params.beta=beta_vec(beta_c);
-    for b_c=1:11
+    for b_c=1:11 % 7
         Params.b=b_vec(b_c);
-        for n_c=1:2
+        for n_c=2:2 %1:2
             Params.n=n_vec(n_c);
-            for gamma_c=1:3
+            for gamma_c=2:2 % 1:3
                 Params.gamma=gamma_vec(gamma_c);
-                for g_c=1:2
+                for g_c=1:1 % 1:2
                     Params.g=g_vec(g_c);
-                    for MedicalShock=0:2
+                    for MedicalShock=0:0 % 0:2
                         Params.MedicalShock=MedicalShock;
                         for stochprobofdeath=1:1 %0:1
                             fprintf('Currently doing: %i %i %i %i %i %i %i \n ', beta_c, b_c, n_c, gamma_c, g_c, MedicalShock, stochprobofdeath)
-                            if beta_c==2 && n_c==2 && gamma_c==2 && g_c==1 && MedicalShock==0 && stochprobofdeath==1
+                            if beta_c==2 && b_c>1 && n_c==2 && gamma_c==2 && g_c==1 && MedicalShock==0 && stochprobofdeath==1
                                 calcwelfarebenefits=1; 
                                 % Only calculate the welfare benefits when needed (for Table 3).
                                 % Calculating welfare benefits takes much more time than everything else, hence only do it when necessary.
@@ -61,7 +61,7 @@ for beta_c=1:2
                                 calcwelfarebenefits=0;
                             end
                             
-                            Output=ImrohorogluImrohorogluJoines1995_Fn(Params,n_k,n_z,stochprobofdeath,calcwelfarebenefits,goodinitialguess);
+                            Output=ImrohorogluImrohorogluJoines1995_Fn(Params,n_k,n_z,stochprobofdeath,calcwelfarebenefits);
                             if beta_c==1
                                 FullOutput1(beta_c,b_c,n_c,gamma_c,g_c,MedicalShock+1,stochprobofdeath+1).Output=Output;
                                 save ./SavedOutput/IIJ1995_FullOutput1.mat FullOutput1 -v7.3
@@ -76,6 +76,7 @@ for beta_c=1:2
         end
     end
 end
+
 
 %% Create Figures
 
@@ -263,12 +264,19 @@ FID = fopen('./SavedOutput/LatexInputs/ImrohorogluImrohorogluJoines1995_Table3.t
 fprintf(FID, 'Welfare benefits of social security \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}llllllll} \n \\hline \\hline \n');
 fprintf(FID, ' b         & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f & %8.1f \\\\ \n',FullOutput2(2,2,2,2,1,1,2).Output.Params.b,FullOutput2(2,3,2,2,1,1,2).Output.Params.b,FullOutput2(2,4,2,2,1,1,2).Output.Params.b,FullOutput2(2,5,2,2,1,1,2).Output.Params.b,FullOutput2(2,6,2,2,1,1,2).Output.Params.b,FullOutput2(2,7,2,2,1,1,2).Output.Params.b,FullOutput2(2,11,2,2,1,1,2).Output.Params.b);
-fprintf(FID, ' $\\kappa$ & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f \\\\ \n',100*FullOutput2(2,2,2,2,1,1,2).Output.kappa,100*FullOutput2(2,3,2,2,1,1,2).Output.kappa,100*FullOutput2(2,4,2,2,1,1,2).Output.kappa,100*FullOutput2(2,5,2,2,1,1,2).Output.kappa,100*FullOutput2(2,6,2,2,1,1,2).Output.kappa,100*FullOutput2(2,7,2,2,1,1,2).Output.kappa,100*FullOutput2(2,11,2,2,1,1,2).Output.kappa);
+fprintf(FID, ' $\\kappa$ & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f \\\\ \n',FullOutput2(2,2,2,2,1,1,2).Output.kappa,FullOutput2(2,3,2,2,1,1,2).Output.kappa,FullOutput2(2,4,2,2,1,1,2).Output.kappa,FullOutput2(2,5,2,2,1,1,2).Output.kappa,FullOutput2(2,6,2,2,1,1,2).Output.kappa,FullOutput2(2,7,2,2,1,1,2).Output.kappa,FullOutput2(2,11,2,2,1,1,2).Output.kappa);
+% fprintf(FID, ' $\\kappa$ & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f & %8.4f \\\\ \n',100*FullOutput2(2,2,2,2,1,1,2).Output.kappa,100*FullOutput2(2,3,2,2,1,1,2).Output.kappa,100*FullOutput2(2,4,2,2,1,1,2).Output.kappa,100*FullOutput2(2,5,2,2,1,1,2).Output.kappa,100*FullOutput2(2,6,2,2,1,1,2).Output.kappa,100*FullOutput2(2,7,2,2,1,1,2).Output.kappa,100*FullOutput2(2,11,2,2,1,1,2).Output.kappa);
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: b is the social security replacement rate (IIJ1995 call this $\\theta$). $\\kappa$ is the welfare benefit of introducing social security relative to a situation of no social security, measured by equivalent variation and expressed as a percentage of aggregate income. \n');
+fprintf(FID, 'Note: b is the social security replacement rate (IIJ1995 call this $\\theta$). $\\kappa$ is the welfare benefit of introducing social security relative to a situation of no social security, measured by equivalent variation and expressed as a fraction of aggregate income. \n');
+% fprintf(FID, 'Note: b is the social security replacement rate (IIJ1995 call this $\\theta$). $\\kappa$ is the welfare benefit of introducing social security relative to a situation of no social security, measured by equivalent variation and expressed as a percentage of aggregate income. \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
+
+% % Some outputs related to Table 3 that I used to check it was working
+% [FullOutput2(2,2,2,2,1,1,2).Output.kappa,FullOutput2(2,3,2,2,1,1,2).Output.kappa,FullOutput2(2,4,2,2,1,1,2).Output.kappa,FullOutput2(2,5,2,2,1,1,2).Output.kappa,FullOutput2(2,6,2,2,1,1,2).Output.kappa,FullOutput2(2,7,2,2,1,1,2).Output.kappa,FullOutput2(2,11,2,2,1,1,2).Output.kappa]
+% [FullOutput2(2,2,2,2,1,1,2).Output.minval,FullOutput2(2,3,2,2,1,1,2).Output.minval,FullOutput2(2,4,2,2,1,1,2).Output.minval,FullOutput2(2,5,2,2,1,1,2).Output.minval,FullOutput2(2,6,2,2,1,1,2).Output.minval,FullOutput2(2,7,2,2,1,1,2).Output.minval,FullOutput2(2,11,2,2,1,1,2).Output.minval]
+
 
 % Table 4
 FID = fopen('./SavedOutput/LatexInputs/ImrohorogluImrohorogluJoines1995_Table4.tex', 'w');

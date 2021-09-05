@@ -1,15 +1,18 @@
-function GeneralEqmConditions_and_absOmega0minusOmega1=IIJ1995_absOmega0minusOmega1(GEprices_and_L,Omega1,Params,jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, FnsToEvaluate2, GeneralEqmEqns, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, FnsToEvaluateParamNames2, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions,simoptions,vfoptions)
+function EqmCondns=IIJ1995_absOmega0minusOmega1(GEandLumpSum,Omega1,Params,jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, FnsToEvaluate2, GeneralEqmEqns, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, FnsToEvaluateParamNames2, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions,simoptions,vfoptions)
 % Welfare with compensation L in each period of life and without social security
 
-Params.b=GEprices_and_L(1);
-Params.tau_u=GEprices_and_L(2);
-Params.tau_s=GEprices_and_L(3);
-Params.Tr_beq=GEprices_and_L(4);
-Params.LumpSum=GEprices_and_L(5);
+Params.r=GEandLumpSum(1);
+Params.Tr_beq=GEandLumpSum(2);
+Params.LumpSum=GEandLumpSum(3);
 
-GEprices=GEprices_and_L(1:4);
+GEprices=GEandLumpSum(1:2);
 
 N_z=prod(n_z);
+
+if heteroagentoptions.verbose==1
+    fprintf('Currently evaluating: LumpSum=%8.4f \n', Params.LumpSum)
+end
+
 
 %% 
 % If 'exogenous shock fn' is used and depends on GE parameters then
@@ -57,21 +60,15 @@ AgeConditionalStationaryDist=StationaryDist./sum(sum(StationaryDist,1),2);
 Omega0=sum(sum(sum(discountongrid.*AgeConditionalStationaryDist.*UtilityOnGrid)));
 absOmega0minusOmega1=abs(Omega0-Omega1);
 
-% Get things ready to output and print progress
-GeneralEqmConditionsVec=[GeneralEqmConditionsVec,absOmega0minusOmega1];
-
-heteroagentoptions.multiGEweights=[1,1,1,1,5]; % The magnitude of absOmega0minusOmega1 is small so I multiply it by 5 to ensure it is given some importance.
-GeneralEqmConditions_and_absOmega0minusOmega1=sum(abs(heteroagentoptions.multiGEweights.*GeneralEqmConditionsVec));
-
-GeneralEqmConditions_and_absOmega0minusOmega1=gather(GeneralEqmConditions_and_absOmega0minusOmega1);
+EqmCondns=[gather(abs(GeneralEqmConditionsVec)),gather(absOmega0minusOmega1)];
 
 if heteroagentoptions.verbose==1
-    fprintf('Current GE prices and GeneralEqmConditionsVec, also LumpSum and absOmega0minusOmega1 respectively. \n')
-    GEprices_and_L
-    GeneralEqmConditionsVec
+    fprintf('GEprices: r=%8.4f Tr_beq=%8.4f \n', Params.r, Params.Tr_beq)
+    fprintf('GeneralEqmConditions: %8.4f %8.4f \n', GeneralEqmConditionsVec)
+    fprintf('Omega0 and Omega1: Omega0=%8.4f Omega1=%8.4f \n', Omega0, Omega1)
 end
 
-
+EqmCondns=sum([1,10,1].*(EqmCondns)); % I put a larger weight on Tr_beq as this is almost a perfect substitute for LumpSum
 
 
 

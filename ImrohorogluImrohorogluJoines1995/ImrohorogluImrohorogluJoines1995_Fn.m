@@ -1,4 +1,4 @@
-function Output=ImrohorogluImrohorogluJoines1995_Fn(Params,n_k,n_z,stochprobofdeath,calcwelfarebenefits,goodinitialguess)
+function Output=ImrohorogluImrohorogluJoines1995_Fn(Params,n_k,n_z,stochprobofdeath,calcwelfarebenefits)
 
 heteroagentoptions.toleranceGEcondns=10^(-6);
 heteroagentoptions.toleranceGEprices=10^(-6);
@@ -120,7 +120,7 @@ Params.I_j=[ones(Params.Jr-1,1);zeros(Params.J-Params.Jr+1,1)];
 % Note that with my original version I_j was needed, but is redundant using the original epsilon_j numbers from IIJ1995
 
 % The following is the social security benefits divided by the wage
-Params.SSdivw=Params.b*sum(Params.h*Params.epsilon_j(1:(Params.Jr-1)))/(Params.Jr-1);
+Params.SSdivw=Params.b*sum(Params.h*Params.epsilon_j(1:(Params.Jr-1)))/(Params.Jr-1); % NOTE THAT THIS DEPENDS ON b
 
 % The following is lump-sum transfers which are needed to calculate welfare benefits of reforms.
 Params.LumpSum=0; % They are by definition zero whenever not calculating the welfare benefits of reforms
@@ -200,12 +200,10 @@ AgeWeightsParamNames={'mewj'}; % Many finite horizon models apply different weig
 %% General equilibrium, and initial parameter values for the general eqm parameters
 
 GEPriceParamNames={'r','tau_u','tau_s','Tr_beq'};
-if goodinitialguess==0
-    Params.r=0.06; % interest rate on assets
-    Params.tau_u=0.019; % set to balance unemployment benefits expenditure
-    Params.tau_s=0.122; % set to balance social security benefits expenditure
-    Params.Tr_beq=0.2; % Accidental bequests (IIJ1995 calls this T)
-end
+Params.r=0.06; % interest rate on assets
+Params.tau_u=0.019; % set to balance unemployment benefits expenditure
+Params.tau_s=0.122; % set to balance social security benefits expenditure
+Params.Tr_beq=0.2; % Accidental bequests (IIJ1995 calls this T)
 
 %% Now, create the return function 
 DiscountFactorParamNames={'beta','sj','gdiscount'}; % gdiscount is 1 in the baseline, it is needed for the extension to include deterministic productivity growth
@@ -246,8 +244,8 @@ FnsToEvaluateParamNames(2).Names={'I_j','h','epsilon_j'};
 FnsToEvaluate_2 = @(aprime_val,a_val,z_val,I_j,h,epsilon_j) I_j*h*epsilon_j*z_val; % Aggregate effective labour supply (in efficiency units), I1998 calls this N
 FnsToEvaluateParamNames(3).Names={'sj','n'};
 FnsToEvaluate_3 = @(aprime_val,a_val,z_val,sj,n) (1-sj)*aprime_val/(1+n); % Tr, accidental bequest transfers % The divided by (1+n) is due to population growth and because this is Tr_{t+1}
-FnsToEvaluateParamNames(4).Names={'r','tau_u', 'tau_s','h','zeta','epsilon_j','I_j','alpha','delta', 'A','SSdivw', 'Tr_beq'}; 
-FnsToEvaluate_4 = @(aprime_val,a_val,z_val,r,tau_u, tau_s,h,zeta,epsilon_j,I_j,alpha,delta, A,SSdivw, Tr_beq) ImrohorogluImrohorogluJoines1995_ConsumptionFn(aprime_val,a_val,z_val, r,tau_u, tau_s,h,zeta,epsilon_j,I_j,alpha,delta, A,SSdivw, Tr_beq); % Consumption
+FnsToEvaluateParamNames(4).Names={'r','tau_u', 'tau_s','h','zeta','epsilon_j','I_j','alpha','delta', 'A','SSdivw', 'Tr_beq','workinglifeincome','g','agej','MedicalShock','LumpSum'}; 
+FnsToEvaluate_4 = @(aprime_val,a_val,z_val,r,tau_u, tau_s,h,zeta,epsilon_j,I_j,alpha,delta, A,SSdivw, Tr_beq,workinglifeincome,g,agej,MedicalShock,LumpSum) ImrohorogluImrohorogluJoines1995_ConsumptionFn(aprime_val,a_val,z_val, r,tau_u, tau_s,h,zeta,epsilon_j,I_j,alpha,delta, A,SSdivw, Tr_beq,workinglifeincome,g,agej,MedicalShock,LumpSum); % Consumption
 FnsToEvaluateParamNames(5).Names={'r','A','alpha','delta','h','I_j','epsilon_j'};
 FnsToEvaluate_5 = @(aprime_val,a_val,z_val,r,A,alpha,delta,h,I_j,epsilon_j) ((1-alpha)*(A^(1/(1-alpha)))*((r+delta)/alpha)^(alpha/(alpha-1)))*I_j*h*epsilon_j*z_val; % Labour income (this is also the tax base for various taxes)
 FnsToEvaluateParamNames(6).Names={'r','A','alpha','delta','h','I_j','epsilon_j'};
@@ -259,14 +257,18 @@ FnsToEvaluate={FnsToEvaluate_1,FnsToEvaluate_2,FnsToEvaluate_3,FnsToEvaluate_4,F
 % General Equilibrium Equations
 % Recall that GEPriceParamNames={'r','tau_u','tau_s','Tr_beq'}; In following lines p is the vector of these and so, e.g., p(2) is G.
 GeneralEqmEqnParamNames=struct();
+% Rate of return on assets is related to Marginal Product of Capital
 GeneralEqmEqnParamNames(1).Names={'A','alpha','delta'};
-GeneralEqmEqn_1 = @(AggVars,GEprices,A,alpha,delta) GEprices(1)-(A*(alpha)*(AggVars(1)^(alpha-1))*(AggVars(2)^(1-alpha))-delta); % Rate of return on assets is related to Marginal Product of Capital
+GeneralEqmEqn_1 = @(AggVars,GEprices,A,alpha,delta) GEprices(1)-(A*(alpha)*(AggVars(1)^(alpha-1))*(AggVars(2)^(1-alpha))-delta); 
+% Equation (16): tau_u revenus equals spending on unemployment benefits
 GeneralEqmEqnParamNames(2).Names={'zeta'};
-GeneralEqmEqn_2 = @(AggVars,GEprices,zeta) GEprices(2)*AggVars(5)-zeta*AggVars(6); % Equation (16): tau_u revenus equals spending on unemployment benefits
+GeneralEqmEqn_2 = @(AggVars,GEprices,zeta) GEprices(2)*AggVars(5)-zeta*AggVars(6); 
+% Equation (15): tau_s revenues equals total social security benefits
 GeneralEqmEqnParamNames(3).Names={};
-GeneralEqmEqn_3 = @(AggVars,GEprices) GEprices(3)*AggVars(5)-AggVars(7); % Equation (15): tau_s revenues equals total social security benefits
+GeneralEqmEqn_3 = @(AggVars,GEprices) GEprices(3)*AggVars(5)-AggVars(7);
+% Equation (17): Accidental bequests (adjusted for population growth) are equal to transfers received (this is essentially eqn 14)
 GeneralEqmEqnParamNames(4).Names={};
-GeneralEqmEqn_4 = @(AggVars,GEprices) GEprices(4)-AggVars(3); % Equation (17): Accidental bequests (adjusted for population growth) are equal to transfers received (this is essentially eqn 14)
+GeneralEqmEqn_4 = @(AggVars,GEprices) GEprices(4)-AggVars(3); 
 GeneralEqmEqns={GeneralEqmEqn_1, GeneralEqmEqn_2, GeneralEqmEqn_3, GeneralEqmEqn_4};
 
 %% Test
@@ -369,30 +371,44 @@ Omega1=sum(sum(sum(Utemp)));
 % utility at birth' it instead looks at 'expected utility across the current population'.
 
 if calcwelfarebenefits==1
+    % We no longer consider tau_s as a general eqm parameter as it is set to zero.
+    % IIJ1995, pg 96: my understanding is that we also fix tau_u (and zeta)
+    GEPriceParamNames_Omega0={'r','Tr_beq'}; % 'tau_u' & 'tau_s' have been removed
+    GeneralEqmEqnParamNames_Omega0(1).Names=GeneralEqmEqnParamNames(1).Names;
+    GeneralEqmEqnParamNames_Omega0(2).Names=GeneralEqmEqnParamNames(4).Names;
+    % GeneralEqmEqn_1 = @(AggVars,GEprices,A,alpha,delta) GEprices(1)-(A*(alpha)*(AggVars(1)^(alpha-1))*(AggVars(2)^(1-alpha))-delta); % No change
+    GeneralEqmEqn_Omega0_4 = @(AggVars,GEprices) GEprices(2)-AggVars(3); % Changed from GEprices(4) to GEprices(2)
+    GeneralEqmEqns_Omega0={GeneralEqmEqn_1, GeneralEqmEqn_Omega0_4};
     % Start by calculating Q0
     Params0=Params;
     Params0.b=0;
-    Params0.tau_s=0; % Note: this will actually be determined in general eqm, but may as well start with good initial guess.
-    [p_eqm,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions,vfoptions);
-    Params0.r=p_eqm.r;
-    Params0.tau_u=p_eqm.tau_u;
-    Params0.tau_s=p_eqm.tau_s;
-    Params0.Tr_beq=p_eqm.Tr_beq;
+    Params0.SSdivw=Params0.b*sum(Params0.h*Params0.epsilon_j(1:(Params0.Jr-1)))/(Params0.Jr-1);
+    Params0.tau_s=0;
+    [p_eqm0,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns_Omega0, Params0, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames_Omega0, GEPriceParamNames_Omega0, heteroagentoptions, simoptions,vfoptions);
+    Params0.r=p_eqm0.r;
+    Params0.Tr_beq=p_eqm0.Tr_beq;
     [V0, Policy0]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params0, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
     StationaryDist0=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy0,n_d,n_a,n_z,N_j,pi_z,Params0,simoptions);
     AggVars0=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist0, Policy0, FnsToEvaluate2, Params0, FnsToEvaluateParamNames2, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
     K0=AggVars0(1);
     N0=AggVars0(2);
     Q0=Params0.A*(K0^(Params0.alpha))*(N0^(1-Params0.alpha)); % Cobb-Douglas production fn
-        
-    % Now calculate Lstar (what IIJ1995 refer to as L on pg 96)
-    vfoptions=struct();
-    % Absolute value of Omega0 minus Omega1 as a function of L
-    absOmega0minusOmega1=@(GEprices_and_L) IIJ1995_absOmega0minusOmega1(GEprices_and_L,Omega1,Params0,jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, FnsToEvaluate2, GeneralEqmEqns, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, FnsToEvaluateParamNames2, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions,simoptions,vfoptions);
+    
+    % Initial guess for Lstar, the LumpSum
+    Params0.LumpSum=0; % This is actually already its value, but I put it here to emphasise that this is the 'initial guess' for the welfare calculation.
+
+    absOmega0minusOmega1=@(GEandLumpSum) IIJ1995_absOmega0minusOmega1(GEandLumpSum,Omega1,Params0,jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, FnsToEvaluate2, GeneralEqmEqns_Omega0, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, FnsToEvaluateParamNames2, GeneralEqmEqnParamNames_Omega0, GEPriceParamNames_Omega0,heteroagentoptions,simoptions,vfoptions);
     % Find the Lstar that minimizes this
-    minoptions = optimset('TolX',10^(-5),'TolFun',10^(-4)); % Note that 10^(-5) for TolX is an accuracy to more digits than are reported (for kappa in Table 3)
-    [minval,GEprices_and_Lstar]=fminsearch(absOmega0minusOmega1,[Params.b,Params.tau_u,Params.tau_s,Params.Tr_beq,Params.LumpSum],minoptions);
-    Lstar=GEprices_and_Lstar(end);
+    minoptions = optimset('TolX',10^(-6),'TolFun',10^(-6)); % Note that 10^(-6) for TolX is an accuracy to more digits than are reported (for kappa in Table 3)
+    [GEandLstar,minval]=fminsearch(absOmega0minusOmega1,[Params0.r, Params0.Tr_beq,Params0.LumpSum],minoptions);
+    
+    % For b_c=11 (b=1) the following makes a good initial guess
+%     Params0.r=0.01;
+%     Params0.Tr_beq=0.07;
+%     Params0.LumpSum=-0.04;
+%     absOmega0minusOmega1([Params0.r, Params0.Tr_beq,Params0.LumpSum])
+    
+    Lstar=GEandLstar(3);
     % IIJ1995 report kappa
     kappa=Lstar/Q0;
 end
@@ -421,8 +437,14 @@ Output.LifeCycleProfiles=LifeCycleProfiles; % life-cycle profiles for income, co
 
 Output.ValuesOnGrid=gather(ValuesOnGrid); % Needed to create figures 6 and 7
 
+Output.GeneralEqmEqnsValues=GeneralEqmEqnsValues; % To check the accuracy of the general eqm
+
 if calcwelfarebenefits==1
+    Output.Q0=Q0;
+    Output.Lstar=Lstar;
     Output.kappa=kappa; % Welfare benefits
+    Output.GEandLstar=GEandLstar;
+    Output.minval=minval;
 end
 
 end

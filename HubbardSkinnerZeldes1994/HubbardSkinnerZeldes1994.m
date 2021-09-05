@@ -14,7 +14,7 @@
 % A few lines I needed for running on the Server
 addpath(genpath('./MatlabToolkits/'))
 
-dopart=[0,0,1,1]; % I divide the code into four chunks so can do it bit by bit
+dopart=[1,1,1,1]; % I divide the code into four chunks so can do it bit by bit
 
 %% State space variables of the model
 % Age
@@ -150,7 +150,7 @@ if dopart(1)==1
             end
         end
     end
-    save ./SavedOutput/HSZ1994_Tables_part1.mat Table1row Table2 Table3 LifeCycProfiles Params -v7.3
+    save ./SavedOutput/HSZ1994_Tables_part1.mat Table1row Table2 Table3 LifeCycProfiles Params n_a n_z -v7.3
     % Set Parameters back to defaults
     Params.delta=0.03;
     Params.gamma=3;
@@ -232,11 +232,11 @@ n_z=temp_n_z; % Restore this now that we are done looking at all the certainty c
 
 %% Print out results for the three Tables
 
-load ./SavedOutput/HSZ1994_Tables_part1.mat Table2 Table3
+load ./SavedOutput/HSZ1994_Tables_part1.mat Table2 Table3 n_a n_z
 load ./SavedOutput/HSZ1994_Tables_part4.mat Table1row LifeCycProfiles Params
 
 %Table 1
-FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table1.tex', 'w');
+FID = fopen('./SavedOutput/LatexInputs/HubbardSkinnerZeldes_Table1.tex', 'w');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccccccc} \n \\hline \\hline \n');
 fprintf(FID, ' & &    & \\multicolumn{4}{c}{----Asset-Income Ratio----} & $\\quad$ & \\multicolumn{4}{c}{----Savings Rate----}\\\\ \n');
 fprintf(FID, ' & \\multicolumn{2}{c}{Parameter}   & No High & High  &         & Aggre- & $\\quad$ & No High & High &          & Aggre- \\\\ \n');
@@ -266,7 +266,7 @@ fclose(FID);
 
 
 %Table 2
-FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table2.tex', 'w');
+FID = fopen('./SavedOutput/LatexInputs/HubbardSkinnerZeldes_Table2.tex', 'w');
 fprintf(FID, '\\center{Percentage of Households with Consumption Approximately Equal to Income \\\\ \n (Absolute Average Savings Rate $<$ 0.5 Percent of Income} \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccccc} \n \\hline \\hline \n');
 fprintf(FID, ' & \\multicolumn{3}{c}{PSID} & \\multicolumn{3}{c}{Simulated}  & \\multicolumn{3}{c}{Simulated} \\\\ \n');
@@ -293,7 +293,7 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 % Table 3
-FID = fopen('./SavedOutput/HubbardSkinnerZeldes_Table3.tex', 'w');
+FID = fopen('./SavedOutput/LatexInputs/HubbardSkinnerZeldes_Table3.tex', 'w');
 fprintf(FID, '\\begin{tabular*}{0.9\\textwidth}{@{\\extracolsep{\\fill}}ccccc} \n \\hline \\hline \n');
 fprintf(FID, ' Dependent Varialbe & $\\Delta C*$ & $\\Delta ln(C)*$ & $\\Delta ln(C)**$ & $\\Delta ln(C)**$\\\\ \n');
 fprintf(FID, ' & \\multicolumn{4}{c}{$\\delta=0.03$, Floor=\\$7000} \\\\ \n');
