@@ -164,7 +164,7 @@ end
 FnsToEvaluateParamNames(1).Names={'p','alpha'};
 FnsToEvaluateFn_MPL = @(aprime_val,a_val,z_val,AgentDistMass,p,alpha) alpha*p*z_val*(aprime_val^(alpha-1)); % MPL
 FnsToEvaluate={FnsToEvaluateFn_MPL};
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
+ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_Case1(Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames,StationaryDist); % StationaryDist is only needed because using entry-exit
 
 NominalMPLvalues=shiftdim(ValuesOnGrid,1);
 % Now calcuate the absolute deviations from MPL=1/p as a percentage.

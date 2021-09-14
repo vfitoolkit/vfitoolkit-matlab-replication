@@ -354,7 +354,7 @@ LifeCycleProfiles=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvalu
 % social security benefits.
 
 %% To create Figures 6 and 7 you would also need the value of assets on the grid
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate2, Params, FnsToEvaluateParamNames2, n_d, n_a, n_z, N_j, d_grid, a_grid, z_grid,[],simoptions);
+ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate2, Params, FnsToEvaluateParamNames2, n_d, n_a, n_z, N_j, d_grid, a_grid, z_grid,[],simoptions);
 
 %% Welfare benefits (Table 3 reports these, the explanation of calculation is on pg 96-97 of IIJ1995)
 UtilityOnGrid=shiftdim(ValuesOnGrid(5,:,:,:),1);

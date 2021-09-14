@@ -41,25 +41,25 @@ load ./SavedOutput/IIJ1995_FullOutput2.mat FullOutput2
 
 for beta_c=2:2 % 1:2
     Params.beta=beta_vec(beta_c);
-    for b_c=1:11 % 7
+    for b_c=1:11
         Params.b=b_vec(b_c);
-        for n_c=2:2 %1:2
+        for n_c=1:2
             Params.n=n_vec(n_c);
-            for gamma_c=2:2 % 1:3
+            for gamma_c=1:3
                 Params.gamma=gamma_vec(gamma_c);
-                for g_c=1:1 % 1:2
+                for g_c=1:2
                     Params.g=g_vec(g_c);
-                    for MedicalShock=0:0 % 0:2
+                    for MedicalShock=0:2
                         Params.MedicalShock=MedicalShock;
-                        for stochprobofdeath=1:1 %0:1
+                        for stochprobofdeath=0:1
                             fprintf('Currently doing: %i %i %i %i %i %i %i \n ', beta_c, b_c, n_c, gamma_c, g_c, MedicalShock, stochprobofdeath)
-                            if beta_c==2 && b_c>1 && n_c==2 && gamma_c==2 && g_c==1 && MedicalShock==0 && stochprobofdeath==1
-                                calcwelfarebenefits=1; 
-                                % Only calculate the welfare benefits when needed (for Table 3).
-                                % Calculating welfare benefits takes much more time than everything else, hence only do it when necessary.
-                            else
+%                             if beta_c==2 && b_c>1 && n_c==2 && gamma_c==2 && g_c==1 && MedicalShock==0 && stochprobofdeath==1
+%                                 calcwelfarebenefits=1; 
+%                                 % Only calculate the welfare benefits when needed (for Table 3).
+%                                 % Calculating welfare benefits takes much more time than everything else, hence only do it when necessary.
+%                             else
                                 calcwelfarebenefits=0;
-                            end
+%                             end
                             
                             Output=ImrohorogluImrohorogluJoines1995_Fn(Params,n_k,n_z,stochprobofdeath,calcwelfarebenefits);
                             if beta_c==1
