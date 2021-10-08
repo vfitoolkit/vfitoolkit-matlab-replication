@@ -177,7 +177,7 @@ Params.gdiscount=(1+Params.g)^(1-Params.gamma);
 Params.workinglifeincome=mean(Params.epsilon_j(1:Params.Jr)'.*((1+Params.g).^((1:1:Params.Jr)-1))); % Note that when g=0 this is one. We need this for calculating pensions which are defined as a specific fraction of this.
 
 %% Get into format for VFI Toolkit
-d_grid=[];
+d_grid=1;
 a_grid=k_grid;
 
 n_d=0;
@@ -200,12 +200,16 @@ AgeWeightsParamNames={'mewj'}; % Many finite horizon models apply different weig
 %% General equilibrium, and initial parameter values for the general eqm parameters
 
 GEPriceParamNames={'r','tau_u','tau_s','Tr_beq'};
-Params.r=0.06; % interest rate on assets
-Params.tau_u=0.019; % set to balance unemployment benefits expenditure
-Params.tau_s=0.122; % set to balance social security benefits expenditure
-Params.Tr_beq=0.2; % Accidental bequests (IIJ1995 calls this T)
+Params.r=0.02; % interest rate on assets (this is deliberately too low)
+Params.tau_u=0.01; % set to balance unemployment benefits expenditure
+Params.tau_s=0.2*Params.b; % set to balance social security benefits expenditure (IIJ1995 have roughly tau=2 for tax rate of 1, so I set initial guess based on fraction of this)
+if Params.MedicalShock==0
+    Params.Tr_beq=0.2; % Accidental bequests (IIJ1995 calls this T)
+else
+    Params.Tr_beq=0.05; % Accidental bequests (IIJ1995 calls this T), with medical shocks these are tiny   
+end
 
-%% Now, create the return function 
+%% Now, create the return function
 DiscountFactorParamNames={'beta','sj','gdiscount'}; % gdiscount is 1 in the baseline, it is needed for the extension to include deterministic productivity growth
  
 ReturnFn=@(aprime,a,z,r,tau_u, tau_s,gamma, h,zeta, epsilon_j,I_j,alpha,delta, A,SSdivw, Tr_beq, MedicalShock,workinglifeincome,g,agej,LumpSum) ImrohorogluImrohorogluJoines1995_ReturnFn(aprime,a,z,r,tau_u, tau_s,gamma, h,zeta, epsilon_j,I_j,alpha,delta, A,SSdivw, Tr_beq, MedicalShock,workinglifeincome,g,agej,LumpSum)
@@ -253,6 +257,20 @@ FnsToEvaluate_6 = @(aprime_val,a_val,z_val,r,A,alpha,delta,h,I_j,epsilon_j) ((1-
 FnsToEvaluateParamNames(7).Names={'SSdivw','r','A','alpha','delta','I_j'}; % MODIFY TO ALLOW FOR g
 FnsToEvaluate_7 = @(aprime_val,a_val,z_val,SSdivw,r,A,alpha,delta,I_j) ((1-alpha)*(A^(1/(1-alpha)))*((r+delta)/alpha)^(alpha/(alpha-1)))*SSdivw*(1-I_j); % Total social security benefits: w*SSdivw*(1-I_j)
 FnsToEvaluate={FnsToEvaluate_1,FnsToEvaluate_2,FnsToEvaluate_3,FnsToEvaluate_4,FnsToEvaluate_5,FnsToEvaluate_6,FnsToEvaluate_7};
+% % FnsToEvaluate from 8 and up are just being used by me to check that the
+% % medical shocks are doing what they should. Not in any way used for
+% % solving the model. You can delete them and everything would be fine.
+% FnsToEvaluateParamNames(8).Names={};
+% FnsToEvaluate_8 = @(aprime_val,a_val,z_val) z_val; % z
+% FnsToEvaluateParamNames(9).Names={'agej','Jr'};
+% FnsToEvaluate_9 = @(aprime_val,a_val,z_val,agej,Jr) z_val*(agej<Jr); % z
+% FnsToEvaluateParamNames(10).Names={'agej','Jr'};
+% FnsToEvaluate_10 = @(aprime_val,a_val,z_val,agej,Jr) z_val*(agej>Jr); % z
+% FnsToEvaluateParamNames(11).Names={'agej','Jr'};
+% FnsToEvaluate_11 = @(aprime_val,a_val,z_val,agej,Jr) (agej<Jr); % z
+% FnsToEvaluateParamNames(12).Names={'agej','Jr'};
+% FnsToEvaluate_12 = @(aprime_val,a_val,z_val,agej,Jr) (agej>Jr); % z
+% FnsToEvaluate={FnsToEvaluate_1,FnsToEvaluate_2,FnsToEvaluate_3,FnsToEvaluate_4,FnsToEvaluate_5,FnsToEvaluate_6,FnsToEvaluate_7, FnsToEvaluate_8, FnsToEvaluate_9, FnsToEvaluate_10, FnsToEvaluate_11, FnsToEvaluate_12};
 
 % General Equilibrium Equations
 % Recall that GEPriceParamNames={'r','tau_u','tau_s','Tr_beq'}; In following lines p is the vector of these and so, e.g., p(2) is G.
@@ -274,6 +292,59 @@ GeneralEqmEqns={GeneralEqmEqn_1, GeneralEqmEqn_2, GeneralEqmEqn_3, GeneralEqmEqn
 %% Test
 disp('Test AggVars')
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+% % GEPriceParamNames={'r','tau_u','tau_s','Tr_beq'};
+% GEprices=[Params.r,Params.tau_u, Params.tau_s, Params.Tr_beq];
+% GeneralEqmConditionsVec=real(GeneralEqmConditions_Case1(AggVars,GEprices, GeneralEqmEqns, Params,GeneralEqmEqnParamNames))
+% 
+% AggVars(9)/AggVars(11) % Should be 0.94
+% AggVars(10)/AggVars(12) % If MedicalShock=1, should be (0.1803*0.25)=0.0451 % If MedicalShock=2, should be (0.0899*0.35)=0.0315. Actually since I start everyone healthy in retirement it should be less than this which is calculated based on implied stationary distribution of medical shock process
+% 
+% FnsToEvaluateParamNames_temp(1).Names=FnsToEvaluateParamNames(8).Names;
+% FnsToEvaluate_temp={FnsToEvaluate_8};
+% ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate_temp, Params, FnsToEvaluateParamNames_temp, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+% 
+% size(ValuesOnGrid)
+% ValuesOnGrid(1,1:10,:,1)
+% ValuesOnGrid(1,1:10,:,40)
+% ValuesOnGrid(1,1:10,:,50)
+% ValuesOnGrid(1,1:10,:,65)
+
+% MedicalShock=2
+% Params.MedicalShock=2
+
+
+% AggVars =
+%     5.4930
+%     0.3509
+%     0.0773
+%     0.7261
+%     0.7118
+%     0.0458
+%     0.0152
+%     0.8017
+%     0.7868
+%     0.0035
+%     0.8370
+%     0.1509
+% GeneralEqmConditionsVec =
+%     0.0183   -0.0112   -0.0010   -0.0273
+
+% size(StationaryDist)
+% 
+% StationaryDist(251:300,:,65)
+% StationaryDist(1:10,:,40)
+% StationaryDist(1:10,:,1)
+
+% Is anyone near top of grid?
+% sum(sum(sum(StationaryDist(1200:1251,:,:))))
+
+% size(Policy)
+% Policy(1,1:1251,:,1)
+% Policy(1,1:100,:,40)
+% Policy(1,1:10,:,65)
+% 
+% V(1:2,:,1)
+% V(1:2,:,65)
 
 %% Calculate the general equilibrium
 heteroagentoptions.verbose=1
@@ -344,7 +415,7 @@ fprintf('Average Utility (value fn): %8.3f \n ', sum(sum(sum(Udist))) );
 fprintf('K/Q: %8.3f \n ', K/Q);
 
 %% Some life-cycle profiles for income, consumption, and assets
-LifeCycleProfiles=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate2,FnsToEvaluateParamNames2,Params,0,n_a,n_z,N_j,0,a_grid,z_grid,simoptions);
+LifeCycleProfiles=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate2,FnsToEvaluateParamNames2,Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,simoptions);
 % (this creates much more than just the 'age conditional mean' profiles that we use here)
 % (Note: when productivity growth is non-zero then you would need to correct some of these)
 % I have assumed income includes capital income, unemployment benefits and
@@ -354,7 +425,7 @@ LifeCycleProfiles=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvalu
 % social security benefits.
 
 %% To create Figures 6 and 7 you would also need the value of assets on the grid
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate2, Params, FnsToEvaluateParamNames2, n_d, n_a, n_z, N_j, d_grid, a_grid, z_grid,[],simoptions);
+ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate2, Params, FnsToEvaluateParamNames2, n_d, n_a, n_z, N_j, d_grid, a_grid, z_grid,2,simoptions);
 
 %% Welfare benefits (Table 3 reports these, the explanation of calculation is on pg 96-97 of IIJ1995)
 UtilityOnGrid=shiftdim(ValuesOnGrid(5,:,:,:),1);
@@ -371,44 +442,62 @@ Omega1=sum(sum(sum(Utemp)));
 % utility at birth' it instead looks at 'expected utility across the current population'.
 
 if calcwelfarebenefits==1
+    % See pdf for explanation of why first solve for (r,LplusTr_beq) and
+    % then recover Tr_beq and L from this, which is what is currently done.
+    fprintf('Starting welfare calculation \n')
     % We no longer consider tau_s as a general eqm parameter as it is set to zero.
     % IIJ1995, pg 96: my understanding is that we also fix tau_u (and zeta)
-    GEPriceParamNames_Omega0={'r','Tr_beq'}; % 'tau_u' & 'tau_s' have been removed
-    GeneralEqmEqnParamNames_Omega0(1).Names=GeneralEqmEqnParamNames(1).Names;
-    GeneralEqmEqnParamNames_Omega0(2).Names=GeneralEqmEqnParamNames(4).Names;
-    % GeneralEqmEqn_1 = @(AggVars,GEprices,A,alpha,delta) GEprices(1)-(A*(alpha)*(AggVars(1)^(alpha-1))*(AggVars(2)^(1-alpha))-delta); % No change
-    GeneralEqmEqn_Omega0_4 = @(AggVars,GEprices) GEprices(2)-AggVars(3); % Changed from GEprices(4) to GEprices(2)
-    GeneralEqmEqns_Omega0={GeneralEqmEqn_1, GeneralEqmEqn_Omega0_4};
     % Start by calculating Q0
     Params0=Params;
     Params0.b=0;
     Params0.SSdivw=Params0.b*sum(Params0.h*Params0.epsilon_j(1:(Params0.Jr-1)))/(Params0.Jr-1);
     Params0.tau_s=0;
-    [p_eqm0,p_eqm_index, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns_Omega0, Params0, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames_Omega0, GEPriceParamNames_Omega0, heteroagentoptions, simoptions,vfoptions);
+    [p_eqm0,p_eqm_index, GeneralEqmEqnsValues2]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns_Omega0, Params0, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames_Omega0, GEPriceParamNames_Omega0, heteroagentoptions, simoptions,vfoptions);
     Params0.r=p_eqm0.r;
     Params0.Tr_beq=p_eqm0.Tr_beq;
     [V0, Policy0]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params0, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
     StationaryDist0=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy0,n_d,n_a,n_z,N_j,pi_z,Params0,simoptions);
-    AggVars0=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist0, Policy0, FnsToEvaluate2, Params0, FnsToEvaluateParamNames2, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+    AggVars0=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist0, Policy0, FnsToEvaluate2, Params0, FnsToEvaluateParamNames2, n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,2,simoptions);
     K0=AggVars0(1);
     N0=AggVars0(2);
     Q0=Params0.A*(K0^(Params0.alpha))*(N0^(1-Params0.alpha)); % Cobb-Douglas production fn
-    
+
+    % New (and improved version), I calculate the equilibrium using r and
+    % LumpSum. (Since Tr_beq is just the same as LumpSum in the sense that
+    % it enters the model as a perfect substitute as model input; so LumpSum in this will really be LumpSum+Tr_beq). Once I
+    % have that solution I then use AggVars to calculate the Tr_beq and
+    % subtract that from what was called LumpSum but was really
+    % LumpSum+Tr_beq.
+    GEPriceParamNames_Omega0={'r'}; % 'tau_u' & 'tau_s' have been removed
+    clear GeneralEqmEqnParamNames_Omega0
+    GeneralEqmEqnParamNames_Omega0(1).Names=GeneralEqmEqnParamNames(1).Names;
+    GeneralEqmEqns_Omega0={GeneralEqmEqn_1};
+
     % Initial guess for Lstar, the LumpSum
-    Params0.LumpSum=0; % This is actually already its value, but I put it here to emphasise that this is the 'initial guess' for the welfare calculation.
+    Params0.LumpSum=Params0.Tr_beq; % Implicitly this is LumpSum=0 (as LumpSum is really LumpSum+Tr_beq)
+    Params0.Tr_beq=0;
 
     absOmega0minusOmega1=@(GEandLumpSum) IIJ1995_absOmega0minusOmega1(GEandLumpSum,Omega1,Params0,jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, FnsToEvaluate2, GeneralEqmEqns_Omega0, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, FnsToEvaluateParamNames2, GeneralEqmEqnParamNames_Omega0, GEPriceParamNames_Omega0,heteroagentoptions,simoptions,vfoptions);
     % Find the Lstar that minimizes this
     minoptions = optimset('TolX',10^(-6),'TolFun',10^(-6)); % Note that 10^(-6) for TolX is an accuracy to more digits than are reported (for kappa in Table 3)
-    [GEandLstar,minval]=fminsearch(absOmega0minusOmega1,[Params0.r, Params0.Tr_beq,Params0.LumpSum],minoptions);
+    [GEandLstar,minval]=fminsearch(absOmega0minusOmega1,[Params0.r,Params0.LumpSum],minoptions);
+    % Now find out what Tr_beq should be, and use it to get actual LumpSum
+    Params0.r;
+    Params0.LumpSum=0;
+    GEPriceParamNames_Omega0={'Tr_beq'}; % 'tau_u' & 'tau_s' have been removed
+    clear GeneralEqmEqnParamNames_Omega0
+    GeneralEqmEqnParamNames_Omega0(1).Names={};
+    GeneralEqmEqn_Omega0_Tr_beq = @(AggVars,GEprices) GEprices(1)-AggVars(3); % Tr_beq
+    GeneralEqmEqns_Omega0={GeneralEqmEqn_Omega0_Tr_beq};
+    [p_eqm0,~, GeneralEqmEqnsValues3]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns_Omega0, Params0, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames_Omega0, GEPriceParamNames_Omega0, heteroagentoptions, simoptions,vfoptions);
+    Params0.Tr_beq=p_eqm0.Tr_beq;
+
+    Lstar=GEandLstar(2)-Params0.Tr_beq;    
     
-    % For b_c=11 (b=1) the following makes a good initial guess
-%     Params0.r=0.01;
-%     Params0.Tr_beq=0.07;
-%     Params0.LumpSum=-0.04;
-%     absOmega0minusOmega1([Params0.r, Params0.Tr_beq,Params0.LumpSum])
-    
-    Lstar=GEandLstar(3);
+    fprintf('Results for welfare compensation are: \n')
+    fprintf('r: %8.4f, Tr_beq: %8.4f, LumpSum: %8.4f \n',GEandLstar(1), Params0.Tr_beq, Lstar,GeneralEqmEqnsValues3)
+    fprintf('The minimums acheived were %8.4f and %8.4f \n',minval)
+
     % IIJ1995 report kappa
     kappa=Lstar/Q0;
 end
@@ -444,7 +533,9 @@ if calcwelfarebenefits==1
     Output.Lstar=Lstar;
     Output.kappa=kappa; % Welfare benefits
     Output.GEandLstar=GEandLstar;
-    Output.minval=minval;
+    Output.welfarebenefit_Tr_beq=Params0.Tr_beq;
+    Output.minval=minval; % Should be zero
+    Output.GeneralEqmEqnsValues3=GeneralEqmEqnsValues3; % Should be zero
 end
 
 end

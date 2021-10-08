@@ -10,18 +10,20 @@ if agej==Jr
     if MedicalShock==1
         pi_z=[1,0;1,0]; % Everyone starts healthy
         % Originally I used the unconditional probability of illness, but this delivered results at stark odds with paper.
-%         pi_z=[0.82,0.18; 0.82,0.18]; % Probability of illness is 0.18
+%         pi_z=[0.82,0.18; 0.82,0.18]; % iid Probability of illness is 0.18
     elseif MedicalShock==2
         pi_z=[1,0;1,0]; % Everyone starts healthy
         % Originally I used the unconditional probability of illness, but this delivered results at stark odds with paper.
-%         pi_z=[0.91,0.09; 0.91,0.09]; % Probability of illness is 0.09
+%         pi_z=[0.91,0.09; 0.91,0.09]; % iid Probability of illness is 0.09
     end
 elseif agej>Jr % z now indicates 'illness', or more precisely 'cost of illness as percent of employed wage.
     if MedicalShock==1
         z_grid=[0;0.25]; % Cost of illness is 25 percent of employed wage
-        pi_z=[0.9450, 0.0550; 0.25, 0.75];
+        pi_z=[0.9450, 0.0550; 0.25, 0.75]; % Implies stationarty distribution of [0.8197; 0.1903]
     elseif MedicalShock==2
         z_grid=[0;0.35]; % 35 percent of employed wage
-        pi_z=[0.9753, 0.0247; 0.25, 0.75];
+        pi_z=[0.9753, 0.0247; 0.25, 0.75]; % Implies stationarty distribution of [0.9101; 0.0899]
     end
+end
+
 end
