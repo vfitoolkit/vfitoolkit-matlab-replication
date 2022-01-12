@@ -1,14 +1,15 @@
-% Conesa & Krueger (1999) - Social Security Reform with Heterogeneous Agents
+%% Conesa & Krueger (1999) - Social Security Reform with Heterogeneous Agents
 
-% I run this code twice, the first with the following vfoptions.fastOLG equal to one, and then a second time with this equal to zero.
-vfoptions.fastOLG=0;
+% I run this code twice, the first with the following transpathoptions.fastOLG equal to one, and then a second time with this equal to zero.
+transpathoptions.fastOLG=0;
 
-% The second time round I use the results of the first as an initial guess for the price paths:
-if vfoptions.fastOLG==0
+% % The second time round I use the results of the first as an initial guess for the price paths:
+% if transpathoptions.fastOLG==0
 %     load ./SavedOutput/ConesaKrueger_FullResults_fastOLG.mat FullResults
-    % I already computed the FullResults once through, so now just use that
-    load ./SavedOutput/ConesaKrueger_FullResults.mat FullResults
-end
+% end
+
+load ./SavedOutput/ConesaKrueger_FullResults.mat FullResults
+
 
 % IndivProdShock=1; % 0 for 'no heterogeneity', 1 for Diaz-Gimenez et al (1997) the 'asymmetric case', 2 for Storesletten et al (1998) the 'symmetric case'.
 %                   % Values of 3,4,5 are only used for Table 6 (2 state, 3 state, and 5 state) [In principle, 2 and 3 should be identical, but they differ slightly.]
@@ -20,12 +21,14 @@ end
 % can calculate analytic value for labor supply based on a and aprime, see
 % CK1999 paper. I model it explicitly so that code is easier to modify for
 % other uses.)
-if vfoptions.fastOLG==1
+if transpathoptions.fastOLG==1
     n_d=51; % fraction of time worked
     n_a=301; % assets
 else
     n_d=101; % fraction of time worked
-    n_a=1001; % assets
+    n_a=801; % assets
+%     n_d=121; % fraction of time worked
+%     n_a=1201; % assets
 end
 % n_z % labour efficiency units, depends on 'IndivProdShock', so set below.
 N_j=66; % age (number of periods, to be precise this is age-19)
@@ -101,11 +104,10 @@ Params.n=0.011;
 %Social Security replacement rate
 Params.b_initial=0.5; Params.b=Params.b_initial;
 
+% This commented out part is how I has originally did the survival
+% probabilities. I later received the codes of Conesa & Krueger by email from them and these are copy-pasted below.
 % Probability of surviving, conditional on being alive (Conesa & Krueger 1999 just say that they get them from Faber, 1982)
-% This is same source as Imrohoroglu, Imrohoroglu & Joines (1995) and while replicating that paper they sent me a copy of the survival probabilities.
 % The commented out lines below contain my original version using more recent numbers from 'same' source.
-% I was sent the original survival probabilities by email by Selahattin
-% Imrohoroglu and the contents of that 'psurv.dat' file are used below.
 % %As this document is not available online I instead take the values from the updated version of the document, namely from 
 % %F. C. Bell and M. L. Miller (2005), Life Tables for the United States Social Security Area 1900-2100, Actuarial Study No. 120, Office of the Chief Actuary
 % %http://www.socialsecurity.gov/oact/NOTES/s2000s.html
@@ -122,15 +124,18 @@ Params.b_initial=0.5; Params.b=Params.b_initial;
 % Params.sj(end)=0;
 % % I use linear interpolation to fill in the numbers inbetween those reported by Bell & Miller (2005).
 % % I have aditionally imposed that the prob of death at age 20 be zero and that prob of death at age 85 is one.
-% Following are the orginal survival probabilites I was emailed by Selahattin Imrohoroglu in file 'psurv.dat'
-Params.sj=[1.0000000, 0.99851000, 0.99844000, 0.99838000, 0.99832000, 0.99826000, 0.99820000, 0.99816000, 0.99815000, 0.99819000,...
-    0.99826000, 0.99834000,0.99840000, 0.99843000, 0.99841000, 0.99835000, 0.99828000, 0.99818000, 0.99807000, 0.99794000,...
-    0.99778000, 0.99759000, 0.99737000, 0.99712000, 0.99684000, 0.99653000, 0.99619000, 0.99580000, 0.99535000, 0.99481000,...
-    0.99419000, 0.99350000, 0.99278000, 0.99209000, 0.99148000, 0.99088000, 0.99021000, 0.98942000, 0.98851000, 0.98746000,...
-    0.98625000, 0.98495000, 0.98350000, 0.98178000, 0.97974000, 0.97743000, 0.97489000, 0.97226000, 0.96965000, 0.96715000,...
-    0.96466000, 0.96200000, 0.95907000, 0.95590000, 0.95246000, 0.94872000, 0.94460000, 0.94017000, 0.93555000, 0.93077000, ...
-    0.92570000, 0.92030000, 0.91431000, 0.90742000, 0.89948000];
-Params.sj=[Params.sj,0]; % CK1999 has one more period than IIJ1995, but this period anyway ends in certain death so I am not 'missing' a conditional surivival probability for the final age
+
+% Following is taken from original codes that were sent to me by email by Conesa & Krueger (demographics.f90):
+% Population Numbers from Faber (1982) (this line was their comment)
+PopulationData=[196729, 196546, 196357, 196161, 195958, 195747, 195530, 195306, 195082, 194864, 194655, 194457, 194266, 194080, 193893, 193699, 193497, 193283, 193054, 192806,...
+    192533, 192232, 191897, 191527, 191120, 190671, 190177, 189633, 189031, 188358, 187610, 186774, 185846, 184836, 183752, 182599, 181373, 180058, 178634, 177077,...
+    175367, 173494, 171452, 169223, 166789, 164138, 161257, 158158, 154847, 151369, 147740, 143958, 140011, 135897, 131617, 127168, 122543, 117741, 112772, 107648,...
+	102379, 96966, 91412, 85731, 79939, 74066, 68144, 62209, 56302, 50467, 44755, 39220, 33920, 28915, 24259, 20005, 16209, 12908, 10108, 7792, 5922];
+% Survival probabilities: phi(i)=prob(alive in i+1|alive in i) (their comment; phi(i) is what I here call sj)
+Params.sj=PopulationData(2:end)./PopulationData(1:end-1);
+% Note, this is more ages than we need/want. So just grab those which are relevant
+Params.sj=Params.sj(1:Params.J);
+Params.sj(end)=0; % Fill in a zero for final period (note that the value of zero here is actually irrelevant to codes, I do it purely as CK1999 do in their codes: demographics.f90)
 
 % Age profile of productivity (based on lifetime profile of earnings, Hansen 1993), Epsilon_j
 % I have to interpolate this in some manner to get the values for each age. I am not sure how CK1999 did the interpolation as they never mention it.
@@ -153,24 +158,21 @@ Params.sj=[Params.sj,0]; % CK1999 has one more period than IIJ1995, but this per
 %25-44    1.24        0.89
 %45-64    1.37        0.86
 %epsilon_j is set based on the first entries of the data for males
-% The following commented out part is my original attempt, below that are a
-% copy-paste of the numbers used by IIJ1995 which I was sent by email by
-% Selahattin Imrohoroglu.
+% The following commented out part is my original attempt
 % epsilon_j=zeros(Params.J,1); 
 % epsilon_j(1:5)=0.78; epsilon_j(6:15)=1.14; epsilon_j(16:25)=1.37; 
 % epsilon_j(26:35)=1.39; epsilon_j(36:45)=1.33; epsilon_j(46:66)=0.89;
 % Params.epsilon_j=epsilon_j/epsilon_j(1); %Conesa & Krueger refer to labour efficiency as 1 at age 20, so presumably they make some renormalization like this
-% The following line is the contents of 'comboeff.dat' file I received from Selahattin Imrohoroglu (see a few lines above)
-Params.epsilon_j=[0.36928407;  0.42120465;  0.49398951; 0.56677436; 0.63955922; 0.71234407; 0.78512892; 0.81551713; 0.84590532; 0.87629354; 0.90668176; 0.93706995; 0.96379826; 0.99052656; 1.0172549; 1.0439831; 1.0707114; 1.0819067; 1.0931018; 1.1042970; 1.1154923; 1.1266874; 1.1435058; 1.1603241; 1.1771424; 1.1939607; 1.2107789; 1.2015913; 1.1924037; 1.1832160; 1.1740283; 1.1648407; 1.1609988; 1.1571568; 1.1533149; 1.1494730; 1.1456310; 1.1202085; 1.0947859; 1.0693634; 1.0439408; 1.0185183; 0.99309576; 0.96767321];
-% CK1999 have one more time/age period than IIJ1995 did, so I will repeat the last entry twice
-Params.epsilon_j=[Params.epsilon_j;Params.epsilon_j(end)];
-Params.epsilon_j=[Params.epsilon_j; zeros(Params.J-Params.Jr+1,1)]; % Fill in the zeros for retirement age
-Params.epsilon_j=Params.epsilon_j/Params.epsilon_j(1); %Conesa & Krueger refer to labour efficiency as 1 at age 20, so presumably they make some renormalization like this
+% Following lines are copy-pasted from the codes of Conesa & Krueger (which they sent me by email; demographics.f90)
+Params.epsilon_j=zeros(Params.J,1); % CK1999 code fills in everything from period 46 on with zeros
+Params.epsilon_j(1:45)=[1.0000,1.0719,1.1438, 1.2158, 1.2842, 1.3527, 1.4212, 1.4897, 1.5582, 1.6267, 1.6952, 1.7217, 1.7438, 1.7748, 1.8014, 1.8279, 1.8545, 1.8810, 1.9075, 1.9341,...
+    1.9606, 1.9623, 1.9640, 1.9658, 1.9675, 1.9692, 1.9709, 1.9726, 1.9743, 1.9760, 1.9777, 1.9700, 1.9623, 1.9546, 1.9469, 1.9392, 1.9315, 1.9238, 1.9161, 1.9084, 1.9007, 1.8354, 1.7701, 1.7048, 1.6396]';
+% Note that this already includes the normalization of labor efficiency to 1 at age 20
 % Conesa & Krueger ban retirees from working. One way to do this is just to
 % set epsilon_j=0 for retirees. Rather than do this via epsilon_j it is
 % done by I_j which in practice is multiplied by epsilon_j.
 Params.I_j=[ones(Params.Jr-1,1);zeros(Params.J-Params.Jr+1,1)];
-% Note that with my original version I_j was needed, but is redundant using the original epsilon_j numbers from IIJ1995
+% Note that with my original version I_j was needed, but is redundant using the original epsilon_j numbers from CK1999
 
 
 vfoptions.verbose=0;
@@ -181,7 +183,12 @@ vfoptions.lowmemory=0; % This is changed to other values for some of the model v
 heteroagentoptions.verbose=1;
 
 %%
-for IndivProdShock=6:8 % 0:8
+for IndivProdShock=0:8% 0:8 
+    % Note that in IndivProdShock 1,3 & 6 just solve the same thing (first
+    % is using eta from CK1999 paper, second is using tauchen-hussey method
+    % to create eta (which gives almost identical), third is doing same
+    % with PType (with only one type) and is just intended to act as a
+    % double-check that PType command is working correctly.
     
     %Idiosycratic productivity shocks
     if IndivProdShock<=5
@@ -210,11 +217,8 @@ for IndivProdShock=6:8 % 0:8
             Params.eta1=eta_grid(1); Params.eta2=eta_grid(2);
             Params.pi1=pi_eta(1,1); Params.pi2=pi_eta(2,2);
         elseif IndivProdShock>=3 && IndivProdShock<=5 % 3 'symmetric case', Tauchen approx of AR(1) from Storesletten et al (1998)
-            Params.Tauchen_q=0.45; % For the two state this seems to do the trick. I will assume this is kept constant as the number of grid points in changed.
-            % Note to self: I suspect that while paper says they use
-            % Tauchen method they may in fact have used the Tauchen-Hussey
-            % method as it is the later paper that appears in the
-            % refererences?
+            % Note to self: I suspect that while paper says they use Tauchen method they may in fact have used the Tauchen-Hussey
+            % method as it is the later paper that appears in the refererences? Update: email from Conesa & Krueger confirms they did use Tauchen-Hussey method
             tauchenoptions.parallel=1; % use cpu rather than gpu for Tauchen method
             % The following three parameters are just used to determine eta_grid and pi_eta, both (eta_grid and pi_eta are themselves given directly in paper, pg 767-8 for the main 'symmetric case' hence they were not needed there).
             Params.rho=0.935;
@@ -226,16 +230,22 @@ for IndivProdShock=6:8 % 0:8
             elseif IndivProdShock==4
                 n_z=3;
             elseif IndivProdShock==5
-                if vfoptions.fastOLG==1
+                if transpathoptions.fastOLG==1
                     vfoptions.lowmemory=1;
                 end
                 n_z=5;
             end
             % What CK1999 call z I have called u1
-            [u_grid, pi_u]=TauchenMethod(0,Params.sigmasq_upsilon,Params.rho,n_z,Params.Tauchen_q,tauchenoptions); %[states, transmatrix]=TauchenMethod_Param(mew,sigmasq,rho,znum,q,[tauchenoptions]), transmatix is (z,zprime)
-            %     [epsilon_grid, pi_epsilon]=TauchenMethod(0,Params.sigmasq_epsilon,0,n_z,q); %[states, transmatrix]=TauchenMethod_Param(mew,sigmasq,rho,znum,q,[tauchenoptions]), transmatix is (z,zprime)
-            %     u_grid=u1_grid+epsilon_grid;
-            %     eta_grid=exp(u_grid);
+            % Params.Tauchen_q=0.45; % For the two state this seems to do the trick. I will assume this is kept constant as the number of grid points in changed.
+            % [u_grid, pi_u]=TauchenMethod(0,Params.sigmasq_upsilon,Params.rho,n_z,Params.Tauchen_q,tauchenoptions); %[states, transmatrix]=TauchenMethod_Param(mew,sigmasq,rho,znum,q,[tauchenoptions]), transmatix is (z,zprime)
+            % Email communcation from Conesa & Krueger (1999): they tell me that they used Tauchen-Hussey method
+            % From tauchenHussey() command: there are three suggestions for baseSigma, the following lines implement these. I use the one
+            % that gives numbers closed to those for IndivProdShock==1 (other two are commented out)
+            baseSigma=sqrt(Params.sigmasq_upsilon);
+%             baseSigma=sqrt(Params.sigmasq_upsilon)/sqrt(1-Params.rho^2);
+%             baseSigmaw=0.5+Params.rho/4;
+%             baseSigma=baseSigmaw*sqrt(Params.sigmasq_upsilon) +(1-baseSigmaw)*sqrt(Params.sigmasq_upsilon)/sqrt(1-Params.rho^2);
+            [u_grid,pi_u] = tauchenHussey(n_z,0,Params.rho,sqrt(Params.sigmasq_upsilon),baseSigma); 
             eta_grid=exp(u_grid);
             pi_eta=pi_u;
         end
@@ -259,8 +269,12 @@ for IndivProdShock=6:8 % 0:8
         Params.sigmasq_alpha=0.326;
         n_z=2;
         % What CK1999 call z I have called u
-        [u_grid, pi_u]=TauchenMethod(0,Params.sigmasq_upsilon,Params.rho,n_z,Params.Tauchen_q,tauchenoptions); %[states, transmatrix]=TauchenMethod_Param(mew,sigmasq,rho,znum,q,[tauchenoptions]), transmatix is (z,zprime)
-%         eta_grid=exp(u_grid);
+        % [u_grid, pi_u]=TauchenMethod(0,Params.sigmasq_upsilon,Params.rho,n_z,Params.Tauchen_q,tauchenoptions); %[states, transmatrix]=TauchenMethod_Param(mew,sigmasq,rho,znum,q,[tauchenoptions]), transmatix is (z,zprime)
+        % Email communcation from Conesa & Krueger (1999): they tell me that they used Tauchen-Hussey method
+        % From tauchenHussey() command: Tauchen & Hussey recommend baseSigma = sigma
+        baseSigma=sqrt(Params.sigmasq_upsilon);
+        [u_grid,pi_u] = tauchenHussey(n_z,0,Params.rho,sqrt(Params.sigmasq_upsilon),baseSigma);
+        % eta_grid=exp(u_grid);
         pi_eta=pi_u;
         z_grid=u_grid; % Note that for Ptype z_grid uses u_grid rather than eta_grid (eta=exp(u))
         pi_z=pi_eta; % Note: these appear in 'reverse' order.
@@ -368,7 +382,7 @@ for IndivProdShock=6:8 % 0:8
     heteroagentoptions.toleranceGEprices=10^(-5); % Final eqm prices need to be highly accurate when using transition paths
     heteroagentoptions.toleranceGEcondns=10^(-5); % Final eqm condns need to be highly accurate when using transition paths
     
-    for PolicyReform=1:3
+    for PolicyReform=1:3 %1:3
         % To indicate progress:
         save ./SavedOutput/ConesaKrueger1999_ProgressIndicator.mat IndivProdShock PolicyReform
         
@@ -401,8 +415,8 @@ for IndivProdShock=6:8 % 0:8
         end
         
         % We need to give an initial guess for the price path on interest rates.
-        if vfoptions.fastOLG==0
-            PricePath0=FullResults(IndivProdShock+1,PolicyReform).Output.PricePath; % This is the version that was calculated with vfoptions.fastOLG==1
+        if transpathoptions.fastOLG==0
+            PricePath0=FullResults(IndivProdShock+1,PolicyReform).Output.PricePath; % This is the version that was calculated with transpathoptions.fastOLG==1
         else
             PricePath0=struct(); % Is filled in internally by ConesaKrueger1999_Fn.m based on the initial and final eqm
         end
@@ -413,7 +427,7 @@ for IndivProdShock=6:8 % 0:8
         % initial and final equilibria)
         transpathoptions.weightscheme=3; % default =1
         transpathoptions.verbose=1;
-%         vfoptions.fastOLG=1; % Set at top of this script
+        % transpathoptions.fastOLG % Set at top of this script
         transpathoptions.maxiterations=200; % default is ???
         transpathoptions.oldpathweight=0.8; % default =0.9
         transpathoptions.historyofpricepath=1;
@@ -437,12 +451,13 @@ for IndivProdShock=6:8 % 0:8
         GeneralEqmEqn_4 = @(AggVars,GEprices) GEprices(4)-0.5*(GEprices(4)-AggVars(3)); % Accidental bequests (adjusted for population growth) are equal to transfers received
         GeneralEqmEqns_Transition={GeneralEqmEqn_1, GeneralEqmEqn_2, GeneralEqmEqn_3, GeneralEqmEqn_4};
         
+        fprintf('Now solving productivity shock %i with policy %i \n', IndivProdShock, PolicyReform)
         FullResults(IndivProdShock+1,PolicyReform).Output=ConesaKrueger1999_Fn(IndivProdShock,Params, n_d,n_a,n_z,N_j, d_grid,a_grid,z_grid,pi_z,ReturnFn, ReturnFnParamNames, DiscountFactorParamNames, jequaloneDist, GEPriceParamNames, AgeWeightsParamNames, T, ParamPath, PricePath0, GeneralEqmEqns_Transition, vfoptions, simoptions, heteroagentoptions, transpathoptions, Names_i, PTypeDistParamNames);
         % Notice the IndivProdShock+1
         
         ReplicationStatus=gather([IndivProdShock, PolicyReform]);
         save ./SavedOutput/ConesaKrueger_ReplicationStatus.mat ReplicationStatus
-        if vfoptions.fastOLG==0
+        if transpathoptions.fastOLG==0
             save ./SavedOutput/ConesaKrueger_FullResults.mat FullResults a_grid -v7.3
         else
             save ./SavedOutput/ConesaKrueger_FullResults_fastOLG.mat FullResults a_grid -v7.3
@@ -944,6 +959,7 @@ fclose(FID);
 % specific ages). I have therefore ended up just drawing the age 20
 % version as out of the age 20, 30 & 60 versions this was the one that
 % looked most like that of CK1999.
+% Later email communication from Dirk Krueger: he says he is confident that this graph was of age 20.
 
 clear EV
 figure(14)

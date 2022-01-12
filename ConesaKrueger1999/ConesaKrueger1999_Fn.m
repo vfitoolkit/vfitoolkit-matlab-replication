@@ -268,7 +268,7 @@ Params.Tr=p_eqm_init.Tr;
 p_init=p_eqm_init; %0.75*p_eqm_init(2)]; % Ignoring the behavioural responses we would expect revenues (and thus spending) to fall to 0.75 of what they were, so lets use this as a 'starting guess'
 p_final=p_eqm_final;
 
-if vfoptions.fastOLG==1
+if transpathoptions.fastOLG==1
     % We need to give an initial guess for the price path on interest rates
     PricePath0.r=[linspace(p_init.r, p_final.r, floor(T/2))'; p_final.r*ones(T-floor(T/2),1)];
     PricePath0.tau=p_init.tau*(2*ParamPath.b); % Because tau is so closely related to b this seems a reasonable guess (the 2* is so the init value of b of 0.5 is instead 1)
