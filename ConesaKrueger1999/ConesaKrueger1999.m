@@ -26,9 +26,7 @@ if transpathoptions.fastOLG==1
     n_a=301; % assets
 else
     n_d=101; % fraction of time worked
-    n_a=801; % assets
-%     n_d=121; % fraction of time worked
-%     n_a=1201; % assets
+    n_a=1001; % assets
 end
 % n_z % labour efficiency units, depends on 'IndivProdShock', so set below.
 N_j=66; % age (number of periods, to be precise this is age-19)
