@@ -4,6 +4,7 @@ function F=GuerrieriLorenzoni2017_DurableGoods_ConsumptionFn(d_val, a1prime_val,
 % omega is the 'wedge' induced by stick wages in the New Keynesian version
 % of model in Section 4 of GL (2017), pg 1450. Notice that when omega=0 it
 % plays no role and this is the case in the rest of the paper.
+% So a2 is durable consumption good, a1 is non-durable consumption good
 
 tau=0.0607*v+B-(1/(1+r))*Bprime; % From pg 1434, notice that q_t=1/(1+r)
 % In steady-state we know that tau=u*v+r/(1+r)*B, as Bprime=B, so the formula could be simplified.
@@ -21,7 +22,8 @@ gk=(a2prime_val-a2_val+delta*a2_val)*(a2prime_val>=a2_val)+((1-zeta)*(a2prime_va
 % here and could just as well use another form.
 
 F=-Inf;
-c=a1_val+z_val*d_val-tau_tilde-((1-chi)*(a1prime_val<0))*(1/(1+r))*a1prime_val-gk; % q=1/(1+r)
+% Bottom of page 48 of GL2017 Appendix A.3, we get the following budgent constraint
+c=a1_val+z_val*d_val-tau_tilde-(1-chi)*(a1prime_val<0)*(1/(1+r))*a1prime_val-(a1prime_val<0)*(1/(1+r))*a1prime_val-gk; % q=1/(1+r)
 % % Note: as well as adding capital adjustment cost gk, also introduce intermediation cost between borrowing and lending cost (1-zeta)*(a1prime_val<0)
 % if c>0 && k>0
 %     % Note: this won't work if gamma=1 or eta=1
