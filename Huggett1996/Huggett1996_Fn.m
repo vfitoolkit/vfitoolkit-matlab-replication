@@ -100,7 +100,7 @@ KdivY=(KdivL^(1-Params.alpha))/Params.A;
 % We know w=MPL (MPL is marginal product of labour)
 Params.w=Params.A*(1-Params.alpha)*(KdivL^Params.alpha); % wage rate (per effective labour unit)
 % Huggett (1996) calibrates tau to the following (see pg 478 for explanation)
-Params.tau=0.195*(1-Params.delta*KdivY);
+Params.tau=0.195/(1-Params.delta*KdivY);
 
 % Aggregate wealth transfers.% Start with some basics (these were previously being done inside return function):
 % Rearranging that r=MPK-delta gives the following eqn (MPK is marginal product of capital)
@@ -110,7 +110,7 @@ KdivY=(KdivL^(1-Params.alpha))/Params.A;
 % We know w=MPL (MPL is marginal product of labour)
 Params.w=Params.A*(1-Params.alpha)*(KdivL^Params.alpha); % wage rate (per effective labour unit)
 % Huggett (1996) calibrates tau to the following (see pg 478 for explanation)
-Params.tau=0.195*(1-Params.delta*KdivY);
+Params.tau=0.195/(1-Params.delta*KdivY);
 
 % Aggregate wealth transfers.
 AggregateWealthTransers=zeros(1,N_j);

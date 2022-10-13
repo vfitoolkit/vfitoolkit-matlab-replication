@@ -10,7 +10,7 @@ KdivY=(KdivL^(1-alpha))/A;
 % We know w=MPL (MPL is marginal product of labour)
 w=A*(1-alpha)*(KdivL^alpha); % wage rate (per effective labour unit)
 % Huggett (1996) calibrates tau to the following (see pg 478 for explanation)
-tau=0.195*(1-delta*KdivY);
+tau=0.195/(1-delta*KdivY);
 
 % Pensions:
 

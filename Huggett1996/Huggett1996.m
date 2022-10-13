@@ -34,8 +34,8 @@ Params.JR=46; % Retirement at age 65 (Note: never actually used directly as is i
 Params.n=0.012; % Population growth rate of 1%
 
 % Tax rates
-% Params.tau % Determined based on r: Params.tau=0.195*(1-Params.delta*K/Y) % Note that K/Y can be calculated from r, see below
-Params.tau=0.195*(1-0.06*3); % Just give an initial guess for tau here
+% Params.tau % Determined based on r: Params.tau=0.195/(1-Params.delta*K/Y) % Note that K/Y can be calculated from r, see below
+Params.tau=0.195/(1-0.06*3); % Just give an initial guess for tau here
 Params.theta=0.1;
 % Accidental bequests
 % Params.T % Determined in GE
@@ -115,7 +115,7 @@ Params.T=1; % lumpsum transfers made out of the accidental bequests
 % KdivL=((Params.r+Params.delta)/(Params.alpha*Params.A))^(1/(Params.alpha-1));
 % KdivY=(KdivL^(1-Params.alpha))/Params.A;
 % Params.w=Params.A*(1-Params.alpha)*(KdivL^Params.alpha); % wage rate (per effective labour unit)
-% Params.tau=0.195*(1-Params.delta*KdivY);
+% Params.tau=0.195/(1-Params.delta*KdivY);
 
 % Note that G is not part of the GEPriceParamNames, this is because it is
 % effectively just a residual of the model and plays no part in the actual
