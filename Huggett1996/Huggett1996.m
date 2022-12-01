@@ -11,6 +11,9 @@
 % One stochastic exogenous variables: income shock
 % Age
 
+% A few lines I needed for running on the Server
+addpath(genpath('./MatlabToolkits/'))
+
 CheckUniquenessOfGE=0; % If =1, will used grid on prices around the GE to check for possibility of other GE. Major increase in run time.
 
 Params.J=79; % Ages 20 to 98 inclusive.
@@ -105,9 +108,9 @@ n_z=18;
 
 %% General eqm variables: give some initial values
 GEPriceParamNames={'r','b','T'};
-Params.r=0.06; % interest rate on assets
+Params.r=0.05; % interest rate on assets
 Params.b=1.2; % Benefits level for retirees
-Params.T=1; % lumpsum transfers made out of the accidental bequests
+Params.T=0.1; % lumpsum transfers made out of the accidental bequests
 % I originally had b=0.8, T=0.6; switched to these after solving for the GE as I know they are
 % closer to the true values, which helps make things run a bit faster.
 
@@ -138,7 +141,8 @@ a_grid=sort(a_grid); % Double-check: length(unique(a_grid))==n_a
 DiscountFactorParamNames={'beta','sj'};
  
 ReturnFn=@(aprime,a,z,sigma,r,ybarj,theta,b,bvec,T,delta,alpha,A,bc_equalsminusw) Huggett1996_ReturnFn(aprime,a,z,sigma,r,ybarj,theta,b,bvec,T,delta,alpha,A,bc_equalsminusw)
-ReturnFnParamNames={'sigma','r','ybarj','theta','b','bvec','T','delta','alpha','A','bc_equalsminusw'}; %It is important that these are in same order as they appear in 'Huggett1996_ReturnFn'
+% For the return function the first inputs must be (any decision variables), next period endogenous
+% state, this period endogenous state (any exogenous shocks). After that come any parameters.
 
 vfoptions.verbose=0;
 vfoptions.policy_forceintegertype=2; % Policy was not being treated as integers (one of the elements was 10^(-15) different from an integer)
@@ -163,27 +167,17 @@ Params.fractionretired=sum(Params.mewj.*Params.bvec); % Note: bvec is really jus
 
 %% Set up the General Equilibrium conditions (on assets/interest rate, assuming a representative firm with Cobb-Douglas production function)
 
-% Aggregate Variables (important that ordering of Names and Functions is the same)
-FnsToEvaluateParamNames=struct();
-FnsToEvaluateParamNames(1).Names={};
-FnsToEvaluateFn_1 = @(aprime_val,a_val,z_val) a_val; % Aggregate assets (which is this periods state)
-FnsToEvaluateParamNames(2).Names={'ybarj'};
-FnsToEvaluateFn_2 = @(aprime_val,a_val,z_val,ybarj) exp(z_val+ybarj); % Aggregate labour supply (in efficiency units)
-FnsToEvaluateParamNames(3).Names={'sj','r','tau'};
-FnsToEvaluateFn_3 = @(aprime_val,a_val,z_val,sj,r,tau) (1-sj)*aprime_val*(1+r*(1-tau)); % Total accidental bequests
-FnsToEvaluate={FnsToEvaluateFn_1,FnsToEvaluateFn_2,FnsToEvaluateFn_3};
+% Functions to evaluate
+FnsToEvaluate.K = @(aprime,a,z) a; % Aggregate assets (which is this periods state)
+FnsToEvaluate.L = @(aprime,a,z,ybarj) exp(z+ybarj); % Aggregate labour supply (in efficiency units)
+FnsToEvaluate.Beq = @(aprime,a,z,sj,r,tau) (1-sj)*aprime*(1+r*(1-tau)); % Total accidental bequests
 % Note that the aggregate labour supply is actually entirely exogenous and so I could just precompute it, but am feeling lazy.
 
 % General Equilibrium Equations
-% Recall that GEPriceParamNames={'r','b','T'}; In following lines p is the vector of these and so, e.g., p(2) is T.
-GeneralEqmEqnParamNames=struct();
-GeneralEqmEqnParamNames(1).Names={'A','alpha','delta'};
-GeneralEqmEqn_1 = @(AggVars,p,A,alpha,delta) p(1)-(A*alpha*(AggVars(1)^(alpha-1))*(AggVars(2)^(1-alpha))-delta); % Rate of return on assets is related to Marginal Product of Capital
-GeneralEqmEqnParamNames(2).Names={'theta','fractionretired','A','alpha'};
-GeneralEqmEqn_2 = @(AggVars,p,theta,fractionretired,alpha,A) p(2)*fractionretired-theta*(A*(1-alpha)*(AggVars(1)^(alpha))*(AggVars(2)^(-alpha)))*AggVars(2); % Retirement benefits equal Payroll tax revenue: b*fractionretired-theta*w*L
-GeneralEqmEqnParamNames(3).Names={};
-GeneralEqmEqn_3 = @(AggVars,p) p(3)-AggVars(3); % Lump-sum transfers equal Accidental bequests 
-GeneralEqmEqns={GeneralEqmEqn_1,GeneralEqmEqn_2,GeneralEqmEqn_3};
+% Recall that GEPriceParamNames={'r','b','T'};
+GeneralEqmEqns.capitalmarket = @(r,L,K,A,alpha,delta) r-(A*alpha*(K^(alpha-1))*(L^(1-alpha))-delta); % Rate of return on assets is related to Marginal Product of Capital
+GeneralEqmEqns.SSbalance = @(b,K,L,theta,fractionretired,alpha,A) b*fractionretired-theta*(A*(1-alpha)*(K^(alpha))*(L^(-alpha)))*L; % Retirement benefits equal Payroll tax revenue: b*fractionretired-theta*w*L
+GeneralEqmEqns.Bequests = @(T,Beq,n) T-Beq/(1+n); % Lump-sum transfers equal Accidental bequests 
 
 %% We have finished setting up the model, now we need to solve it for all the variations that Huggett (1996) does.
 % Hugget solves more than one economy
@@ -194,6 +188,12 @@ bc_equalsminuswvec=[0,1];
 % Params.sigmasqepsilon=0, 0.045
 sigmasqepsilonvec=[0, 0.045];
 % Certain lifetimes: beta=0.994, Params.sj=1, beta=1.011, Params.sj=vector
+
+sigma_c=1;
+alowerbar_c=1;
+sigmasqepsilon_c=2;
+uncertainlifetime_c=2;
+
 for sigma_c=1:2
     Params.sigma=sigmavec(sigma_c);
     for alowerbar_c=1:2
@@ -209,7 +209,15 @@ for sigma_c=1:2
                     Params.beta=0.994;
                     Params.sj=ones(size(Params.dj));
                 end
-                OutputResults=Huggett1996_Fn(Params, n_a,n_z,N_j, a_grid, ReturnFn, DiscountFactorParamNames, ReturnFnParamNames, AgeWeightsParamNames, FnsToEvaluate, FnsToEvaluateParamNames, GEPriceParamNames, GeneralEqmEqns, GeneralEqmEqnParamNames, simoptions,vfoptions,CheckUniquenessOfGE);
+                if sigma_c==1 && alowerbar_c==1 && sigmasqepsilon_c==2 && uncertainlifetime_c==2
+                    heteroagentoptions.fminalgo=6; % Need to use contrained optimization
+                    % Impose that transfers must be >=0
+                    heteroagentoptions.lb=[-Inf,-Inf,0]; % recall GEPriceParamNames={'r','b','T'};
+                    heteroagentoptions.ub=[Inf,Inf,Inf];
+                else
+                    heteroagentoptions=struct(); % No need to set any of heteroagentoptions
+                end
+                OutputResults=Huggett1996_Fn(Params, n_a,n_z,N_j, a_grid, ReturnFn, DiscountFactorParamNames, AgeWeightsParamNames, FnsToEvaluate, GEPriceParamNames, GeneralEqmEqns,heteroagentoptions, simoptions,vfoptions,CheckUniquenessOfGE);
                 FullResults(sigma_c,alowerbar_c,sigmasqepsilon_c,uncertainlifetime_c).OutputResults=OutputResults;
                 counter=[sigma_c, alowerbar_c, sigmasqepsilon_c, uncertainlifetime_c];
                 save ./SavedOutput/Huggett1996_Counter.mat counter
@@ -234,7 +242,7 @@ saveas(gcf,'./SavedOutput/Graphs/Huggett1996_Figure1.png')
 AgeConditionalStats=FullResults(1,2,2,1).OutputResults.AgeConditionalStats;
 % Fig 2
 figure(2);
-plot(19+(1:1:71),AgeConditionalStats.Mean(1:end-8),19+(1:1:71),AgeConditionalStats.QuantileCutoffs(2,1:end-8),19+(1:1:71),AgeConditionalStats.QuantileCutoffs(5,1:end-8),19+(1:1:71),AgeConditionalStats.QuantileCutoffs(10,1:end-8))
+plot(19+(1:1:71),AgeConditionalStats.K.Mean(1:end-8),19+(1:1:71),AgeConditionalStats.K.QuantileCutoffs(2,1:end-8),19+(1:1:71),AgeConditionalStats.K.QuantileCutoffs(5,1:end-8),19+(1:1:71),AgeConditionalStats.K.QuantileCutoffs(10,1:end-8))
 legend('Mean','10th','25th','Median')
 title({'Wealth Profiles: Uncertain Lifetimes'})
 xlabel('Age')
@@ -247,7 +255,7 @@ saveas(gcf,'./SavedOutput/Graphs/Huggett1996_Figure2.png')
 figure(3);
 AgeConditionalStats1=FullResults(1,1,2,2).OutputResults.AgeConditionalStats;
 AgeConditionalStats2=FullResults(1,2,2,2).OutputResults.AgeConditionalStats;
-plot(19+(11:1:56),AgeConditionalStats1.Gini(11:(end-8-15)),19+(11:1:56),AgeConditionalStats2.Gini(11:(end-8-15)))
+plot(19+(11:1:56),AgeConditionalStats1.K.Gini(11:(end-8-15)),19+(11:1:56),AgeConditionalStats2.K.Gini(11:(end-8-15)))
 legend('a=0, sigma=1.5', 'a=-w, sigma=1.5')
 title({'Certain Lifetimes: Gini coefficients within age groups'})
 xlabel('Age')
@@ -259,7 +267,7 @@ saveas(gcf,'./SavedOutput/Graphs/Huggett1996_Figure4.png')
 figure(4);
 AgeConditionalStats1=FullResults(1,1,2,1).OutputResults.AgeConditionalStats;
 AgeConditionalStats2=FullResults(1,2,2,1).OutputResults.AgeConditionalStats;
-plot(19+(11:1:56),AgeConditionalStats1.Gini(11:(end-8-15)),19+(11:1:61),AgeConditionalStats2.Gini(11:(end-8-10)))
+plot(19+(11:1:56),AgeConditionalStats1.K.Gini(11:(end-8-15)),19+(11:1:61),AgeConditionalStats2.K.Gini(11:(end-8-10)))
 legend('a=0, sigma=1.5', 'a=-w, sigma=1.5')
 title({'Uncertain Lifetimes: Gini coefficients within age groups'})
 xlabel('Age')

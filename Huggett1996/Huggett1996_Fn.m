@@ -1,4 +1,4 @@
-function OutputResults=Huggett1996_Fn(Params, n_a,n_z,N_j, a_grid, ReturnFn, DiscountFactorParamNames, ReturnFnParamNames, AgeWeightsParamNames, SSvaluesFn, SSvalueParamNames, GEPriceParamNames, GeneralEqmEqns, GeneralEqmEqnParamNames, simoptions, vfoptions,CheckUniquenessOfGE)
+function OutputResults=Huggett1996_Fn(Params, n_a,n_z,N_j, a_grid, ReturnFn, DiscountFactorParamNames, AgeWeightsParamNames, FnsToEvaluate, GEPriceParamNames, GeneralEqmEqns, heteroagentoptions, simoptions, vfoptions,CheckUniquenessOfGE)
 % Replication of Huggett (1996) - Wealth Distribution in Life Cycle Economies
 
 %% Need to create appropriate z_grid and pi_z
@@ -49,7 +49,7 @@ end
 % Without p_grid, just searching. Use n_p=0. (Setting the actual algorithm
 % used to 'search' can be done with heteroagentoptions.fminalgo)
 heteroagentoptions.verbose=1;
-[p_eqm,~, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, 0, pi_z, 0, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+[p_eqm,~, GeneralEqmEqnsValues]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, 0, pi_z, 0, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
 Params.r=p_eqm.r;
 Params.b=p_eqm.b;
 Params.T=p_eqm.T;
@@ -70,7 +70,7 @@ if CheckUniquenessOfGE==1
     n_p=[length(r_grid),length(b_grid),length(T_grid)];
     heteroagentoptions.pgrid=p_grid;
     heteroagentoptions.verbose=1;
-    [p_eqm,p_eqm_index1, GeneralEqmEqnsValues1]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, n_p, pi_z, 0, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,p_eqm_index1, GeneralEqmEqnsValues1]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, n_p, pi_z, 0, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
     Params.r=p_eqm.r;
     Params.b=p_eqm.b;
     Params.T=p_eqm.T;
@@ -81,7 +81,7 @@ if CheckUniquenessOfGE==1
     b_grid=linspace(0.95,1.05,21)'*Params.b; %okay
     T_grid=linspace(0.95,1.05,21)'*Params.T; %good
     p_grid=[r_grid,b_grid, T_grid];
-    [p_eqm,p_eqm_index2, GeneralEqmEqnsValues2]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, n_p, pi_z, 0, a_grid, z_grid, ReturnFn, SSvaluesFn, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, SSvalueParamNames, GeneralEqmEqnParamNames, GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,p_eqm_index2, GeneralEqmEqnsValues2]=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,0, n_a, n_z, N_j, n_p, pi_z, 0, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
     Params.r=p_eqm.r;
     Params.b=p_eqm.b;
     Params.T=p_eqm.T;
@@ -89,7 +89,7 @@ if CheckUniquenessOfGE==1
 end
 
 %% Compute a few things about the equilibrium
-[V, Policy]=ValueFnIter_Case1_FHorz(0,n_a,n_z,N_j, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz(0,n_a,n_z,N_j, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [],vfoptions);
 StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,0,n_a,n_z,N_j,pi_z,Params,simoptions);
 
 % Start with some basics (these were previously being done inside return function):
@@ -121,35 +121,25 @@ for jj=1:Params.J
 end
 AggregateWealthTransers=sum(Params.mewj.*AggregateWealthTransers);
 % Total wealth
-FnsToEvaluateParamNames=struct();
-FnsToEvaluateParamNames(1).Names={}; 
-FnsToEvaluate_TotalWealth = @(aprime_val,a_val,z_val) a_val;
-FnsToEvaluate={FnsToEvaluate_TotalWealth};
-TotalWealth=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid);
+FnsToEvaluate2.TotalWealth = @(aprime_val,a_val,z_val) a_val;
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate2, Params, [], 0, n_a, n_z,N_j, 0, a_grid, z_grid);
 % Transfer Wealth Ratio
-TransferWealthRatio=AggregateWealthTransers/TotalWealth;
+TransferWealthRatio=AggregateWealthTransers/AggVars.TotalWealth.Mean;
 
 
 % Calculate fraction of population with zero or negative wealth
-FnsToEvaluateParamNames=struct();
-FnsToEvaluateParamNames(1).Names={}; % ZeroOrNegAssets
-FnsToEvaluate_ZeroOrNegAssets = @(aprime_val,a_val,z_val) (a_val<=0); % Indicator for ZeroOrNegAssets
-FnsToEvaluate={FnsToEvaluate_ZeroOrNegAssets};
-FractionWithZeroOrNegAssets=100*EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid);
+FnsToEvaluate3.ZeroOrNegAssets = @(aprime_val,a_val,z_val) (a_val<=0); % Indicator for ZeroOrNegAssets
+FractionWithZeroOrNegAssets=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate3, Params, [], 0, n_a, n_z,N_j, 0, a_grid, z_grid);
 
 % Calculate wealth lorenz curve (and thus all percentile shares) and also
 % the that for earnings (in text at bottom of pg 480, top of pg 481, there
 % are a bunch of descriptions of model earnings, conditional on working age)
-FnsToEvaluateParamNames=struct();
-FnsToEvaluateParamNames(1).Names={};
-FnsToEvaluate_1 = @(aprime_val,a_val,z_val) a_val; % Aggregate assets (which is this periods state)
-FnsToEvaluate={FnsToEvaluate_1};
-LorenzCurves=EvalFnOnAgentDist_LorenzCurve_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, 0, n_a, n_z,N_j, 0, a_grid, z_grid);
-TopWealthShares=100*(1-LorenzCurves([80,95,99],1)); % Need the 20,5, and 1 top shares for Tables of Huggett (1996)
+AllLorenzCurves=EvalFnOnAgentDist_LorenzCurve_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], 0, n_a, n_z,N_j, 0, a_grid, z_grid);
+TopWealthShares=100*(1-AllLorenzCurves.K([80,95,99],1)); % Need the 20,5, and 1 top shares for Tables of Huggett (1996)
 % Calculate the wealth gini
-WealthGini=Gini_from_LorenzCurve(LorenzCurves(:,1));
+WealthGini=Gini_from_LorenzCurve(AllLorenzCurves.K(:,1));
 
-AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,FnsToEvaluateParamNames,Params,0,n_a,n_z,N_j,0,a_grid,z_grid);
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,0,n_a,n_z,N_j,0,a_grid,z_grid);
 
 %% Put together a bunch of things that I want to return as output
 
@@ -159,13 +149,14 @@ OutputResults.AgeConditionalStats=AgeConditionalStats;
 
 OutputResults.WealthGini=WealthGini;
 OutputResults.TopWealthShares=TopWealthShares;
-OutputResults.FractionWithZeroOrNegAssets=FractionWithZeroOrNegAssets;
+OutputResults.FractionWithZeroOrNegAssets=100*FractionWithZeroOrNegAssets.ZeroOrNegAssets.Mean;
 OutputResults.TransferWealthRatio=TransferWealthRatio;
 OutputResults.KdivY=KdivY;
 
 OutputResults.z_grid=gather(z_grid);
 OutputResults.pi_z=gather(pi_z);
 
+OutputResults.GeneralEqmEqnsValues=gather(GeneralEqmEqnsValues); % So can check accuracy of the eqm
 
 if CheckUniquenessOfGE==1
     % Some things to allow looking at whether the equilibrium was unique
