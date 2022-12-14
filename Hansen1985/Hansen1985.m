@@ -76,7 +76,7 @@ elseif AlternativeProductivityShocks==1
     q=3;
     tauchenoptions.parallel=Parallel;
     mcmomentsoptions.parallel=Parallel;
-    [z_grid, pi_z]=TauchenMethod(0,Params.sigmasq_epsilon,Params.rho,n_z,q,tauchenoptions); % the AR(1) on log(z)
+    [z_grid,pi_z]=discretizeAR1_Tauchen(0,Params.rho,Params.sigma_epsilon,n_z,q, tauchenoptions);  % the AR(1) on log(z)
     z_grid=exp(z_grid); % so z is just exp(log(z))
     %Normalize z by dividing it by Expectation_z (so that the resulting process has expectaion equal to 1.
     [Expectation_z,~,~,~]=MarkovChainMoments(z_grid,pi_z,mcmomentsoptions);
@@ -92,8 +92,7 @@ pi_z=gpuArray(pi_z);
 
 DiscountFactorParamNames={'beta'};
 
-ReturnFn=@(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy) Hansen1985_ReturnFn(d_val, aprime_val, a_val, z_val, alpha, delta, A, B, Economy);
-ReturnFnParamNames={'alpha', 'delta', 'A', 'B', 'Economy'}; 
+ReturnFn=@(d, aprime, a, z, alpha, delta, A, B, Economy) Hansen1985_ReturnFn(d, aprime, a, z, alpha, delta, A, B, Economy);
 
 %% Solve Model and Generate Table 1 of Hansen (1985)
 
@@ -101,15 +100,17 @@ ReturnFnParamNames={'alpha', 'delta', 'A', 'B', 'Economy'};
 % I instead use 10,000 simulations to ensure that results are not 'random' (not impacted by the seed of the random number generator)
 NSims=10000;  %Number of simulations
 simoptions.simperiods=115;
-StdBusCycleStats=zeros(2,7,2,NSims,'gpuArray');
+if gpuDeviceCount>0 % If there is a gpu
+    StdBusCycleStats=zeros(2,7,2,NSims,'gpuArray');
+else % If there is no gpu, will use cpu but is much slower
+    StdBusCycleStats=zeros(2,7,2,NSims);
+end
 
 for Economy=1:2 % Divisible and Indivisible labour respectively
     Params.Economy=Economy;
     %% Solve
     disp('Solve value fn problem')
-%     V0=ones([n_a,n_z],'gpuArray'); %(a,z)
-    [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames,ReturnFnParamNames,vfoptions);
-    disp('Sim time series')
+    [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames,[],vfoptions);
 
     %No need for asyptotic distribution.
     %simoptions.simperiods=10^4; simoptions.iterate=1;
@@ -123,28 +124,25 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
             save ./SavedOutput/Hansen1985_Economy2.mat V Policy
         end
     end
+
     %% Generate Table 1 of Hansen (1985)
-    
-    for ii=1:NSims
-        TimeSeriesIndexes=SimTimeSeriesIndexes_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions);
-        
-        %Define the functions which we wish to create time series for (from the TimeSeriesIndexes)
-        TimeSeriesFn_1 = @(d_val,aprime_val,a_val,z_val) z_val*(a_val^Params.alpha)*(d_val^(1-Params.alpha)); %Output (from eqn 1)
-        TimeSeriesFn_2 = @(d_val,aprime_val,a_val,z_val) z_val*(a_val^Params.alpha)*(d_val^(1-Params.alpha)) -(aprime_val-(1-Params.delta)*a_val); %Consumption (=output-investment, from eqn 2; this formula is valid for both divisible and indivisible labour)
-        TimeSeriesFn_3 = @(d_val,aprime_val,a_val,z_val) aprime_val-(1-Params.delta)*a_val; %Investment (from eqn 3)
-        TimeSeriesFn_4 = @(d_val,aprime_val,a_val,z_val) a_val; %Capital Stock
-        TimeSeriesFn_5 = @(d_val,aprime_val,a_val,z_val) d_val; %Hours
-        TimeSeriesFn_6 = @(d_val,aprime_val,a_val,z_val) (z_val*(a_val^Params.alpha)*(d_val^(1-Params.alpha)))/d_val; %Productivity (measured in data as output divided by hours)
-        TimeSeriesFn_7 = @(d_val,aprime_val,a_val,z_val) z_val; %Tech Shock (Hansen 1985 does not report this, just for interest)
-        
-        
-        TimeSeriesFn={TimeSeriesFn_1, TimeSeriesFn_2, TimeSeriesFn_3, TimeSeriesFn_4, TimeSeriesFn_5, TimeSeriesFn_6, TimeSeriesFn_7};
-        
-        TimeSeries=TimeSeries_Case1(TimeSeriesIndexes,Policy, TimeSeriesFn, n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
-        
-        [OutputTrend,OutputCyc]=hpfilter(gather(log(TimeSeries(1,:))),1600); % hpfilter() does not yet exist for gpu
+    disp('Simulate time series')
+    for ii=1:NSims        
+        %Define the functions which we wish to create time series for
+        FnsToEvaluate.Y = @(d,aprime,a,z,alpha) z*(a^alpha)*(d^(1-alpha)); %Output (from eqn 1)
+        FnsToEvaluate.C = @(d,aprime,a,z) z*(a^Params.alpha)*(d^(1-Params.alpha)) -(aprime-(1-Params.delta)*a); %Consumption (=output-investment, from eqn 2; this formula is valid for both divisible and indivisible labour)
+        FnsToEvaluate.I = @(d,aprime,a,z) aprime-(1-Params.delta)*a; %Investment (from eqn 3) 
+        FnsToEvaluate.K = @(d,aprime,a,z) a; %Capital Stock
+        FnsToEvaluate.H = @(d,aprime,a,z) d; %Hours 
+        FnsToEvaluate.TFP = @(d,aprime,a,z,alpha) (z*(a^alpha)*(d^(1-alpha)))/d; %Productivity (measured in data as output divided by hours)
+        FnsToEvaluate.z = @(d,aprime,a,z) z; %Tech Shock (Hansen 1985 does not report this, just for interest)
+
+        TimeSeries=TimeSeries_Case1(Policy, FnsToEvaluate, Params, n_d, n_a, n_z, d_grid, a_grid, z_grid,pi_z,simoptions);
+
+        [OutputTrend,OutputCyc]=hpfilter(gather(log(TimeSeries.Y)),1600); % hpfilter() does not yet exist for gpu
+        FnNames=fieldnames(FnsToEvaluate);
         for jj=1:7
-            [TimeSeriesTrend,TimeSeriesCyc]=hpfilter(gather(log(TimeSeries(jj,:))),1600); % hpfilter() does not yet exist for gpu
+            [TimeSeriesTrend,TimeSeriesCyc]=hpfilter(gather(log(TimeSeries.(FnNames{jj}))),1600); % hpfilter() does not yet exist for gpu
             temp=cov(100*OutputCyc,100*TimeSeriesCyc); % To match treatment of data the model output must be logged and then hpfiltered, then multiply by 100 to express as percent
             StdBusCycleStats(1,jj,Economy,ii)=sqrt(temp(2,2)); % Std dev (column a)
             StdBusCycleStats(2,jj,Economy,ii)=temp(1,2)/(sqrt(temp(1,1))*sqrt(temp(2,2))); % Correlation with output (column b)
