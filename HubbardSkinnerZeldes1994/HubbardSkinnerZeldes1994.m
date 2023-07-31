@@ -35,8 +35,8 @@ Params.age=[WorkingAgeVec,RetiredAgeVec];
 %
 n_a=1501;
 maxa=5*10^5;
-n_z=[21,21]; % income, medical. HSZ1994 use [9,9] (HSV1994, pg 112)
-N_i=3; % Number of fixed types
+n_z=[21,21]; % 21,21 % income, medical. HSZ1994 use [9,9] (HSV1994, pg 112)
+Names_i={'NoHighSchool','HighSchool','College'}; % Number of fixed types
 N_j=Params.J; % Number of periods in finite horizon
 Params.q=3; % For tauchen method. They used q=2.5: pg 112 of pdf, "range between 2.5 standard deviations (of the unconditional distribution) above and below..."
 
@@ -50,6 +50,9 @@ Params.delta=0.03; % rate at which agents discount future
 Params.beta=1/(1+Params.delta);
 Params.r=0.03; % interest rate on assets
 
+% Add a parameter which just indicates the permanent type (for use when simulating panel data)
+Params.hhtype=[1,2,3];
+
 % Mortality rates (probability of survival)
 % Table A.1
 Params.dj=[0.00058, 0.00061, 0.00062, 0.00064, 0.00065, 0.00067, 0.00069, 0.00070, 0.00072, 0.00075, 0.00078, 0.00082, 0.00086, 0.00091, 0.00098, 0.00105, 0.00115, 0.00128, 0.00144, 0.00161, 0.00180, 0.00200,...
@@ -62,23 +65,23 @@ Params.sj=1-Params.dj; % Conditional survival probabilities. Act as a discount r
 
 % Wage (Earnings) incomes, W
 % Table A.2
-Params.DeterministicWj_working.pt1=[10993-196*WorkingAgeVec+2167*((WorkingAgeVec.^2)/100)-2655*((WorkingAgeVec.^3)/10000)];
-Params.DeterministicWj_working.pt2=[-11833+1421*WorkingAgeVec-137*((WorkingAgeVec.^2)/100)-2186*((WorkingAgeVec.^3)/10000)]; 
-Params.DeterministicWj_working.pt3=[72270-5579*WorkingAgeVec+19200*((WorkingAgeVec.^2)/100)-18076*((WorkingAgeVec.^3)/10000)];
+Params.DeterministicWj_working.NoHighSchool=[10993-196*WorkingAgeVec+2167*((WorkingAgeVec.^2)/100)-2655*((WorkingAgeVec.^3)/10000)];
+Params.DeterministicWj_working.HighSchool=[-11833+1421*WorkingAgeVec-137*((WorkingAgeVec.^2)/100)-2186*((WorkingAgeVec.^3)/10000)]; 
+Params.DeterministicWj_working.College=[72270-5579*WorkingAgeVec+19200*((WorkingAgeVec.^2)/100)-18076*((WorkingAgeVec.^3)/10000)];
 % Table A.3
-Params.DeterministicWj_retired.pt1=[17861-133*RetiredAgeVec]; 
-Params.DeterministicWj_retired.pt2=[29733-245*RetiredAgeVec]; 
-Params.DeterministicWj_retired.pt3=[48123-429*RetiredAgeVec];
+Params.DeterministicWj_retired.NoHighSchool=[17861-133*RetiredAgeVec]; 
+Params.DeterministicWj_retired.HighSchool=[29733-245*RetiredAgeVec]; 
+Params.DeterministicWj_retired.College=[48123-429*RetiredAgeVec];
 % Is not mentioned in paper, but based on Figures 3a-c is clear that
 % earnings from ages 90+ are simply frozen at their age 89 level.
-Params.DeterministicWj_retired.pt1(25:35)=Params.DeterministicWj_retired.pt1(24)*ones(size(Params.DeterministicWj_retired.pt1(25:35)));
-Params.DeterministicWj_retired.pt2(25:35)=Params.DeterministicWj_retired.pt2(24)*ones(size(Params.DeterministicWj_retired.pt2(25:35)));
-Params.DeterministicWj_retired.pt3(25:35)=Params.DeterministicWj_retired.pt3(24)*ones(size(Params.DeterministicWj_retired.pt3(25:35)));
-Params.DeterministicWj.pt1=[Params.DeterministicWj_working.pt1, Params.DeterministicWj_retired.pt1];
-Params.DeterministicWj.pt2=[Params.DeterministicWj_working.pt2, Params.DeterministicWj_retired.pt2];
-Params.DeterministicWj.pt3=[Params.DeterministicWj_working.pt3, Params.DeterministicWj_retired.pt3];
+Params.DeterministicWj_retired.NoHighSchool(25:35)=Params.DeterministicWj_retired.NoHighSchool(24)*ones(size(Params.DeterministicWj_retired.NoHighSchool(25:35)));
+Params.DeterministicWj_retired.HighSchool(25:35)=Params.DeterministicWj_retired.HighSchool(24)*ones(size(Params.DeterministicWj_retired.HighSchool(25:35)));
+Params.DeterministicWj_retired.College(25:35)=Params.DeterministicWj_retired.College(24)*ones(size(Params.DeterministicWj_retired.College(25:35)));
+Params.DeterministicWj.NoHighSchool=[Params.DeterministicWj_working.NoHighSchool, Params.DeterministicWj_retired.NoHighSchool];
+Params.DeterministicWj.HighSchool=[Params.DeterministicWj_working.HighSchool, Params.DeterministicWj_retired.HighSchool];
+Params.DeterministicWj.College=[Params.DeterministicWj_working.College, Params.DeterministicWj_retired.College];
 % % Compare to Fig A.1(a-c): they won't be exactly the same as drop the year fixed effects, but eyeballing suggests they are fine.
-% plot(21:1:100, Params.DeterministicWj.pt1, 21:1:100, Params.DeterministicWj.pt2, 21:1:100, Params.DeterministicWj.pt3)
+% plot(21:1:100, Params.DeterministicWj.NoHighSchool, 21:1:100, Params.DeterministicWj.HighSchool, 21:1:100, Params.DeterministicWj.College)
 % Stochastic Wj (Table A.4): u_it, an AR(1) in regressions in paper
 Params.w_rho=[0.955; 0.946; 0.955];
 Params.w_sigmasqepsilon=[0.033; 0.025; 0.016];
@@ -108,7 +111,8 @@ Params.n=0.01;
 simoptions.parallel=1;
 simoptions.numbersims=10^5; % Number of simulations on which panel data (and life-cycle profile) results will be based.
 
-PTypeDist=[0.22,0.56,0.22]'; % Hubbard, Skinner & Zeldes (1994) do not appear to report these 
+PTypeDistParamNames={'ptypeweights'};
+Params.ptypeweights=[0.22,0.56,0.22]'; % Hubbard, Skinner & Zeldes (1994) do not appear to report these 
                              % weights/probabilities anywhere in either of the two papers. 
                              % I have 'ballparked' them based on alternative sources for 1984 as
                              % fractions of US population (pg 1 of http://www.russellsage.org/sites/all/files/chartbook/Educational%20Attainment%20and%20Achievement.pdf )
@@ -138,7 +142,7 @@ if dopart(1)==1
                 descriptivestr=['Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
                 descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
                 descriptivestr={descriptivestr};
-                [Table1row.(descriptivestr{:}), Table2temp, Table3temp, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+                [Table1row.(descriptivestr{:}), Table2temp, Table3temp, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDistParamNames);
                 if Params.Cbar==7000 && Params.delta==0.03 && Params.gamma==3
                     Table2(:,1:3)=Table2temp;
                 elseif Params.Cbar==1 && Params.delta==0.1 && Params.gamma==3
@@ -319,10 +323,10 @@ fclose(FID);
 
 % Figure 1
 figure(1)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(1,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.NoHighSchool(1,1:(end-19),1)/1000)
 hold on
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(1,1:(end-19),1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(1,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.HighSchool(1,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.College(1,1:(end-19),1)/1000)
 hold off
 title({'Average Assets by Age';'All Certain, $1 Floor'})
 legend('No High School Degree', 'High School Degree', 'College')
@@ -332,11 +336,11 @@ saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure1.png')
 
 % Figure 2a
 figure(2)
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.NoHighSchool(1,:,1)/1000)
 hold on
-plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt1(1,:,1)/1000)
-plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt1(1,:,1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(1,1:(end-19),1)/1000)
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.NoHighSchool(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.NoHighSchool(1,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.NoHighSchool(1,1:(end-19),1)/1000)
 hold off
 title({'Average Assets by Age';'No High School Degree'})
 legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
@@ -347,11 +351,11 @@ saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2a.png')
 
 % Figure 2b
 figure(3)
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.HighSchool(1,:,1)/1000)
 hold on
-plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt2(1,:,1)/1000)
-plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt2(1,:,1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(1,1:(end-19),1)/1000)
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.HighSchool(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.HighSchool(1,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.HighSchool(1,1:(end-19),1)/1000)
 hold off
 title({'Average Assets by Age';'High School Degree'})
 legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
@@ -362,11 +366,11 @@ saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2b.png')
 
 % Figure 2c
 figure(4)
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.College(1,:,1)/1000)
 hold on
-plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt3(1,:,1)/1000)
-plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt3(1,:,1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(1,1:(end-19),1)/1000)
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.College(1,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.College(1,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.College(1,1:(end-19),1)/1000)
 hold off
 title({'Average Assets by Age';'College Degree'})
 legend('All uncertain ($1 floor)', 'All uncertain ($7000 floor)','Only lifetime uncertain', 'All certain')
@@ -378,13 +382,13 @@ saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure2c.png')
 
 % Figure 3a
 figure(5)
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(2,:,1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.NoHighSchool(2,:,1)/1000) % Earnings
 hold on
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(2,1:(end-19),1)/1000) % Earnings
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt1(5,:,1)/1000) % Consumption
-plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt1(5,:,1)/1000)
-plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt1(5,:,1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt1(5,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.NoHighSchool(2,1:(end-19),1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.NoHighSchool(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.NoHighSchool(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.NoHighSchool(5,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.NoHighSchool(5,1:(end-19),1)/1000)
 hold off
 title({'Average Consumption and Earnings by Age';'No High School Degree'})
 legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
@@ -395,13 +399,13 @@ saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3a.png')
 
 % Figure 3b
 figure(6)
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(2,:,1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.HighSchool(2,:,1)/1000) % Earnings
 hold on
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(2,1:(end-19),1)/1000) % Earnings
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt2(5,:,1)/1000) % Consumption
-plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt2(5,:,1)/1000)
-plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt2(5,:,1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt2(5,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.HighSchool(2,1:(end-19),1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.HighSchool(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.HighSchool(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.HighSchool(5,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.HighSchool(5,1:(end-19),1)/1000)
 hold off
 title({'Average Consumption and Earnings by Age';'High School Degree'})
 legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')
@@ -412,13 +416,13 @@ saveas(gcf,'./SavedOutput/Graphs/HubbardSkinnerZeldes1994_Figure3b.png')
 
 % Figure 3c
 figure(7)
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(2,:,1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.College(2,:,1)/1000) % Earnings
 hold on
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(2,1:(end-19),1)/1000) % Earnings
-plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.pt3(5,:,1)/1000) % Consumption
-plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.pt3(5,:,1)/1000)
-plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.pt3(5,:,1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.pt3(5,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.College(2,1:(end-19),1)/1000) % Earnings
+plot(Params.age, LifeCycProfiles.Cbar1gamma3delta003.College(5,:,1)/1000) % Consumption
+plot(Params.age, LifeCycProfiles.Cbar7000gamma3delta003.College(5,:,1)/1000)
+plot(Params.age, LifeCycProfiles.onlylifetimeuncertain_Cbar1gamma3delta003.College(5,:,1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.College(5,1:(end-19),1)/1000)
 hold off
 title({'Average Consumption and Earnings by Age';'College Degree'})
 legend('Earnings: All Uncertain','Earnings: All certain','Cons: All uncertain ($1 floor)', 'Cons: All uncertain ($7000 floor)','Cons: Only lifetime uncertain', 'Cons: All certain')

@@ -1,4 +1,4 @@
-function [Table1row, Table2, Table3, SimLifeCycleProfiles]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist)
+function [Table1row, Table2, Table3, SimLifeCycleProfiles]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames)
 
 %% This code replicates the results of 
 % Hubbard, Skinner & Zeldes (1994) - The importance of precautionary motives in explaining individual and aggregate saving
@@ -33,7 +33,7 @@ function [Table1row, Table2, Table3, SimLifeCycleProfiles]=HubbardSkinnerZeldes1
 % n_a=250;
 maxa=5*10^5;
 % n_z=[15,15]; % income, medical
-N_i=3; % Number of fixed types
+% Names_i={'NoHighSchool','HighSchool','College'}; % Number of fixed types
 N_j=Params.J; % Number of periods in finite horizon
 % Params.q=3; % For tauchen method. They used q=2.5: pg 112 of pdf, "range between 2.5 standard deviations (of the unconditional distribution) above and below..."
 % 
@@ -59,27 +59,27 @@ Params.beta=1/(1+Params.delta);
 % 
 % % Wage (Earnings) incomes, W
 % % Table A.2
-% Params.DeterministicWj_working.pt1=[10993-196*WorkingAgeVec+2167*((WorkingAgeVec.^2)/100)-2655*((WorkingAgeVec.^3)/10000)];
-% Params.DeterministicWj_working.pt2=[-11833+1421*WorkingAgeVec-137*((WorkingAgeVec.^2)/100)-2186*((WorkingAgeVec.^3)/10000)]; 
-% Params.DeterministicWj_working.pt3=[72270-5579*WorkingAgeVec+19200*((WorkingAgeVec.^2)/100)-18076*((WorkingAgeVec.^3)/10000)];
+% Params.DeterministicWj_working.NoHighSchool=[10993-196*WorkingAgeVec+2167*((WorkingAgeVec.^2)/100)-2655*((WorkingAgeVec.^3)/10000)];
+% Params.DeterministicWj_working.HighSchool=[-11833+1421*WorkingAgeVec-137*((WorkingAgeVec.^2)/100)-2186*((WorkingAgeVec.^3)/10000)]; 
+% Params.DeterministicWj_working.College=[72270-5579*WorkingAgeVec+19200*((WorkingAgeVec.^2)/100)-18076*((WorkingAgeVec.^3)/10000)];
 % % Table A.3
-% Params.DeterministicWj_retired.pt1=[17861-133*RetiredAgeVec]; 
-% Params.DeterministicWj_retired.pt2=[29733-245*RetiredAgeVec]; 
-% Params.DeterministicWj_retired.pt3=[48123-429*RetiredAgeVec];
-% Params.DeterministicWj.pt1=[Params.DeterministicWj_working.pt1, Params.DeterministicWj_retired.pt1];
-% Params.DeterministicWj.pt2=[Params.DeterministicWj_working.pt2, Params.DeterministicWj_retired.pt2];
-% Params.DeterministicWj.pt3=[Params.DeterministicWj_working.pt3, Params.DeterministicWj_retired.pt3];
+% Params.DeterministicWj_retired.NoHighSchool=[17861-133*RetiredAgeVec]; 
+% Params.DeterministicWj_retired.HighSchool=[29733-245*RetiredAgeVec]; 
+% Params.DeterministicWj_retired.College=[48123-429*RetiredAgeVec];
+% Params.DeterministicWj.NoHighSchool=[Params.DeterministicWj_working.NoHighSchool, Params.DeterministicWj_retired.NoHighSchool];
+% Params.DeterministicWj.HighSchool=[Params.DeterministicWj_working.HighSchool, Params.DeterministicWj_retired.HighSchool];
+% Params.DeterministicWj.College=[Params.DeterministicWj_working.College, Params.DeterministicWj_retired.College];
 % % Compare to Fig A.1(a-c): they won't be exactly the same as drop the year
 % % fixed effects, but eyeballing suggests they are fine.
-% plot(21:1:100, Params.DeterministicWj.pt1, 21:1:100, Params.DeterministicWj.pt2, 21:1:100, Params.DeterministicWj.pt3)
+% plot(21:1:100, Params.DeterministicWj.NoHighSchool, 21:1:100, Params.DeterministicWj.HighSchool, 21:1:100, Params.DeterministicWj.College)
 % % Stochastic Wj (Table A.4): u_it, an AR(1) in regressions in paper
 % Params.w_rho=[0.955; 0.946; 0.955];
 % Params.w_sigmasqepsilon=[0.033; 0.025; 0.016];
 % Params.w_sigmasqu=Params.w_sigmasqepsilon./(1-Params.w_rho.^2);
 % Params.w_sigmasqupsilon=[0.040; 0.021; 0.014]; % Estimated from PSID but not used in model.
-[z1_grid.pt1, pi_z1.pt1]=TauchenMethod(0,Params.w_sigmasqepsilon(1), Params.w_rho(1), n_z(1), Params.q);
-[z1_grid.pt2, pi_z1.pt2]=TauchenMethod(0,Params.w_sigmasqepsilon(2), Params.w_rho(2), n_z(1), Params.q);
-[z1_grid.pt3, pi_z1.pt3]=TauchenMethod(0,Params.w_sigmasqepsilon(3), Params.w_rho(3), n_z(1), Params.q);
+[z1_grid.NoHighSchool,pi_z1.NoHighSchool]=discretizeAR1_Tauchen(0,Params.w_rho(1),sqrt(Params.w_sigmasqepsilon(1)),n_z(1),Params.q);
+[z1_grid.HighSchool,pi_z1.HighSchool]=discretizeAR1_Tauchen(0,Params.w_rho(2),sqrt(Params.w_sigmasqepsilon(2)),n_z(1),Params.q);
+[z1_grid.College,pi_z1.College]=discretizeAR1_Tauchen(0,Params.w_rho(3),sqrt(Params.w_sigmasqepsilon(3)),n_z(1),Params.q);
 % % Bottom of pg 103 (45th pg): Wit=exp(log(DeterministicWj)-0.5*sigmasqu+uit)
 % % "This specification ensures that when we compare the certainty case with
 % % the earnings uncertainty case, we hold the age-conditional means of earnings constant."
@@ -92,24 +92,21 @@ Params.beta=1/(1+Params.delta);
 % Params.m_rho=0.901*ones(3,1);
 % Params.m_sigmasqepsilon=[0.175; 0.156; 0.153];
 % Params.m_sigmasqomega=[0.220; 0.220; 0.220];
-[z2_grid.pt1, pi_z2.pt1]=TauchenMethod(0, Params.m_sigmasqepsilon(1), Params.m_rho(1), n_z(2), Params.q);
-[z2_grid.pt2, pi_z2.pt2]=TauchenMethod(0, Params.m_sigmasqepsilon(2), Params.m_rho(2), n_z(2), Params.q);
-[z2_grid.pt3, pi_z2.pt3]=TauchenMethod(0, Params.m_sigmasqepsilon(3), Params.m_rho(3), n_z(2), Params.q);
-% [z2_grid.pt1, pi_z2.pt1]=TauchenMethod(0,Params.m_sigmasqepsilon(1)/(1-Params.m_rho(1)^2), Params.m_rho(1), n_z(2), Params.q);
-% [z2_grid.pt2, pi_z2.pt2]=TauchenMethod(0,Params.m_sigmasqepsilon(2)/(1-Params.m_rho(2)^2), Params.m_rho(2), n_z(2), Params.q);
-% [z2_grid.pt3, pi_z2.pt3]=TauchenMethod(0,Params.m_sigmasqepsilon(3)/(1-Params.m_rho(3)^2), Params.m_rho(3), n_z(2), Params.q);
-% 
+[z2_grid.NoHighSchool,pi_z2.NoHighSchool]=discretizeAR1_Tauchen(0,Params.m_rho(1),sqrt(Params.m_sigmasqepsilon(1)),n_z(2),Params.q);
+[z2_grid.HighSchool,pi_z2.HighSchool]=discretizeAR1_Tauchen(0,Params.m_rho(2),sqrt(Params.m_sigmasqepsilon(2)),n_z(2),Params.q);
+[z2_grid.College,pi_z2.College]=discretizeAR1_Tauchen(0,Params.m_rho(3),sqrt(Params.m_sigmasqepsilon(3)),n_z(2),Params.q);
+
 % % Consumption Floor
 % Params.Cbar=7000; % (middle of pg. 111)
 
 %% Grids
-z_grid.pt1=[z1_grid.pt1; z2_grid.pt1];
-z_grid.pt2=[z1_grid.pt2; z2_grid.pt2];
-z_grid.pt3=[z1_grid.pt3; z2_grid.pt3];
+z_grid.NoHighSchool=[z1_grid.NoHighSchool; z2_grid.NoHighSchool];
+z_grid.HighSchool=[z1_grid.HighSchool; z2_grid.HighSchool];
+z_grid.College=[z1_grid.College; z2_grid.College];
 
-pi_z.pt1=kron(pi_z1.pt1, pi_z2.pt1);
-pi_z.pt2=kron(pi_z1.pt2, pi_z2.pt2);
-pi_z.pt3=kron(pi_z1.pt3, pi_z2.pt3);
+pi_z.NoHighSchool=kron(pi_z2.NoHighSchool,pi_z1.NoHighSchool); % note, kron() in reverse order
+pi_z.HighSchool=kron(pi_z2.HighSchool,pi_z1.HighSchool); % note, kron() in reverse order
+pi_z.College=kron(pi_z2.College,pi_z1.College); % note, kron() in reverse order
 
 a_grid=linspace(0,maxa,n_a)'; % Could probably do better by adding more grid near zero
 
@@ -117,25 +114,24 @@ a_grid=linspace(0,maxa,n_a)'; % Could probably do better by adding more grid nea
 DiscountFactorParamNames={'beta','sj'};
 
 ReturnFn=@(aprime,a,W_z1,M_z2,age,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj, m_sigmasqmew) HubbardSkinnerZeldes1994_ReturnFn(aprime,a,W_z1,M_z2,age,gamma,r,Cbar,DeterministicWj, w_sigmasqu, DeterministicMj, m_sigmasqmew)
-ReturnFnParamNames={'age','gamma','r','Cbar','DeterministicWj', 'w_sigmasqu', 'DeterministicMj', 'm_sigmasqmew'}; %It is important that these are in same order as they appear in 'HubbardSkinnerZeldes1994_ReturnFn'
 
 %% Now solve the value function iteration problem
 
 vfoptions.verbose=1;
 tic;
 % Don't keep V as it is not needed for anything
-[~, Policy]=ValueFnIter_Case1_FHorz_PType(0,n_a,n_z,N_j,N_i, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
+[~, Policy]=ValueFnIter_Case1_FHorz_PType(0,n_a,n_z,N_j,Names_i, 0, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames,vfoptions);
 toc
 
 % %% Draw some policy functions of 'fixed type 1'.
 % % These are not part of replications, just to illustrate some uses of VFI Toolkit.
 % % Note that what is being plotted are 'policy indexes', not 'policy values'.
 % figure(2)
-% surf(reshape(Policy.pt1(1,:,8,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+% surf(reshape(Policy.NoHighSchool(1,:,8,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 % figure(3)
-% surf(reshape(Policy.pt1(1,:,15,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+% surf(reshape(Policy.NoHighSchool(1,:,15,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 % figure(4)
-% surf(reshape(Policy.pt1(1,:,1,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
+% surf(reshape(Policy.NoHighSchool(1,:,1,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 % 
 % 
 % %% Simulate Panel Data: Illustrations of a few commands. These are going to create some model output.
@@ -148,14 +144,14 @@ toc
 % 
 % % Simulate a single life-cycle (time series), starting from a specific seedpoint. Do just for 'fixed type 1'.
 % simoptions.seedpoint=[ceil(prod(n_a)/2),ceil(prod(n_z)/2),1];
-% SimLifeCycle_pt1=SimLifeCycleIndexes_FHorz_Case1(Policy.pt1,0,n_a,n_z,N_j,pi_z.pt1, simoptions);
+% SimLifeCycle_pt1=SimLifeCycleIndexes_FHorz_Case1(Policy.NoHighSchool,0,n_a,n_z,N_j,pi_z.NoHighSchool, simoptions);
 % 
 % simoptions.numbersims=10^3;
 % 
 % % Simulate a panel dataset for a given PType, with initial conditions drawn from a distribution.
 % InitialDist=zeros([n_a,n_z],'gpuArray'); 
 % InitialDist(ceil(n_a/2),ceil(n_z(1)/2),ceil(n_z(2)/2))=1;
-% SimPanel_pt1=SimPanelIndexes_FHorz_Case1(InitialDist,Policy.pt1,0,n_a,n_z,N_j,pi_z.pt1, simoptions);
+% SimPanel_pt1=SimPanelIndexes_FHorz_Case1(InitialDist,Policy.NoHighSchool,0,n_a,n_z,N_j,pi_z.NoHighSchool, simoptions);
 % 
 % 
 % % Simulate a panel dataset, with initial conditions drawn from a distribution.
@@ -183,63 +179,55 @@ toc
 % remains unclear. HubbardSkinnerZeldes1994 do not appear to report these
 % numbers in the paper at all.
 
-z1staty.pt1=ones(size(z1_grid.pt1))/length(z1_grid.pt1);
+z1staty.NoHighSchool=ones(size(z1_grid.NoHighSchool))/length(z1_grid.NoHighSchool);
 for ii=1:1000
-    z1staty.pt1=pi_z1.pt1'*z1staty.pt1;
+    z1staty.NoHighSchool=pi_z1.NoHighSchool'*z1staty.NoHighSchool;
 end
-z1staty.pt2=ones(size(z1_grid.pt2))/length(z1_grid.pt2);
+z1staty.HighSchool=ones(size(z1_grid.HighSchool))/length(z1_grid.HighSchool);
 for ii=1:1000
-    z1staty.pt2=pi_z1.pt2'*z1staty.pt2;
+    z1staty.HighSchool=pi_z1.HighSchool'*z1staty.HighSchool;
 end
-z1staty.pt3=ones(size(z1_grid.pt3))/length(z1_grid.pt3);
+z1staty.College=ones(size(z1_grid.College))/length(z1_grid.College);
 for ii=1:1000
-    z1staty.pt3=pi_z1.pt3'*z1staty.pt3;
+    z1staty.College=pi_z1.College'*z1staty.College;
 end
 
 % PTypeDist=[0.25,0.25,0.5]';
-InitialDist=zeros([n_a,n_z,N_i]); 
-% InitialDist(1,ceil(n_z(1)/2),ceil(n_z(2)/2),:)=1*permute(PTypeDist,[4,3,2,1]);
-InitialDist(1,:,ceil(n_z(2)/2),1)=z1staty.pt1'*PTypeDist(1);
-InitialDist(1,:,ceil(n_z(2)/2),2)=z1staty.pt2'*PTypeDist(2);
-InitialDist(1,:,ceil(n_z(2)/2),3)=z1staty.pt3'*PTypeDist(3);
+PTypeDist=Params.(PTypeDistParamNames{1});
+InitialDist.NoHighSchool=zeros([n_a,n_z]); 
+InitialDist.NoHighSchool(1,:,ceil(n_z(2)/2))=z1staty.NoHighSchool'*PTypeDist(1);
+InitialDist.HighSchool=zeros([n_a,n_z]); 
+InitialDist.HighSchool(1,:,ceil(n_z(2)/2))=z1staty.HighSchool'*PTypeDist(2);
+InitialDist.College=zeros([n_a,n_z]); 
+InitialDist.College(1,:,ceil(n_z(2)/2))=z1staty.College'*PTypeDist(3);
 
 %% Life-cycle profiles
 
-FnsToEvaluateParamNames=struct();
-FnsToEvaluateParamNames(1).Names={}; % Assets
-FnsToEvaluate_Assets = @(aprime_val,a_val,z1_val,z2_val) a_val; 
-FnsToEvaluateParamNames(2).Names={'DeterministicWj','w_sigmasqu'}; % Earnings: Wj
-FnsToEvaluate_Earnings= @(aprime_val,a_val,z1_val,z2_val,DeterministicWj,w_sigmasqu) exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val);
-FnsToEvaluateParamNames(3).Names={'age'};  % Age
-FnsToEvaluate_age = @(aprime_val,a_val,z1_val,z2_val,age) age;
-FnsToEvaluateParamNames(4).Names={'r','DeterministicWj','w_sigmasqu'}; % Income: r*a+Wj
-FnsToEvaluate_Income = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val);  
-FnsToEvaluateParamNames(5).Names={'r','Cbar','DeterministicWj','w_sigmasqu', 'DeterministicMj'}; % Consumption
-FnsToEvaluate_Cons= @(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_ConsumptionFn(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
-FnsToEvaluateParamNames(6).Names={'r','Cbar','DeterministicWj','w_sigmasqu', 'DeterministicMj'}; % Transfers (Pension & Social Security Income)
-FnsToEvaluate_TR = @(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_TRFn(aprime_val,a_val,z1_val,z2_val,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
-FnsToEvaluateParamNames(7).Names={'r','DeterministicWj','w_sigmasqu'}; % Asset-Income Ratio
-FnsToEvaluate_AssetIncomeRatio = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) a_val/(r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val));  
-FnsToEvaluateParamNames(8).Names={'r','DeterministicWj','w_sigmasqu'}; % Savings Rate (as fraction of income)
-FnsToEvaluate_SavingsRate = @(aprime_val,a_val,z1_val,z2_val,r,DeterministicWj,w_sigmasqu) (aprime_val-a_val)/(r*a_val+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1_val));  
-FnsToEvaluateParamNames(9).Names={}; % Gross savings (change in assets)
-FnsToEvaluate_GrossSavings = @(aprime_val,a_val,z1_val,z2_val) aprime_val-a_val;  
-FnsToEvaluate={FnsToEvaluate_Assets, FnsToEvaluate_Earnings, FnsToEvaluate_age, FnsToEvaluate_Income, FnsToEvaluate_Cons, FnsToEvaluate_TR,FnsToEvaluate_AssetIncomeRatio,FnsToEvaluate_SavingsRate,FnsToEvaluate_GrossSavings}; 
+FnsToEvaluate.Assets = @(aprime,a,z1,z2) a; 
+FnsToEvaluate.Earnings= @(aprime,a,z1,z2,DeterministicWj,w_sigmasqu) exp(log(DeterministicWj)-0.5*w_sigmasqu+z1);
+FnsToEvaluate.age = @(aprime,a,z1,z2,age) age;
+FnsToEvaluate.Income = @(aprime,a,z1,z2,r,DeterministicWj,w_sigmasqu) r*a+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1);  
+FnsToEvaluate.Consumption= @(aprime,a,z1,z2,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_ConsumptionFn(aprime,a,z1,z2,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
+FnsToEvaluate.TR = @(aprime,a,z1,z2,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj) HubbardSkinnerZeldes1994_TRFn(aprime,a,z1,z2,r,Cbar,DeterministicWj,w_sigmasqu, DeterministicMj);
+FnsToEvaluate.AssetIncomeRatio = @(aprime,a,z1,z2,r,DeterministicWj,w_sigmasqu) a/(r*a+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1));  
+FnsToEvaluate.SavingsRate = @(aprime,a,z1,z2,r,DeterministicWj,w_sigmasqu) (aprime-a)/(r*a+exp(log(DeterministicWj)-0.5*w_sigmasqu+z1));  
+FnsToEvaluate.GrossSavings = @(aprime,a,z1,z2) aprime-a;  
+FnsToEvaluate.ptype = @(aprime,a,z1,z2,hhtype) hhtype;
 
 simoptions.lifecyclepercentiles=0; % Just mean and median, no percentiles.
-SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_PType_Case1(InitialDist,Policy, FnsToEvaluate,FnsToEvaluateParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
+SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_Case1_PType(InitialDist,PTypeDistParamNames,Policy, FnsToEvaluate,Params,0,n_a,n_z,N_j,Names_i,0,a_grid,z_grid,pi_z, simoptions);
 
 % % Figure: Assets
 % figure(1)
-% plot(Params.age,SimLifeCycleProfiles.pt1(1,:,1),Params.age,SimLifeCycleProfiles.pt2(1,:,1),Params.age,SimLifeCycleProfiles.pt3(1,:,1))
+% plot(Params.age,SimLifeCycleProfiles.NoHighSchool(1,:,1),Params.age,SimLifeCycleProfiles.HighSchool(1,:,1),Params.age,SimLifeCycleProfiles.College(1,:,1))
 % % Figure: Earnings
 % figure(2)
-% plot(Params.age,SimLifeCycleProfiles.pt1(2,:,1),Params.age,SimLifeCycleProfiles.pt2(2,:,1),Params.age,SimLifeCycleProfiles.pt3(2,:,1))
+% plot(Params.age,SimLifeCycleProfiles.NoHighSchool(2,:,1),Params.age,SimLifeCycleProfiles.HighSchool(2,:,1),Params.age,SimLifeCycleProfiles.College(2,:,1))
 
 
 % Simulate Panel Data
 % Same variables as we used for the life-cycle profiles.
-SimPanelValues=SimPanelValues_FHorz_PType_Case1(InitialDist,Policy, FnsToEvaluate,FnsToEvaluateParamNames,Params,0,n_a,n_z,N_j,N_i,0,a_grid,z_grid,pi_z, simoptions);
+SimPanelValues=SimPanelValues_FHorz_Case1_PType(InitialDist,PTypeDistParamNames,Policy, FnsToEvaluate,Params,0,n_a,n_z,N_j,Names_i,0,a_grid,z_grid,pi_z, simoptions);
 
 
 %% Table 1: Asset-Income ratio and Savings Rate (aggregate and conditional on fixed-type)
@@ -256,12 +244,12 @@ ageweights=ageweights./sum(ageweights); % Normalize to sum to 1
 % Note that these are what we already calculated for the life-cycle profiles, so rather 
 % than get them from panel data simulation we can just get them from there. 
 % [The life-cycle profiles command is anyway internally based on a simulated panel data].
-AssetsByAgeAndFixedType=[SimLifeCycleProfiles.pt1(1,:,1);SimLifeCycleProfiles.pt2(1,:,1);SimLifeCycleProfiles.pt3(1,:,1)];
-EarningsByAgeAndFixedType=[SimLifeCycleProfiles.pt1(2,:,1);SimLifeCycleProfiles.pt2(2,:,1);SimLifeCycleProfiles.pt3(2,:,1)];
-IncomeByAgeAndFixedType=[SimLifeCycleProfiles.pt1(4,:,1);SimLifeCycleProfiles.pt2(4,:,1);SimLifeCycleProfiles.pt3(4,:,1)];
-ConsumptionByAgeAndFixedType=[SimLifeCycleProfiles.pt1(5,:,1);SimLifeCycleProfiles.pt2(5,:,1);SimLifeCycleProfiles.pt3(5,:,1)];
-TransfersByAgeAndFixedType=[SimLifeCycleProfiles.pt1(6,:,1);SimLifeCycleProfiles.pt2(6,:,1);SimLifeCycleProfiles.pt3(6,:,1)];
-GrossSavingsByAgeAndFixedType=[SimLifeCycleProfiles.pt1(9,:,1); SimLifeCycleProfiles.pt2(9,:,1); SimLifeCycleProfiles.pt3(9,:,1)];
+AssetsByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Assets.Mean;SimLifeCycleProfiles.HighSchool.Assets.Mean;SimLifeCycleProfiles.College.Assets.Mean];
+EarningsByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Earnings.Mean;SimLifeCycleProfiles.HighSchool.Earnings.Mean;SimLifeCycleProfiles.College.Earnings.Mean];
+IncomeByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Income.Mean;SimLifeCycleProfiles.HighSchool.Income.Mean;SimLifeCycleProfiles.College.Income.Mean];
+ConsumptionByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Consumption.Mean;SimLifeCycleProfiles.HighSchool.Consumption.Mean;SimLifeCycleProfiles.College.Consumption.Mean];
+TransfersByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.TR.Mean;SimLifeCycleProfiles.HighSchool.TR.Mean;SimLifeCycleProfiles.College.TR.Mean];
+GrossSavingsByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.GrossSavings.Mean; SimLifeCycleProfiles.HighSchool.GrossSavings.Mean; SimLifeCycleProfiles.College.GrossSavings.Mean];
 
 AssetsByFixedType=sum(AssetsByAgeAndFixedType.*ageweights,2);
 Assets_Agg=sum(PTypeDist.*AssetsByFixedType);
@@ -309,13 +297,13 @@ LowAssets_HighCorrIncomeCons=zeros(6,3);
 
 % AverageIncomeByAgeBin=[mean(SimLifeCycleProfiles(4,1:9,1)),mean(SimLifeCycleProfiles(4,10:19,1)),mean(SimLifeCycleProfiles(4,20:29,1)),mean(SimLifeCycleProfiles(4,30:39,1)),mean(SimLifeCycleProfiles(4,40:49,1)),mean(SimLifeCycleProfiles(4,50:end,1))];
 
-for ii=1:size(SimPanelValues,3)
+for ii=1:simoptions.numbersims
     for jj=1:80
-        cons=SimPanelValues(5,jj,ii);
-        income=SimPanelValues(4,jj,ii);
-        assets=SimPanelValues(1,jj,ii);
-        age=SimPanelValues(3,jj,ii);
-        hhtype=SimPanelValues(10,jj,ii);
+        cons=SimPanelValues.Consumption(jj,ii);
+        income=SimPanelValues.Income(jj,ii);
+        assets=SimPanelValues.Assets(jj,ii);
+        age=SimPanelValues.age(jj,ii);
+        hhtype=SimPanelValues.ptype(jj,ii);
         
         if age<=29
             agebin=1;
@@ -374,13 +362,13 @@ Table2=[HighCorrIncomeCons./NumberOfHHs;LowAssets_HighCorrIncomeCons./LowAssets_
 % cons=SimPanelValues(5,:,:);
 % income=SimPanelValues(4,:,:);
 
-vecsize=[(size(SimPanelValues,2)-1)*size(SimPanelValues,3),1];
+vecsize=[(N_j-1)*simoptions.numbersims,1];
 
-DeltaC=reshape(SimPanelValues(5,2:end,:)-SimPanelValues(5,1:(end-1),:),vecsize);
-DeltaY=reshape(SimPanelValues(4,2:end,:)-SimPanelValues(4,1:(end-1),:),vecsize);
-DeltalnC=reshape(log(SimPanelValues(5,2:end,:))-log(SimPanelValues(5,1:(end-1),:)),vecsize);
-DeltalnY=reshape(log(SimPanelValues(4,2:end,:))-log(SimPanelValues(4,1:(end-1),:)),vecsize);
-age=reshape(SimPanelValues(3,2:end,:),vecsize);
+DeltaC=reshape(SimPanelValues.Consumption(2:end,:)-SimPanelValues.Consumption(1:(end-1),:),vecsize);
+DeltaY=reshape(SimPanelValues.Income(2:end,:)-SimPanelValues.Income(1:(end-1),:),vecsize);
+DeltalnC=reshape(log(SimPanelValues.Consumption(2:end,:))-log(SimPanelValues.Consumption(1:(end-1),:)),vecsize);
+DeltalnY=reshape(log(SimPanelValues.Income(2:end,:))-log(SimPanelValues.Income(1:(end-1),:)),vecsize);
+age=reshape(SimPanelValues.age(2:end,:),vecsize);
 constant=ones(vecsize);
 
 % All the regressions appear to be two-stage least squared, using lags as
@@ -435,3 +423,6 @@ Table3(6,4)=bcolumn4(3)/((bintcolumn4(3,2)-bcolumn4(3))/1.96);
 Table3(7,4)=bcolumn4(4);
 Table3(8,4)=bcolumn4(4)/((bintcolumn4(4,2)-bcolumn4(4))/1.96);
 
+
+
+end
