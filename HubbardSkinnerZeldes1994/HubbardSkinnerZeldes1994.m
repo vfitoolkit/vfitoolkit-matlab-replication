@@ -167,7 +167,7 @@ if dopart(2)==1
     % Get results for 'only lifetime uncertain' case
     n_z=[1,1];  Params.w_sigmasqu=[0;0;0];  Params.m_sigmasqmew=[0;0;0];
     Params.Cbar=7000;
-    % [Table1row.allcertain, ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+    % [Table1row.allcertain, ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames);
     for delta_c=1:length(deltavec)
         for gamma_c=1:length(gammavec)
             for Cbar_c=1:2
@@ -178,7 +178,7 @@ if dopart(2)==1
                 descriptivestr=['onlylifetimeuncertain_','Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
                 descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
                 descriptivestr={descriptivestr};
-                [Table1row.(descriptivestr{:}), ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+                [Table1row.(descriptivestr{:}), ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames);
             end
         end
     end
@@ -193,7 +193,7 @@ load ./SavedOutput/HSZ1994_Tables_part2.mat Table1row LifeCycProfiles Params
     Params.sj((end-19):end)=0;
     n_z=temp_n_z; Params.w_sigmasqu=Params.w_sigmasqepsilon./(1-Params.w_rho.^2);  Params.m_sigmasqmew=Params.m_sigmasqepsilon./(1-Params.m_rho.^2);
     Params.Cbar=1;
-    % [Table1row.certainlifetimes, ~, ~, LifeCycProfiles.certainlifetimes]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+    % [Table1row.certainlifetimes, ~, ~, LifeCycProfiles.certainlifetimes]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames);
     for delta_c=1:length(deltavec)
         for gamma_c=1:length(gammavec)
             fprintf('Currently solving for delta_c=%d, gamma_c=%d',delta_c,gamma_c)
@@ -202,7 +202,7 @@ load ./SavedOutput/HSZ1994_Tables_part2.mat Table1row LifeCycProfiles Params
             descriptivestr=['certainlifetimes_','Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
             descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
             descriptivestr={descriptivestr};
-            [Table1row.(descriptivestr{:}), ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDist);
+            [Table1row.(descriptivestr{:}), ~, ~, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames);
         end
     end
     save ./SavedOutput/HSZ1994_Tables_part3.mat Table1row  LifeCycProfiles Params -v7.3
