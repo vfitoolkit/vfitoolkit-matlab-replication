@@ -142,7 +142,7 @@ if dopart(1)==1
                 descriptivestr=['Cbar',num2str(Params.Cbar),'gamma',num2str(Params.gamma),'delta',num2str(Params.delta)];
                 descriptivestr(descriptivestr=='.') = []; % Get rid of decimal points
                 descriptivestr={descriptivestr};
-                [Table1row.(descriptivestr{:}), Table2temp, Table3temp, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,simoptions, PTypeDistParamNames);
+                [Table1row.(descriptivestr{:}), Table2temp, Table3temp, LifeCycProfiles.(descriptivestr{:})]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames);
                 if Params.Cbar==7000 && Params.delta==0.03 && Params.gamma==3
                     Table2(:,1:3)=Table2temp;
                 elseif Params.Cbar==1 && Params.delta==0.1 && Params.gamma==3
