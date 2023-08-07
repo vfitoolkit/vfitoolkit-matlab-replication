@@ -323,10 +323,10 @@ fclose(FID);
 
 % Figure 1
 figure(1)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.NoHighSchool(1,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.NoHighSchool.Assets.Mean(1:(end-19))/1000)
 hold on
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.HighSchool(1,1:(end-19),1)/1000)
-plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.College(1,1:(end-19),1)/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.HighSchool.Assets.Mean(1:(end-19))/1000)
+plot(Params.age(1:(end-19)), LifeCycProfiles.allcertain_Cbar1gamma3delta003.College.Assets.Mean(1:(end-19))/1000)
 hold off
 title({'Average Assets by Age';'All Certain, $1 Floor'})
 legend('No High School Degree', 'High School Degree', 'College')
