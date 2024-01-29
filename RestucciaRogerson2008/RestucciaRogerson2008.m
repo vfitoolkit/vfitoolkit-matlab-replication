@@ -176,12 +176,11 @@ Params.oneminuslambda=1-Params.lambda; % This is now the conditional probability
 Params.rho=1/(1+Params.i); % The factor at which firms discount the future depends on both the risk-free interest rate and the risk/probability of exit
 DiscountFactorParamNames={'rho','oneminuslambda'};
 
-ReturnFn=@(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf);
-ReturnFnParamNames={'w','r','alpha','gamma','taurate','subsidyrate','cf'}; %It is important that these are in same order as they appear in 'RestucciaRogerson2008_ReturnFn'
+ReturnFn=@(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf);
 
 % Check that everything is working so far by solving the value function
 vfoptions.parallel=Parallel;
-[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 
 % If you wanted to look at the value fn
 % figure(2)
@@ -242,10 +241,7 @@ StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions, Params,
 %Create descriptions of SS values as functions of d_grid, a_grid, s_grid &
 %pi_s (used to calculate the integral across the SS dist fn of whatever
 %functions you define here)
-FnsToEvaluateParamNames(1).Names={};
-% FnsToEvaluateFn_1 = @(aprime_val,a_val,z1_val,z2_val) a_val; %We just want the aggregate assets (which is this periods state)
-% FnsToEvaluate={FnsToEvaluateFn_1};
-FnsToEvaluate={};
+FnsToEvaluate=struct();
 
 %Now define the functions for the General Equilibrium conditions
     %Should be written as LHS of general eqm eqn minus RHS, so that 
@@ -262,12 +258,9 @@ heteroagentoptions.specialgeneqmcondn={'condlentry','entry'};
 GEPriceParamNames={'w'}; 
     % Note that this parameter does not directly appear in any of the general eqm conditions, only indirectly by it's effect on the value fn.
     % Note that 'ebar', the conditional entry decision, is also determined as part of general eqm, and so in some sense is a general eqm parameter. But since this is unavoidably the case for conditional entry there is no need to declare it.
-GeneralEqmEqnParamNames(1).Names={'beta'};
-GeneralEqmEqn_CondlEntry = @(ValueFn,GEprices,beta) beta*ValueFn-0; % % Conditional entry condition
+GeneralEqmEqns.CondlEntry = @(ValueFn,beta) beta*ValueFn-0; % % Conditional entry condition
 % (ValueFn>=0): should this be changed to (beta*ValueFn>=0)? Yes, because of timing.
-GeneralEqmEqnParamNames(2).Names={'beta','ce'};
-GeneralEqmEqn_Entry = @(EValueFn,GEprices,beta,ce) beta*EValueFn-ce; % Free entry conditions (expected returns equal zero in eqm); note that the first 'General eqm price' is ce, the fixed-cost of entry.
-GeneralEqmEqns={GeneralEqmEqn_CondlEntry,GeneralEqmEqn_Entry};
+GeneralEqmEqns.Entry = @(EValueFn,beta,ce) beta*EValueFn-ce; % Free entry conditions (expected returns equal zero in eqm); note that the first 'General eqm price' is ce, the fixed-cost of entry.
 
 % In principle, 'Ne', the mass of (potential) new entrants is also a
 % parameter to be determined in general equilibrium, and hence would also
@@ -279,26 +272,21 @@ GeneralEqmEqns={GeneralEqmEqn_CondlEntry,GeneralEqmEqn_Entry};
 % the distribution of firms. To implement this we would need to add the
 % following:
 % GEPriceParamNames={'w','Ne'};
-% FnsToEvaluateParamNames(1).Names={'alpha','gamma','r','w','taurate'};
-% FnsToEvaluateFn_nbar = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate) (((1-taurate*z2_val)*z1_val*gamma)/w)^(1/(1-gamma)) *((alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *(z1_val*(1-taurate*z2_val))^(1/(1-alpha-gamma)))^(alpha/(1-gamma)); % which evaluates to Nbar in the aggregate
-% GeneralEqmEqnParamNames(3).Names={};
-% GeneralEqmEqn_LabourMarket = @(AggVars,GEprices) 1-AggVars;
+% FnsToEvaluate.nbar = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate) (((1-taurate*z2)*z1*gamma)/w)^(1/(1-gamma)) *((alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *(z1*(1-taurate*z2))^(1/(1-alpha-gamma)))^(alpha/(1-gamma)); % which evaluates to Nbar in the aggregate
+% GeneralEqmEqns.LabourMarket = @(nbar) 1-nbar;
 % The obvious changes to include these in 
-% FnsToEvaluate={FnsToEvaluateFn_nbar};
 % heteroagentoptions.specialgeneqmcondn={0,'condlentry','entry'};
-% GeneralEqmEqns={GeneralEqmEqn_CondlEntry,GeneralEqmEqn_Entry, GeneralEqmEqn_LabourMarket}; 
-% would also need to be made.
 % Because RR2008 model is linear in Ne (not the case for most models of entry), we 
 % can instead simply impose this afterwards, by setting Ne=1/Nbar. This is done
 % here just after computing the general equilibrium.
 % Obviously endogenizing labour supply would change this, and this 'short-cut' version would no longer work.
 
-heteroagentoptions.verbose=0;
+heteroagentoptions.verbose=1;
 n_p=0;
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 % NOTE: EntryExitParamNames has to be passed as an additional input compared to the standard case.
-[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
+[p_eqm,p_eqm_index, GeneralEqmCondition]=HeteroAgentStationaryEqm_Case1(0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 % findeqmtime=toc
 Params.w=p_eqm.w;
 Params.ebar=p_eqm.ebar;
@@ -307,17 +295,15 @@ Params.ebar=p_eqm.ebar;
 % I get w=1.9074, ebar is all ones.
 
 % Calculate some things in the general eqm
-[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions, Params, EntryExitParamNames);
 
 % Impose the labour market clearance, which involves calculating Ne. See
 % comments above (about 10-20 lines above).
-FnsToEvaluateParamNames(1).Names={'alpha','gamma','r','w','taurate','subsidyrate'};
-FnsToEvaluateFn_nbar = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*z1_val)^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
-FnsToEvaluate={FnsToEvaluateFn_nbar};
-AggValues=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
+FnsToEvaluate.nbar = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*z1)^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
+AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
 InitialNe=Params.Ne;
-Params.Ne=1/AggValues; % AggValues is presently equal to Nbar. This line is imposing/satisfying the labour market clearance condition.
+Params.Ne=1/AggVars.nbar.Aggregate; % This line is imposing/satisfying the labour market clearance condition.
 StationaryDist.mass=StationaryDist.mass*(Params.Ne/InitialNe); % Take advantage of linearity of the stationary distribution in new entrants distribution.
 
 %% Table 1
@@ -349,26 +335,22 @@ fclose(FID);
 % solutions for kbar and nbar in terms of (s,tau). But will use the VFI
 % Toolkit commands simply to show how to apply them.
 
-FnsToEvaluateParamNames(1).Names={'alpha','gamma','r','w','taurate','subsidyrate'};
-FnsToEvaluateFn_kbar = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) (alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *(z1_val*(1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^(1/(1-alpha-gamma));
-FnsToEvaluateParamNames(2).Names={'alpha','gamma','r','w','taurate','subsidyrate'};
-FnsToEvaluateFn_nbar = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*z1_val)^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
-FnsToEvaluateParamNames(3).Names={'alpha','gamma','r','w','taurate','subsidyrate'};
-FnsToEvaluateFn_output = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^((alpha+gamma)/(1-gamma-alpha))*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
-FnsToEvaluate={FnsToEvaluateFn_kbar, FnsToEvaluateFn_nbar, FnsToEvaluateFn_output};
+FnsToEvaluate.kbar = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *(z1*(1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2))^(1/(1-alpha-gamma));
+% FnsToEvaluate.nbar = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*z1)^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
+FnsToEvaluate.output = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2))^((alpha+gamma)/(1-gamma-alpha))*z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
 
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_Case1_Mass(StationaryDist.mass, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames,EntryExitParamNames, n_d, n_a, n_z, [], a_grid, z_grid, Parallel,simoptions);
+ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_Case1_Mass(StationaryDist.mass, Policy, FnsToEvaluate, Params, [],EntryExitParamNames, n_d, n_a, n_z, [], a_grid, z_grid, Parallel,simoptions);
 
-ProbDensityFns=EvalFnOnAgentDist_pdf_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, [], a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
+ProbDensityFns=EvalFnOnAgentDist_pdf_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, [], a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
 
 % s_grid.^(1/(1-Params.gamma-Params.alpha))
-nbarValues=shiftdim(ValuesOnGrid(2,:,:,:),1);
+nbarValues=shiftdim(ValuesOnGrid.nbar(:,:,:),1);
 % THIS IS REALLY WEIRD. Model is setup using h(s) and s grid values to make
 % it so that firms can choose realistic numbers of employees. They choose
 % much less than in the data. RR2008 then just go and renormalize the
 % choices so that it looks like the same magnitude as in the data again!!!
-nbarValues=shiftdim(ValuesOnGrid(2,:,:,:),1);
-normalize_employment=nbarValues(1,1,2); % Normalize so that smallest occouring value of nbar in the baseline is equal to 1.
+nbarValues=shiftdim(ValuesOnGrid.nbar(:,:,:),1);
+normalize_employment=nbarValues(1,1); % Normalize so that smallest occouring value of nbar in the baseline is equal to 1.
 nbarValues=nbarValues./normalize_employment;
 
 Partion1Indicator=logical(nbarValues<5);
@@ -382,17 +364,17 @@ ShareOfEstablishments(1)=sum(sum(StationaryDist.pdf(Partion1Indicator)));
 ShareOfEstablishments(2)=sum(sum(StationaryDist.pdf(Partion2Indicator)));
 ShareOfEstablishments(3)=sum(sum(StationaryDist.pdf(Partion3Indicator)));
 
-Output_pdf=shiftdim(ProbDensityFns(3,:,:,:),1);
+Output_pdf=ProbDensityFns.output(:,:,:);
 ShareOfOutput(1)=sum(sum(sum(Output_pdf(Partion1Indicator))));
 ShareOfOutput(2)=sum(sum(sum(Output_pdf(Partion2Indicator))));
 ShareOfOutput(3)=sum(sum(sum(Output_pdf(Partion3Indicator))));
 
-Labour_pdf=shiftdim(ProbDensityFns(2,:,:,:),1);
+Labour_pdf=ProbDensityFns.nbar(:,:,:);
 ShareOfLabour(1)=sum(sum(sum(Labour_pdf(Partion1Indicator))));
 ShareOfLabour(2)=sum(sum(sum(Labour_pdf(Partion2Indicator))));
 ShareOfLabour(3)=sum(sum(sum(Labour_pdf(Partion3Indicator))));
 
-Capital_pdf=shiftdim(ProbDensityFns(1,:,:,:),1);
+Capital_pdf=ProbDensityFns.kbar(:,:,:);
 ShareOfCapital(1)=sum(sum(sum(Capital_pdf(Partion1Indicator))));
 ShareOfCapital(2)=sum(sum(sum(Capital_pdf(Partion2Indicator))));
 ShareOfCapital(3)=sum(sum(sum(Capital_pdf(Partion3Indicator))));
@@ -422,11 +404,9 @@ fclose(FID);
 % as this is used to determine the size of the subsidies (taurate_s) in the
 % rest of the cases where the subsidy is set to ensure that the level of
 % aggregate capital remains unchanged from the baseline.
-FnsToEvaluateParamNames(1).Names={'alpha','gamma','r','w','taurate','subsidyrate'};
-FnsToEvaluateFn_kbar = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) (alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *(z1_val*(1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^(1/(1-alpha-gamma));
-FnsToEvaluate={FnsToEvaluateFn_kbar};
+AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
 
-Params.Kbaseline=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
+Params.Kbaseline=AggVars.kbar.Aggregate;
 
 %% We have now solved the baseline case. Will solve the rest of the cases using the following loop. 
 % All the cases are essentially solved exactly the same way as the
@@ -451,42 +431,42 @@ taxbasevec={'outputtax','capitaltax','labourtax'};
 % Following forumulae look complex, mainly because it has to contain two
 % 'copies' to allow for taurate and subsidy rate to be different.
 % (Note: the inputs remain unchanged in each case) 
-clear FnsToEvaluateFn_kbar FnsToEvaluateFn_nbar FnsToEvaluateFn_output
+clear FnsToEvaluate
 
-FnsToEvaluateFn_kbar.outputtax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) (alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *(z1_val*(1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^(1/(1-alpha-gamma));
-FnsToEvaluateFn_kbar.capitaltax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) (alpha/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*r))^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *z1_val^(1/(1-alpha-gamma));
-FnsToEvaluateFn_kbar.labourtax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) (alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*w))^(gamma/(1-gamma-alpha)) *z1_val^(1/(1-alpha-gamma));
+FnsToEvaluate.kbar.outputtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *(z1*(1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2))^(1/(1-alpha-gamma));
+FnsToEvaluate.kbar.capitaltax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (alpha/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*r))^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *z1^(1/(1-alpha-gamma));
+FnsToEvaluate.kbar.labourtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (alpha/r)^((1-gamma)/(1-gamma-alpha)) *(gamma/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*w))^(gamma/(1-gamma-alpha)) *z1^(1/(1-alpha-gamma));
 
-FnsToEvaluateFn_nbar.outputtax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*z1_val)^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
-FnsToEvaluateFn_nbar.capitaltax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) z1_val^(1/(1-alpha-gamma)) *(alpha/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
-FnsToEvaluateFn_nbar.labourtax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) z1_val^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*w))^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
+FnsToEvaluate.nbar.outputtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*z1)^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
+FnsToEvaluate.nbar.capitaltax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) z1^(1/(1-alpha-gamma)) *(alpha/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
+FnsToEvaluate.nbar.labourtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) z1^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*w))^((1-alpha)/(1-gamma-alpha)); % which evaluates to Nbar in the aggregate
 
-FnsToEvaluateFn_output.outputtax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^((alpha+gamma)/(1-gamma-alpha))*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
-FnsToEvaluateFn_output.capitaltax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) z1_val^(1/(1-gamma-alpha)) *(alpha/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
-FnsToEvaluateFn_output.labourtax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*w))^(gamma/(1-gamma-alpha));
+FnsToEvaluate.output.outputtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) ((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2))^((alpha+gamma)/(1-gamma-alpha))*z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
+FnsToEvaluate.output.capitaltax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) z1^(1/(1-gamma-alpha)) *(alpha/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
+FnsToEvaluate.output.labourtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*w))^(gamma/(1-gamma-alpha));
 
-FnsToEvaluateFn_subsidy.outputtax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) (z2_val<0)*subsidyrate* ((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^((alpha+gamma)/(1-gamma-alpha))*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)); % (z2_val<0)*subsidyrate)* output
-FnsToEvaluateFn_subsidy.capitaltax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) (z2_val<0)*subsidyrate*r* (alpha/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*r))^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *z1_val^(1/(1-alpha-gamma)); % (z2_val<0)*subsidyrate)*r* capital
-FnsToEvaluateFn_subsidy.labourtax = @(aprime_val,a_val,z1_val,z2_val,mass,alpha,gamma,r,w,taurate,subsidyrate) (z2_val<0)*subsidyrate*w* z1_val^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*w))^((1-alpha)/(1-gamma-alpha)); % (z2_val<0)*subsidyrate)*w* nbar
+FnsToEvaluate.subsidy.outputtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<0)*subsidyrate* ((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2))^((alpha+gamma)/(1-gamma-alpha))*z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)); % (z2<0)*subsidyrate)* output
+FnsToEvaluate.subsidy.capitaltax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<0)*subsidyrate*r* (alpha/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*r))^((1-gamma)/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha)) *z1^(1/(1-alpha-gamma)); % (z2<0)*subsidyrate)*r* capital
+FnsToEvaluate.subsidy.labourtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<0)*subsidyrate*w* z1^(1/(1-alpha-gamma)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*w))^((1-alpha)/(1-gamma-alpha)); % (z2<0)*subsidyrate)*w* nbar
 
 % Following are just 'indicator for subsidised' times output, needed to calculate Ys
-FnsToEvaluateFn_outputofsubsidised.outputtax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) (z2_val<0)*((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^((alpha+gamma)/(1-gamma-alpha))*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
-FnsToEvaluateFn_outputofsubsidised.capitaltax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) (z2_val<0)*z1_val^(1/(1-gamma-alpha)) *(alpha/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
-FnsToEvaluateFn_outputofsubsidised.labourtax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) (z2_val<0)*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*w))^(gamma/(1-gamma-alpha));
+FnsToEvaluate.outputofsubsidised.outputtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<0)*((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2))^((alpha+gamma)/(1-gamma-alpha))*z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
+FnsToEvaluate.outputofsubsidised.capitaltax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<0)*z1^(1/(1-gamma-alpha)) *(alpha/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
+FnsToEvaluate.outputofsubsidised.labourtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<0)*z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*w))^(gamma/(1-gamma-alpha));
 
 % For Table 7, RR2008 redefine Ys to be 'output of non-taxed', rather than 'output of subsidised'
 % For dealing with this, need the following.
-FnsToEvaluateFn_outputofnontaxed.outputtax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) (z2_val<=0)*((1-((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val))^((alpha+gamma)/(1-gamma-alpha))*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
-FnsToEvaluateFn_outputofnontaxed.capitaltax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) (z2_val<=0)*z1_val^(1/(1-gamma-alpha)) *(alpha/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
-FnsToEvaluateFn_outputofnontaxed.labourtax = @(aprime_val,a_val,z1_val,z2_val,mass, alpha,gamma,r,w,taurate,subsidyrate) (z2_val<=0)*z1_val^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2_val>=0)*taurate+(z2_val<0)*subsidyrate)*z2_val)*w))^(gamma/(1-gamma-alpha));
+FnsToEvaluate.outputofnontaxed.outputtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<=0)*((1-((z2>=0)*taurate+(z2<0)*subsidyrate)*z2))^((alpha+gamma)/(1-gamma-alpha))*z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
+FnsToEvaluate.outputofnontaxed.capitaltax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<=0)*z1^(1/(1-gamma-alpha)) *(alpha/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*r))^(alpha/(1-gamma-alpha)) *(gamma/w)^(gamma/(1-gamma-alpha));
+FnsToEvaluate.outputofnontaxed.labourtax = @(aprime,a,z1,z2,alpha,gamma,r,w,taurate,subsidyrate) (z2<=0)*z1^(1/(1-gamma-alpha)) *(alpha/r)^(alpha/(1-gamma-alpha)) *(gamma/((1+((z2>=0)*taurate+(z2<0)*subsidyrate)*z2)*w))^(gamma/(1-gamma-alpha));
 
 % Use a slightly different ReturnFn for the different tax bases.
 % (Note: the inputs remain unchanged in each case)
 % You could alternatively have a 'tax base' input, and just use the same ReturnFn for all.
 clear ReturnFn
-ReturnFn.outputtax =@(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf);
-ReturnFn.capitaltax =@(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn_CapitalTax(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf);
-ReturnFn.labourtax =@(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn_LabourTax(aprime_val, a_val, z1_val,z2_val,w,r,alpha,gamma,taurate,subsidyrate,cf);
+ReturnFn.outputtax =@(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf);
+ReturnFn.capitaltax =@(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn_CapitalTax(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf);
+ReturnFn.labourtax =@(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf) RestucciaRogerson2008_ReturnFn_LabourTax(aprime,a,z1,z2,w,r,alpha,gamma,taurate,subsidyrate,cf);
 
 % Start with all the results for output tax (that is, everything except Tables 8 and 9)
 taxbase_c=1; % Output tax
@@ -529,13 +509,13 @@ for fractiontaxed_c=1:length(fractiontaxedvec) %[1,3,5,7,9]%
                     Params.subsidyrate=Params.taurate;
                 end
                 
-                FullFnsToEvaluate{1}=FnsToEvaluateFn_kbar.(taxbasevec{taxbase_c});
-                FullFnsToEvaluate{2}=FnsToEvaluateFn_nbar.(taxbasevec{taxbase_c});
-                FullFnsToEvaluate{3}=FnsToEvaluateFn_output.(taxbasevec{taxbase_c});
-                FullFnsToEvaluate{4}=FnsToEvaluateFn_subsidy.(taxbasevec{taxbase_c});
-                FullFnsToEvaluate{5}=FnsToEvaluateFn_outputofsubsidised.(taxbasevec{taxbase_c});
+                FullFnsToEvaluate.kbar=FnsToEvaluate.kbar.(taxbasevec{taxbase_c});
+                FullFnsToEvaluate.nbar=FnsToEvaluate.nbar.(taxbasevec{taxbase_c});
+                FullFnsToEvaluate.output=FnsToEvaluate.output.(taxbasevec{taxbase_c});
+                FullFnsToEvaluate.subsidy=FnsToEvaluate.subsidy.(taxbasevec{taxbase_c});
+                FullFnsToEvaluate.outputofsubsidised=FnsToEvaluate.outputofsubsidised.(taxbasevec{taxbase_c});
                 if index_taus==1 % Table 7, need to redefine Ys to 'non-taxed' instead of 'subsidised' as everywhere else.
-                    FullFnsToEvaluate{5}=FnsToEvaluateFn_outputofnontaxed.(taxbasevec{taxbase_c});
+                    FullFnsToEvaluate.outputofnontaxed=FnsToEvaluate.outputofnontaxed.(taxbasevec{taxbase_c});
                 end
                 
                 fprintf('Now running RestucciaRogerson2008 for combination: \n')
@@ -543,7 +523,7 @@ for fractiontaxed_c=1:length(fractiontaxedvec) %[1,3,5,7,9]%
                 Params.subsidyrate
                 sum(Params.upsilon,1)
                             
-                FullResults(fixedsubsidy_c+1, TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
+                FullResults(fixedsubsidy_c+1, TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
             end
         end
     end
@@ -573,18 +553,18 @@ for TaxProductivityCorrelation=1:2 % Note: 3 is never actually reported in any r
 %         if sum(Params.upsilon(:,1))>0 % if some firms are actually receiving subsidies
 %             Params.subsidyrate=Params.taurate; % From RR2008 we know this is way too large as an initial guess, but it will do.
 %         end
-        FullFnsToEvaluate{1}=FnsToEvaluateFn_kbar.(taxbasevec{taxbase_c});
-        FullFnsToEvaluate{2}=FnsToEvaluateFn_nbar.(taxbasevec{taxbase_c});
-        FullFnsToEvaluate{3}=FnsToEvaluateFn_output.(taxbasevec{taxbase_c});
-        FullFnsToEvaluate{4}=FnsToEvaluateFn_subsidy.(taxbasevec{taxbase_c});
-        FullFnsToEvaluate{5}=FnsToEvaluateFn_outputofsubsidised.(taxbasevec{taxbase_c});
+        FullFnsToEvaluate.kbar=FnsToEvaluate.kbar.(taxbasevec{taxbase_c});
+        FullFnsToEvaluate.nbar=FnsToEvaluate.nbar.(taxbasevec{taxbase_c});
+        FullFnsToEvaluate.output=FnsToEvaluate.output.(taxbasevec{taxbase_c});
+        FullFnsToEvaluate.subsidy=FnsToEvaluate.subsidy.(taxbasevec{taxbase_c});
+        FullFnsToEvaluate.outputofsubsidised=FnsToEvaluate.outputofsubsidised.(taxbasevec{taxbase_c});
         if index_taus==1 % Table 7, need to redefine Ys to 'non-taxed' instead of 'subsidised' as everywhere else.
-            FullFnsToEvaluate{5}=FnsToEvaluateFn_outputofnontaxed.(taxbasevec{taxbase_c});
+            FullFnsToEvaluate.outputofnontaxed=FnsToEvaluate.outputofnontaxed.(taxbasevec{taxbase_c});
         end
         
         fprintf('Now running RestucciaRogerson2008 for comination: \n')
         [fixedsubsidy_c+1,TaxProductivityCorrelation, fractiontaxed_c,index_taus+1, taxbase_c, tau_c]
-        FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
+        FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
     end
 end
 
@@ -607,18 +587,18 @@ for tau_c=[1,6]
             end
             Params.subsidyrate=Params.taurate;
             
-            FullFnsToEvaluate{1}=FnsToEvaluateFn_kbar.(taxbasevec{taxbase_c});
-            FullFnsToEvaluate{2}=FnsToEvaluateFn_nbar.(taxbasevec{taxbase_c});
-            FullFnsToEvaluate{3}=FnsToEvaluateFn_output.(taxbasevec{taxbase_c});
-            FullFnsToEvaluate{4}=FnsToEvaluateFn_subsidy.(taxbasevec{taxbase_c});
-            FullFnsToEvaluate{5}=FnsToEvaluateFn_outputofsubsidised.(taxbasevec{taxbase_c});
+            FullFnsToEvaluate.kbar=FnsToEvaluate.kbar.(taxbasevec{taxbase_c});
+            FullFnsToEvaluate.nbar=FnsToEvaluate.nbar.(taxbasevec{taxbase_c});
+            FullFnsToEvaluate.output=FnsToEvaluate.output.(taxbasevec{taxbase_c});
+            FullFnsToEvaluate.subsidy=FnsToEvaluate.subsidy.(taxbasevec{taxbase_c});
+            FullFnsToEvaluate.outputofsubsidised=FnsToEvaluate.outputofsubsidised.(taxbasevec{taxbase_c});
             if index_taus==1 % Table 7, need to redefine Ys to 'non-taxed' instead of 'subsidised' as everywhere else.
-                FullFnsToEvaluate{5}=FnsToEvaluateFn_outputofnontaxed.(taxbasevec{taxbase_c});
+                FullFnsToEvaluate.outputofnontaxed=FnsToEvaluate.outputofnontaxed.(taxbasevec{taxbase_c});
             end
             
             fprintf('Now running RestucciaRogerson2008 for comination: \n')
             [fixedsubsidy_c+1,TaxProductivityCorrelation, fractiontaxed_c,index_taus+1, taxbase_c, tau_c]
-            FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, ReturnFnParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqnParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
+            FullResults(fixedsubsidy_c+1,TaxProductivityCorrelation,fractiontaxed_c,index_taus+1,taxbase_c,tau_c).Output=RestucciaRogerson2008_Fn(fixedsubsidy_c, normalize_employment, n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,Params,ReturnFn.(taxbasevec{taxbase_c}),DiscountFactorParamNames, FullFnsToEvaluate, GEPriceParamNames, GeneralEqmEqns, EntryExitParamNames, vfoptions, simoptions, heteroagentoptions);
         end
     end
 end
