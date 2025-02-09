@@ -145,7 +145,7 @@ z_grid=z_grid/sum(z_grid.*pistar_z);
 % Tauchen method code they used is not accurate, as they get slightly
 % different grid, so I will just load theirs directly
 if OverwriteWithGL2017Grid==1
-    load ./PaperMaterials/replication-codes-for-Credit-Crises-2017-1f7cb32/inc_process.mat
+    load inc_process.mat
     theta = [0; exp(x)];
     z_grid=theta;
     
