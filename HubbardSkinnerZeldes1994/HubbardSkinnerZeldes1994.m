@@ -32,8 +32,8 @@ WorkingAgeVec=21:1:65;
 RetiredAgeVec=66:100;
 Params.age=[WorkingAgeVec,RetiredAgeVec];
 
-%
-n_a=1501;
+% Set up the state space
+n_a=501; % 1501
 maxa=5*10^5;
 n_z=[21,21]; % 21,21 % income, medical. HSZ1994 use [9,9] (HSV1994, pg 112)
 Names_i={'NoHighSchool','HighSchool','College'}; % Number of fixed types

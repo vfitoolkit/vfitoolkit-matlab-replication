@@ -1,4 +1,4 @@
-function [Table1row, Table2, Table3, SimLifeCycleProfiles]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames)
+function [Table1row, Table2, Table3, AgeConditionalStats]=HubbardSkinnerZeldes1994_function(Params,n_a,n_z,Names_i,simoptions, PTypeDistParamNames)
 
 %% This code replicates the results of 
 % Hubbard, Skinner & Zeldes (1994) - The importance of precautionary motives in explaining individual and aggregate saving
@@ -132,34 +132,6 @@ toc
 % surf(reshape(Policy.NoHighSchool(1,:,15,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
 % figure(4)
 % surf(reshape(Policy.NoHighSchool(1,:,1,8,:),[250,80])-kron(linspace(1,250,250)',ones(1,80)))
-% 
-% 
-% %% Simulate Panel Data: Illustrations of a few commands. These are going to create some model output.
-% % They are not really part of replication, just to illustrate some uses of VFI Toolkit. 
-% % The outputs are in the form of 'indexes' of the state-space variables. 
-% % You are unlikely to want to use these 'indexes' but they will be useful
-% % for power users or those who really want to do some customization.
-% 
-% simoptions.simperiods=80;
-% 
-% % Simulate a single life-cycle (time series), starting from a specific seedpoint. Do just for 'fixed type 1'.
-% simoptions.seedpoint=[ceil(prod(n_a)/2),ceil(prod(n_z)/2),1];
-% SimLifeCycle_pt1=SimLifeCycleIndexes_FHorz_Case1(Policy.NoHighSchool,0,n_a,n_z,N_j,pi_z.NoHighSchool, simoptions);
-% 
-% simoptions.numbersims=10^3;
-% 
-% % Simulate a panel dataset for a given PType, with initial conditions drawn from a distribution.
-% InitialDist=zeros([n_a,n_z],'gpuArray'); 
-% InitialDist(ceil(n_a/2),ceil(n_z(1)/2),ceil(n_z(2)/2))=1;
-% SimPanel_pt1=SimPanelIndexes_FHorz_Case1(InitialDist,Policy.NoHighSchool,0,n_a,n_z,N_j,pi_z.NoHighSchool, simoptions);
-% 
-% 
-% % Simulate a panel dataset, with initial conditions drawn from a distribution.
-% PTypeDist=[0.25,0.25,0.5]';
-% InitialDist=zeros([n_a,n_z,N_i],'gpuArray'); 
-% InitialDist(ceil(n_a/2),ceil(n_z(1)/2),ceil(n_z(2)/2),:)=1*permute(PTypeDist,[4,3,2,1]);
-% SimPanel=SimPanelIndexes_FHorz_PType_Case1(InitialDist,Policy,0,n_a,n_z,N_j,N_i,pi_z, simoptions);
-
 
 %% Create some outputs to replicate those of HubbardSkinnerZeldes1994
 % 
@@ -183,23 +155,37 @@ z1staty.NoHighSchool=ones(size(z1_grid.NoHighSchool))/length(z1_grid.NoHighSchoo
 for ii=1:1000
     z1staty.NoHighSchool=pi_z1.NoHighSchool'*z1staty.NoHighSchool;
 end
+z1staty.NoHighSchool=z1staty.NoHighSchool./sum(z1staty.NoHighSchool(:)); % Normalize to 1 (I was getting numerical rounding errors)
 z1staty.HighSchool=ones(size(z1_grid.HighSchool))/length(z1_grid.HighSchool);
 for ii=1:1000
     z1staty.HighSchool=pi_z1.HighSchool'*z1staty.HighSchool;
 end
+z1staty.HighSchool=z1staty.HighSchool./sum(z1staty.HighSchool(:)); % Normalize to 1 (I was getting numerical rounding errors)
 z1staty.College=ones(size(z1_grid.College))/length(z1_grid.College);
 for ii=1:1000
     z1staty.College=pi_z1.College'*z1staty.College;
 end
+z1staty.College=z1staty.College./sum(z1staty.College(:)); % Normalize to 1 (I was getting numerical rounding errors)
 
-% PTypeDist=[0.25,0.25,0.5]';
-PTypeDist=Params.(PTypeDistParamNames{1});
 InitialDist.NoHighSchool=zeros([n_a,n_z]); 
-InitialDist.NoHighSchool(1,:,ceil(n_z(2)/2))=z1staty.NoHighSchool'*PTypeDist(1);
+InitialDist.NoHighSchool(1,:,ceil(n_z(2)/2))=z1staty.NoHighSchool';
 InitialDist.HighSchool=zeros([n_a,n_z]); 
-InitialDist.HighSchool(1,:,ceil(n_z(2)/2))=z1staty.HighSchool'*PTypeDist(2);
+InitialDist.HighSchool(1,:,ceil(n_z(2)/2))=z1staty.HighSchool';
 InitialDist.College=zeros([n_a,n_z]); 
-InitialDist.College(1,:,ceil(n_z(2)/2))=z1staty.College'*PTypeDist(3);
+InitialDist.College(1,:,ceil(n_z(2)/2))=z1staty.College';
+% Note: We just put each permanent type in as a mass of one. The toolkit
+% knows that it should then combine this with the PTypeDistParamNames entry
+% in the Params structure for the relative masses of each permanent type.
+% To put it another way, InitialDist.College contains the distribution of
+% agents conditional on permanent type being College.
+
+% Calculate the relative masses of the different ages
+% Taking into account population growth n and (conditional) survival rates sj.
+ageweights=cumprod(Params.sj).*cumprod((1/(1+Params.n))*ones(1,Params.J)); % First part is based on survival, second part on population growth
+ageweights=ageweights./sum(ageweights); % Normalize to sum to 1
+Params.mewj=ageweights;
+AgeWeightsParamNames={'mewj'};
+
 
 %% Life-cycle profiles
 
@@ -214,77 +200,53 @@ FnsToEvaluate.SavingsRate = @(aprime,a,z1,z2,r,DeterministicWj,w_sigmasqu) (apri
 FnsToEvaluate.GrossSavings = @(aprime,a,z1,z2) aprime-a;  
 FnsToEvaluate.ptype = @(aprime,a,z1,z2,hhtype) hhtype;
 
-simoptions.lifecyclepercentiles=0; % Just mean and median, no percentiles.
-SimLifeCycleProfiles=SimLifeCycleProfiles_FHorz_Case1_PType(InitialDist,PTypeDistParamNames,Policy, FnsToEvaluate,Params,0,n_a,n_z,N_j,Names_i,0,a_grid,z_grid,pi_z, simoptions);
+fprintf('Doing StationaryDist and AgeConditionalStats \n')
+% the command for the life-cycle profiles needs the agent stationary distribution, so we do that first
+StationaryDist=StationaryDist_Case1_FHorz_PType(InitialDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,0,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
+
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy, FnsToEvaluate, Params,0,n_a,n_z,N_j,Names_i,[],a_grid,z_grid, simoptions);
 
 % % Figure: Assets
 % figure(1)
-% plot(Params.age,SimLifeCycleProfiles.NoHighSchool(1,:,1),Params.age,SimLifeCycleProfiles.HighSchool(1,:,1),Params.age,SimLifeCycleProfiles.College(1,:,1))
+% plot(Params.age,AgeConditionalStats.Assets.NoHighSchool.Mean,Params.age,AgeConditionalStats.Assets.HighSchool.Mean,Params.age,AgeConditionalStats.Assets.College.Mean)
 % % Figure: Earnings
 % figure(2)
-% plot(Params.age,SimLifeCycleProfiles.NoHighSchool(2,:,1),Params.age,SimLifeCycleProfiles.HighSchool(2,:,1),Params.age,SimLifeCycleProfiles.College(2,:,1))
-
+% plot(Params.age,AgeConditionalStats.Assets.NoHighSchool.Mean,Params.age,AgeConditionalStats.Assets.HighSchool.Mean,Params.age,AgeConditionalStats.Assets.College.Mean)
 
 % Simulate Panel Data
+fprintf('Simulate Panel Data \n')
 % Same variables as we used for the life-cycle profiles.
 SimPanelValues=SimPanelValues_FHorz_Case1_PType(InitialDist,PTypeDistParamNames,Policy, FnsToEvaluate,Params,0,n_a,n_z,N_j,Names_i,0,a_grid,z_grid,pi_z, simoptions);
 
+fprintf('Put results together for this parameter combination \n')
+
 
 %% Table 1: Asset-Income ratio and Savings Rate (aggregate and conditional on fixed-type)
-% Taking into account population growth n and (conditional) survival rates sj.
-ageweights=cumprod(Params.sj).*cumprod((1/(1+Params.n))*ones(1,Params.J)); % First part is based on survival, second part on population growth
-ageweights=ageweights./sum(ageweights); % Normalize to sum to 1
 
 % At first, not clear if Table 1 reports the mean of the ratio, or the ratio of the mean (analagously for savings rate)
 % From Appendix B it is clear that Table 1 reports the ratio of the mean.
+% Following is based on Appendix B: Constructing aggregate consumption, earnings, and assets. In the sense of following 
+% the variable definitions there
 
-% Following is based on Appendix B: Constructing aggregate consumption, earnings, and assets.
+% This is pretty trivial, we just use AggVars
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist,Policy,FnsToEvaluate,Params,0,n_a,n_z,N_j,Names_i,[],a_grid,z_grid,simoptions);
 
-% First, calculate sample means for consumption, earnings, and assets all conditional on age.
-% Note that these are what we already calculated for the life-cycle profiles, so rather 
-% than get them from panel data simulation we can just get them from there. 
-% [The life-cycle profiles command is anyway internally based on a simulated panel data].
-AssetsByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Assets.Mean;SimLifeCycleProfiles.HighSchool.Assets.Mean;SimLifeCycleProfiles.College.Assets.Mean];
-EarningsByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Earnings.Mean;SimLifeCycleProfiles.HighSchool.Earnings.Mean;SimLifeCycleProfiles.College.Earnings.Mean];
-IncomeByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Income.Mean;SimLifeCycleProfiles.HighSchool.Income.Mean;SimLifeCycleProfiles.College.Income.Mean];
-ConsumptionByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.Consumption.Mean;SimLifeCycleProfiles.HighSchool.Consumption.Mean;SimLifeCycleProfiles.College.Consumption.Mean];
-TransfersByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.TR.Mean;SimLifeCycleProfiles.HighSchool.TR.Mean;SimLifeCycleProfiles.College.TR.Mean];
-GrossSavingsByAgeAndFixedType=[SimLifeCycleProfiles.NoHighSchool.GrossSavings.Mean; SimLifeCycleProfiles.HighSchool.GrossSavings.Mean; SimLifeCycleProfiles.College.GrossSavings.Mean];
+AssetIncomeRatioByFixedType=[AggVars.Assets.NoHighSchool.Mean/AggVars.Income.NoHighSchool.Mean,...
+    AggVars.Assets.HighSchool.Mean/AggVars.Income.HighSchool.Mean,...
+    AggVars.Assets.College.Mean/AggVars.Income.College.Mean];
+AssetIncomeRatio_Agg=AggVars.Assets.Mean/AggVars.Income.Mean;
 
-AssetsByFixedType=sum(AssetsByAgeAndFixedType.*ageweights,2);
-Assets_Agg=sum(PTypeDist.*AssetsByFixedType);
-EarningsByFixedType=sum(EarningsByAgeAndFixedType.*ageweights,2);
-Earnings_Agg=sum(PTypeDist.*EarningsByFixedType);
-IncomeByFixedType=sum(IncomeByAgeAndFixedType.*ageweights,2);
-Income_Agg=sum(PTypeDist.*IncomeByFixedType);
-ConsumptionByFixedType=sum(ConsumptionByAgeAndFixedType.*ageweights,2);
-Consumption_Agg=sum(PTypeDist.*ConsumptionByFixedType);
-TransfersByFixedType=sum(TransfersByAgeAndFixedType.*ageweights,2);
-Transfers_Agg=sum(PTypeDist.*TransfersByFixedType);
-GrossSavingsByFixedType=sum(GrossSavingsByAgeAndFixedType.*ageweights,2);
-GrossSavings_Agg=sum(PTypeDist.*GrossSavingsByFixedType);
+SavingsRateByFixedType=[AggVars.GrossSavings.NoHighSchool.Mean/AggVars.Income.NoHighSchool.Mean,...
+    AggVars.GrossSavings.HighSchool.Mean/AggVars.Income.HighSchool.Mean,...
+    AggVars.GrossSavings.College.Mean/AggVars.Income.College.Mean];
+SavingsRate_Agg=AggVars.GrossSavings.Mean/AggVars.Income.Mean;
 
-DisposableIncomeByFixedType=IncomeByFixedType+TransfersByFixedType;
-DisposableIncome_Agg=Income_Agg+Transfers_Agg;
-
-AssetEarningsRatioByFixedType=AssetsByFixedType./EarningsByFixedType;
-AssetEarningsRatio_Agg=Assets_Agg/Earnings_Agg;
-AssetIncomeRatioByFixedType=AssetsByFixedType./IncomeByFixedType;
-AssetIncomeRatio_Agg=Assets_Agg/Income_Agg;
-AssetDispIncomeRatioByFixedType=AssetsByFixedType./DisposableIncomeByFixedType;
-AssetDispIncomeRatio_Agg=Assets_Agg/DisposableIncome_Agg;
-
-
-% SavingsRateByFixedType=GrossSavingsByFixedType./EarningsByFixedType
-% SavingsRate_Agg=GrossSavings_Agg/Earnings_Agg
-SavingsRateByFixedType=GrossSavingsByFixedType./IncomeByFixedType;
-SavingsRate_Agg=GrossSavings_Agg/Income_Agg;
 % Income here is after tax but before transfers.
 
-Table1row=[Params.delta, Params.gamma, AssetIncomeRatioByFixedType', AssetIncomeRatio_Agg, SavingsRateByFixedType', SavingsRate_Agg];
-% Note: VFI Toolkit could alternatively do this based on stationary agent
-% distribution of this model. But will here follow the simulated panel data 
-% approach used by Hubbard, Skinner & Zeldes (1994).
+Table1row=[Params.delta, Params.gamma, AssetIncomeRatioByFixedType, AssetIncomeRatio_Agg, SavingsRateByFixedType, SavingsRate_Agg];
+% Note: Hubbard, Skinner & Zeldes (1994) calculate all of these from the panel data, but VFI Toolkit has commands that calculate these 
+% more directly so we have used those. Calculating them from panel data is not difficult, but just requires writing a whole bunch of 
+% unnecessary code.
 
 
 %% Table 2: creates the numbers relevant for Table 2
@@ -295,7 +257,7 @@ NumberOfHHs=zeros(6,3);
 LowAssets_NumberOfHHs=zeros(6,3);
 LowAssets_HighCorrIncomeCons=zeros(6,3);
 
-% AverageIncomeByAgeBin=[mean(SimLifeCycleProfiles(4,1:9,1)),mean(SimLifeCycleProfiles(4,10:19,1)),mean(SimLifeCycleProfiles(4,20:29,1)),mean(SimLifeCycleProfiles(4,30:39,1)),mean(SimLifeCycleProfiles(4,40:49,1)),mean(SimLifeCycleProfiles(4,50:end,1))];
+% AverageIncomeByAgeBin=[mean(AgeConditionalStats(4,1:9,1)),mean(AgeConditionalStats(4,10:19,1)),mean(AgeConditionalStats(4,20:29,1)),mean(AgeConditionalStats(4,30:39,1)),mean(AgeConditionalStats(4,40:49,1)),mean(AgeConditionalStats(4,50:end,1))];
 
 for ii=1:simoptions.numbersims
     for jj=1:80
@@ -339,11 +301,11 @@ for ii=1:simoptions.numbersims
             HighCorrIncomeCons(6,hhtype)=HighCorrIncomeCons(6,hhtype)+1;
         end
         if assets<income % Is not quite clear from paper which HHs in simulated data are considered to satisfy the 'Initial Assets <0.5*Average Income' criterion.
-                LowAssets_NumberOfHHs(6,hhtype)=LowAssets_NumberOfHHs(6,hhtype)+1;
-                if (cons/income)>=0.95 && (cons/income)<=1.05
-                    LowAssets_HighCorrIncomeCons(6,hhtype)=LowAssets_HighCorrIncomeCons(6,hhtype)+1;
-                end
+            LowAssets_NumberOfHHs(6,hhtype)=LowAssets_NumberOfHHs(6,hhtype)+1;
+            if (cons/income)>=0.95 && (cons/income)<=1.05
+                LowAssets_HighCorrIncomeCons(6,hhtype)=LowAssets_HighCorrIncomeCons(6,hhtype)+1;
             end
+        end
     end
 end
 
