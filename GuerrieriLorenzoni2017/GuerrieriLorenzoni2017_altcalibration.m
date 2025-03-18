@@ -17,13 +17,11 @@ heteroagentoptions.pgrid=p_grid;
 
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
-% [p_eqm_initial,p_eqm_index_initial, MarketClearance_initial]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
-[p_eqm_initial,p_eqm_index_initial, MarketClearance_initial]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
+p_eqm_initial=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
 % findeqmtime=toc
 Params.r=p_eqm_initial.r;
 
 % Now that we know what the equilibrium price is, lets calculate a bunch of other things associated with the equilibrium
-p_eqm_index_initial
 disp('Calculating various equilibrium objects')
 [~,Policy_initial]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, simoptions);
@@ -32,17 +30,11 @@ StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, sim
 % Final stationary equilibrium
 %  Only change is
 Params.phi=Params.phi_final;
-% [p_eqm_final,p_eqm_index_final, MarketClearance_final]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
-[p_eqm_final,p_eqm_index_final, MarketClearance_final]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
+p_eqm_final=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
 Params.r=p_eqm_final.r;
 [V_final,Policy_final]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 StationaryDist_final=StationaryDist_Case1(Policy_final,n_d,n_a,n_z,pi_z, simoptions);
 AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-
-% Free up space on gpu
-clear ConsumptionDecision Policy_final
-clear PolicyValues PolicyValuesPermute
-clear StationaryDist_final
 
 %% Compute the flexible price transition path
 clear PricePath0 ParamPath
@@ -55,8 +47,10 @@ temp=linspace(Params.phi_initial,Params.phi_final,7); ParamPath.phi(1:6)=temp(2:
 PricePath0.r=[linspace(-0.01, p_eqm_final.r, floor(T/3))'; p_eqm_final.r*ones(T-floor(T/3),1)]; % PricePath0 is matrix of size T-by-'number of prices'
 
 fprintf('Starting flex prices transition in alt calibration \n')
-whos
 PricePath_flex=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions);
+
+[~,PolicyPath_flex]=ValueFnOnTransPath_Case1(PricePath_flex, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptions);
+AgentDistPath_flex=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_flex,n_d,n_a,n_z,pi_z,T);
 
 %% Sticky Wages
 if altcalib_figurenumber==9 || altcalib_figurenumber==11
@@ -64,8 +58,10 @@ if altcalib_figurenumber==9 || altcalib_figurenumber==11
     PricePath0.omega=zeros(T,1);
 
     fprintf('Starting sticky wages transition in alt calibration \n')
-    whos
     PricePath_NK=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, NKTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_NK);
+
+    [~,PolicyPath_NK]=ValueFnOnTransPath_Case1(PricePath_NK, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptions);
+    AgentDistPath_NK=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_NK,n_d,n_a,n_z,pi_z,T);
 end
 
 %% Figure for Alternative Calibration
@@ -78,13 +74,13 @@ Params.r=p_eqm_initial.r;
 
 % Get the 
 AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, AltCalibFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2);
-AggVarsPath_flex=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, PricePath_flex, ParamPath, Params, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn,transpathoptions);
+AggVarsPath_Flex=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_flex, PolicyPath_flex, PricePath_flex, ParamPath, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
 
 Output_pch_flex=([AggVars_initial.output.Mean; AggVarsPath_flex.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
 Employment_pch_flex=([AggVars_initial.employment.Mean; AggVarsPath_flex.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
 
 if altcalib_figurenumber==9 || altcalib_figurenumber==11
-    AggVarsPath_NK=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate,PricePath_NK, ParamPath, Params, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn,transpathoptions_NK);
+    AggVarsPath_NK=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_NK, PolicyPath_NK, PricePath_NK, ParamPath, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
     Output_pch_NK=([AggVars_initial.output.Mean; AggVarsPath_NK.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
     Employment_pch_NK=([AggVars_initial.employment.Mean; AggVarsPath_NK.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
 end

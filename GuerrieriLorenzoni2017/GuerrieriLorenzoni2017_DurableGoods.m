@@ -1,4 +1,4 @@
-function Output=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,n_p,d_grid,a_grid, T, ParamPath, vfoptions, simoptions, heteroagentoptions,transpathoptions)
+function Output=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,d_grid,a_grid, T, ParamPath, vfoptions, simoptions, heteroagentoptions,transpathoptions)
 % Replicates the results of Guerrieri & Lorenzoni (2017) - Credit Crises, Precautionary Savings, and the Liquidity Trap
 % For the Durable Goods model of Section 7.
 
@@ -61,13 +61,13 @@ simoptions.iterate=0; % Iterating runs out of memory, just use simulation
 GEPriceParamNames={'r'};
 
 fprintf('Calculating initial eqm (for durable goods) \n')
-[p_eqm_initial,p_eqm_index_initial, GeneralEqmCondns_initial]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+p_eqm_initial=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 Params.r=p_eqm_initial.r;
 [~,Policy_initial]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, simoptions);
 AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2);
 
-save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_initial.mat Params p_eqm_initial p_eqm_index_initial GeneralEqmCondns_initial StationaryDist_initial AggVars_initial Policy_initial
+save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_initial.mat Params p_eqm_initial StationaryDist_initial AggVars_initial Policy_initial
 
 %% Final stationary equilibrium
 % Only change is
@@ -78,18 +78,16 @@ for ii=1:length(ParamPathNames)  % Note: it is actually just length 1, but whate
 end
 
 fprintf('Calculating final eqm (for durable goods) \n')
-[p_eqm_final,p_eqm_index_final, MarketClearance_final]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+p_eqm_final=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 Params.r=p_eqm_final.r;
 [V_final,Policy_final]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 StationaryDist_final=StationaryDist_Case1(Policy_final,n_d,n_a,n_z,pi_z, simoptions);
 AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2);
 
-save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_final.mat Params p_eqm_final p_eqm_index_final MarketClearance_final StationaryDist_final AggVars_final Policy_final
+save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_final.mat Params p_eqm_final StationaryDist_final AggVars_final Policy_final
 
 %%
 % Free up space on gpu
-clear ConsumptionDecision
-clear PolicyValues PolicyValuesPermute
 clear StationaryDist_final
 
 %% Compute the transition path
@@ -108,10 +106,14 @@ TransPathGeneralEqmEqns.BondMarket = @(Aprime,Bprime) Aprime-Bprime; % New inter
 transpathoptions.GEnewprice=3; % 3 allows you to say which general eqm eqn is used to update which general eqm price/param, and how
 transpathoptions.GEnewprice3.howtoupdate=... % a row is: GEcondn, price, add, factor
     {'BondMarket','r',0,0.01};... % first GE condition will be positive if r is too big (as this will lead to too much Aprime), so subtract
+    % Note: the update is essentially new_price=price+factor*add*GEcondn_value-factor*(1-add)*GEcondn_value
+    % Notice that this adds factor*GEcondn_value when add=1 and subtracts it what add=0
+    % A small 'factor' will make the convergence to solution take longer, but too large a value will make it
+    % unstable (fail to converge). Technically this is the damping factor in a shooting algorithm.
 
 
 
-PricePath=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames,transpathoptions);
+PricePath=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames,transpathoptions,vfoptions,simoptions);
 
 save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_transition.mat PricePath
 
