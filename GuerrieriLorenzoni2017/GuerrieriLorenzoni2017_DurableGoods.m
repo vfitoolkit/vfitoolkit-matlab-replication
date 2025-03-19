@@ -1,4 +1,4 @@
-function Output=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,d_grid,a_grid, T, ParamPath, vfoptions, simoptions, heteroagentoptions,transpathoptions)
+function Output=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,d_grid,a_grid, T, ParamPath, heteroagentoptions, transpathoptions, vfoptions, simoptions)
 % Replicates the results of Guerrieri & Lorenzoni (2017) - Credit Crises, Precautionary Savings, and the Liquidity Trap
 % For the Durable Goods model of Section 7.
 
@@ -52,7 +52,8 @@ GeneralEqmEqns.BondMarketClearence = @(Aprime,Bprime) Aprime-Bprime; %The requir
 DiscountFactorParamNames={'beta'};
 
 % Change the durable goods return function.
-ReturnFn=@(d, aprime, kprime, a, k, z,r, alpha, gamma, psi, eta, phi_k,delta, zeta, chi, v, B, Bprime,omega) GuerrieriLorenzoni2017_DurableGoods_ReturnFn(d, aprime, kprime, a, k, z,r, alpha, gamma, psi, eta, phi_k,delta, zeta, chi, v, B, Bprime, omega);
+ReturnFn=@(d, aprime, kprime, a, k, z,r, alpha, gamma, psi, eta, phi_k,delta, zeta, chi, v, B, Bprime,omega) ...
+    GuerrieriLorenzoni2017_DurableGoods_ReturnFn(d, aprime, kprime, a, k, z,r, alpha, gamma, psi, eta, phi_k,delta, zeta, chi, v, B, Bprime, omega);
 
 %% Solve the initial stationary equilibrium
 simoptions.iterate=0; % Iterating runs out of memory, just use simulation

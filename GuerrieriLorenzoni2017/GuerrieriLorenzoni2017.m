@@ -223,7 +223,8 @@ GeneralEqmEqns.BondMarketClearence = @(A,B) A-B; %The requirement that the aggre
 %% 
 DiscountFactorParamNames={'beta'};
 
-ReturnFn=@(d, aprime, a, z, r, gamma, psi, eta, phi, v,B,Bprime,omega) GuerrieriLorenzoni2017_ReturnFn(d, aprime, a, z,r, gamma, psi, eta, phi, v,B,Bprime,omega);
+ReturnFn=@(d, aprime, a, z, r, gamma, psi, eta, phi, v,B,Bprime,omega) ...
+    GuerrieriLorenzoni2017_ReturnFn(d, aprime, a, z,r, gamma, psi, eta, phi, v,B,Bprime,omega);
 
 %%
 vfoptions.divideandconquer=1; % for transition path, turn on divide-and-conquer
@@ -585,7 +586,7 @@ if SkipPanelData==0
     InitialDist_1stpercentile(prctileindexes(1),:)=StationaryDist_initial(prctileindexes(1),:)./sum(StationaryDist_initial(prctileindexes(1),:)); % Normalized version of agents holding the 1st-percentile amount of assets, I make sure they have the appropriate distribution over the exogenous shock dimension.
     % Everything else is just completely standard
     AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(InitialDist_1stpercentile, Policy_initial, Fig6FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-    SimPanelValues=SimPanelValues_TransPath_Case1(PricePath, ParamPath, T, V_final, InitialDist_1stpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn, Fig6FnsToEvaluate, Params, DiscountFactorParamNames, transpathoptions,simoptions);
+    SimPanelValues=SimPanelValues_TransPath_Case1(PolicyPath, PricePath, ParamPath, T, InitialDist_1stpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, Fig6FnsToEvaluate, Params, transpathoptions,simoptions);
     % The line in the figure is just the mean for each time period of these (I am guessing), but expressed as
     % percent deviation from steady state. [Not obvious if I should take mean and then percent deviation, or
     % take percent deviation and then mean; have gone with the former.]
@@ -596,22 +597,22 @@ if SkipPanelData==0
     InitialDist_10thpercentile=zeros(n_a,n_z,'gpuArray');
     InitialDist_10thpercentile(prctileindexes(10),:)=StationaryDist_initial(prctileindexes(10),:)./sum(StationaryDist_initial(prctileindexes(10),:)); % Normalized version of agents holding the 1st-percentile amount of assets, I make sure they have the appropriate distribution over the exogenous shock dimension.
     AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(InitialDist_10thpercentile, Policy_initial, Fig6FnsToEvaluate,Params,[],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-    SimPanelValues=SimPanelValues_TransPath_Case1(PricePath, ParamPath, T, V_final, InitialDist_10thpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn, Fig6FnsToEvaluate, Params, DiscountFactorParamNames, transpathoptions,simoptions);
+    SimPanelValues=SimPanelValues_TransPath_Case1(PolicyPath, PricePath, ParamPath, T, InitialDist_10thpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, Fig6FnsToEvaluate, Params, transpathoptions,simoptions);
     Fig6_10thPercentileTrace=(mean(SimPanelValues.consumption,2)-AggVars_initial.consumption.Mean)/AggVars_initial.consumption.Mean;
     InitialDist_20thpercentile=zeros(n_a,n_z,'gpuArray');
     InitialDist_20thpercentile(prctileindexes(20),:)=StationaryDist_initial(prctileindexes(20),:)./sum(StationaryDist_initial(prctileindexes(20),:)); % Normalized version of agents holding the 1st-percentile amount of assets, I make sure they have the appropriate distribution over the exogenous shock dimension.
     AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(InitialDist_20thpercentile, Policy_initial, Fig6FnsToEvaluate,Params,[],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-    SimPanelValues=SimPanelValues_TransPath_Case1(PricePath, ParamPath, T, V_final, InitialDist_20thpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn, Fig6FnsToEvaluate, Params, DiscountFactorParamNames, transpathoptions,simoptions);
+    SimPanelValues=SimPanelValues_TransPath_Case1(PolicyPath, PricePath, ParamPath, T, InitialDist_20thpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, Fig6FnsToEvaluate, Params, transpathoptions,simoptions);
     Fig6_20thPercentileTrace=(mean(SimPanelValues.consumption,2)-AggVars_initial.consumption.Mean)/AggVars_initial.consumption.Mean;
     InitialDist_50thpercentile=zeros(n_a,n_z,'gpuArray');
     InitialDist_50thpercentile(prctileindexes(50),:)=StationaryDist_initial(prctileindexes(50),:)./sum(StationaryDist_initial(prctileindexes(50),:)); % Normalized version of agents holding the 1st-percentile amount of assets, I make sure they have the appropriate distribution over the exogenous shock dimension.
     AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(InitialDist_50thpercentile, Policy_initial, Fig6FnsToEvaluate,Params,[],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-    SimPanelValues=SimPanelValues_TransPath_Case1(PricePath, ParamPath, T, V_final, InitialDist_50thpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn, Fig6FnsToEvaluate, Params, DiscountFactorParamNames, transpathoptions,simoptions);
+    SimPanelValues=SimPanelValues_TransPath_Case1(PolicyPath, PricePath, ParamPath, T, InitialDist_50thpercentile, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, Fig6FnsToEvaluate, Params, transpathoptions,simoptions);
     Fig6_50thPercentileTrace=(mean(SimPanelValues.consumption,2)-AggVars_initial.consumption.Mean)/AggVars_initial.consumption.Mean;
 
     if CreateFigures==1
         fig6=figure(6);
-        plot(0:1:T-1, [0; Fig6_1stPercentileTrace], 0:1:T-1, [0;Fig6_10thPercentileTrace], 0:1:T-1, [0;Fig6_20thPercentileTrace], 0:1:T-1, [0;Fig6_50thPercentileTrace])
+        plot(0:1:T, [0, Fig6_1stPercentileTrace'], 0:1:T, [0, Fig6_10thPercentileTrace'], 0:1:T, [0, Fig6_20thPercentileTrace'], 0:1:T, [0, Fig6_50thPercentileTrace'])
         title('Consumption Response by Percentile in Initial Wealth Distribution')
         legend('1st percentile','10th percentile','20th percentile','50th percentile')
         saveas(fig6,['./SavedOutput/Graphs/GuerrieriLorenzoni2017_Figure6.pdf'])
@@ -1122,13 +1123,13 @@ end
 load ./SavedOutput/GuerrieriLorenzoni2017_initial.mat Params
 
 % To be able to solve this we will need
-clear vfoptions transpathoptions
 vfoptions.lowmemory=1;
-vfoptions.divideandconquer=1;
 transpathoptions.lowmemory=1;
 n_d=21;
-n_a=2^9;
-n_k=2^9; % Number of grid points for the durable asset.
+% n_a=2^9;
+% n_k=2^9; % Number of grid points for the durable asset.
+n_a=2^5;
+n_k=2^5; % Number of grid points for the durable asset.
 
 % Need to update the grids for d and a based on new number of grid points
 d_grid=linspace(0,1,n_d)'; % Labor supply
@@ -1183,9 +1184,9 @@ if SkipDurables==0
     
     % The general equilibrium conditions are unchanged. These are declared inside the durable good function.
     figurenumber=15;
-    Output_DurableGoods1=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,d_grid,a_grid, T, ParamPath_Durables1, vfoptions, simoptions, heteroagentoptions,transpathoptions, vfoptions,simoptions);
+    Output_DurableGoods1=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,d_grid,a_grid, T, ParamPath_Durables1, heteroagentoptions,transpathoptions, vfoptions,simoptions);
     figurenumber=16;
-    Output_DurableGoods2=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,d_grid,a_grid, T, ParamPath_Durables2, vfoptions, simoptions, heteroagentoptions,transpathoptions, vfoptions,simoptions);
+    Output_DurableGoods2=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a,n_k,d_grid,a_grid, T, ParamPath_Durables2, heteroagentoptions,transpathoptions, vfoptions,simoptions);
     
     
     if CreateFigures==1
