@@ -76,8 +76,8 @@ Params.r=p_eqm_initial.r;
 AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, AltCalibFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2);
 AggVarsPath_Flex=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_flex, PolicyPath_flex, PricePath_flex, ParamPath, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
 
-Output_pch_flex=([AggVars_initial.output.Mean; AggVarsPath_flex.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
-Employment_pch_flex=([AggVars_initial.employment.Mean; AggVarsPath_flex.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
+Output_pch_flex=([AggVars_initial.output.Mean; AggVarsPath_Flex.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
+Employment_pch_flex=([AggVars_initial.employment.Mean; AggVarsPath_Flex.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
 
 if altcalib_figurenumber==9 || altcalib_figurenumber==11
     AggVarsPath_NK=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_NK, PolicyPath_NK, PricePath_NK, ParamPath, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
