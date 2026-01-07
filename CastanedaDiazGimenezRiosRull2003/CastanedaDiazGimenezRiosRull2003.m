@@ -1,33 +1,31 @@
 % Replicates the results (and more) of Castaneda, Diaz-Gimenez, and Rios-Rull (2003)
 % Takes quite a while to run, simply because two of the moments (out of 40 odd) take a long time to simulate. Actual solution of the model itself is
 % fast enough.
-% Figures use plotly
 %
-% I make a slight notational change, namely using h for hours worked and l
-% for effeciency-unit-hours worked.
+% I make a slight notational change, namely using h for hours worked and l for effeciency-unit-hours worked.
 %
-% The presence of the estate tax (together with stochastic probability of
-% death) means next periods endogenous state (assets) cannot be chosen with
+% The presence of the estate tax (together with stochastic probability of death) means next periods endogenous state (assets) cannot be chosen with
 % certainty and problem is therefore a 'Case 2' value function problem.
 %
-% Note: The algorithm used for calculating the general equilibrium is not what you would want to use normally for solving this model. It finds the general equilibrium using a discrete grid on interest rates, rather
-% than just solving the fixed-point problem on interest rates directly by using optimization. This is done for robustness reasons; see my paper on BHA models.
-
-% A line needed to run on the server
-addpath(genpath('./MatlabToolkits/'))
+% Note: The algorithm used for calculating the general equilibrium is not what you would want to use normally for solving this model. It finds the general 
+% equilibrium using a discrete grid on interest rates, rather than just solving the fixed-point problem on interest rates directly by using optimization. 
+% This is done for robustness reasons; see my paper on BHA models.
 
 SkipGE=0 % Just a placeholder I am using to work on codes without rerunning the GE step.
 
 %% Set some basic variables
 
-n_l=51; % 101
-n_k=1501; % 2001
+n_l=101;
+n_k=1201;
 n_r=551; % Two General Eqm variables: interest rate r, tax rate a3.
 % Note: d1 is l (labour supply), d2 is a (assets)
 
-% Some Toolkit options
-vfoptions=struct(); % Just use defaults
-simoptions.parallel=3; % Sparse matrix for agent distribution
+% vfoptions.gridinterplayer=1;
+% vfoptions.ngridinterp=25; % # points on next period endogenous state, between every two consecutive points in the grid on the endogenous state
+% simoptions.gridinterplayer=vfoptions.gridinterplayer;
+% simoptions.ngridinterp=vfoptions.ngridinterp;
+vfoptions=struct();
+
 simoptions.ncores=feature('numcores'); % Number of CPU cores
 
 %% Parameters
@@ -83,9 +81,9 @@ k_grid=2500*(linspace(0,1,n_k).^3)'; % Note that the upper limit on my asset gri
 % n_k=length(k_grid);
 
 % Bring model into the notational conventions used by the toolkit
-d_grid=[l_grid; k_grid]; % Is a 'Case 2' value function problem
+d_grid=[l_grid; k_grid];
 a_grid=k_grid;
-z_grid=linspace(1,2*Params.J,2*Params.J)'; %(age (& determines retirement))
+z_grid=linspace(1,2*Params.J,2*Params.J)'; % age (& determines retirement)
 pi_z=Gamma;
 
 % r_grid=linspace(0,1/Params.beta-1,n_r)';
@@ -96,27 +94,28 @@ n_d=[n_l,n_k];
 n_a=n_k;
 n_z=length(z_grid);
 
-disp('sizes')
-n_d
-n_a
-n_z
+%% Setup for the interitance asset a'(d,z,z')
 
-%% Set up the model itself
-GEPriceParamNames={'r','a3'};
+vfoptions.inheritanceasset=1;
+vfoptions.aprimeFn=@(d,z,zprime,J,tauE,zlowerbar) CDGRR2003_aprimeFn(d,z,zprime,J,tauE,zlowerbar);
+% Note: only the 'last' decision variable is input to aprimeFn
 
+simoptions.inheritanceasset=vfoptions.inheritanceasset;
+simoptions.aprimeFn=vfoptions.aprimeFn;
+simoptions.d_grid=d_grid;
+simoptions.a_grid=a_grid;
+simoptions.z_grid=z_grid;
+
+%% Setup return fn
 DiscountFactorParamNames={'beta'};
 
-ReturnFn=@(l, kprime, k, z_val,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3) CastanedaDiazGimenezRiosRull2003_ReturnFn(l, kprime, k, z_val,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3);
-
-% Case 2 requires 'phiaprime' which determines next periods assets from
-% this periods decisions.
-Case2_Type=2;
-vfoptions.phiaprimematrix=1;
-PhiaprimeParamNames={};
-Phi_aprimeMatrix=CastanedaDiazGimenezRiosRull2003_PhiaprimeMatrix(n_d,n_z,k_grid,Params.J,Params.zlowerbar,Params.tauE,vfoptions);
+ReturnFn=@(l, kprime, k, z,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3) CastanedaDiazGimenezRiosRull2003_ReturnFn(l, kprime, k, z,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3);
 
 
-FnsToEvaluate.K = @(h,kprime,k,s) k; %K
+%% Set up for stationary general eqm
+GEPriceParamNames={'r','a3'};
+
+FnsToEvaluate.K = @(h,kprime,k,s) k; % K
 FnsToEvaluate.L = @(h,kprime,k,s,e1,e2,e3,e4) h*(e1*(s==1)+e2*(s==2)+e3*(s==3)+e4*(s==4)); % Efficiency hours worked: L
 FnsToEvaluate.IncomeTaxRevenue = @(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_IncomeTaxRevenueFn(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
 FnsToEvaluate.Pensions = @(h,kprime,k,s,J,omega) omega*(s>J); % If you are retired you earn pension omega (otherwise it is zero).
@@ -124,39 +123,45 @@ FnsToEvaluate.EstateTaxRevenue  = @(h,kprime,k,s,J,p_gg,zlowerbar,tauE) (s>J)*(1
 
 % Now define the functions for the General Equilibrium conditions
 %     Should be written so that closer the value given by the function is to zero, the closer the general eqm condition is to being met.
-%The requirement that the interest rate equals the marginal product of capital
+% The requirement that the interest rate equals the marginal product of capital
 GeneralEqmEqns.CapitalMarket = @(r,K,L,theta,delta) r-(theta*(K^(theta-1))*(L^(1-theta))-delta); 
 % Government budget balance
 GeneralEqmEqns.GovBudget = @(G,Pensions,IncomeTaxRevenue,EstateTaxRevenue) G+Pensions-IncomeTaxRevenue-EstateTaxRevenue; % The roles of 'a3' is captured in the total revenue of income taxes
 
 %% Test a few commands out before getting into the main part of General equilibrium
-Params.r=0.045; %Params.a3
-[V, Policy]=ValueFnIter_Case2(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, [], PhiaprimeParamNames, vfoptions);
-StationaryDist=StationaryDist_Case2(Policy,Phi_aprimeMatrix,Case2_Type,n_d,n_a,n_z,pi_z,simoptions);
-AggVars=EvalFnOnAgentDist_AggVars_Case2(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, 2);
+Params.r=0.045;
+tic;
+[V, Policy]=ValueFnIter_Case1(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+toc
+tic;
+StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions,Params);
+toc
+tic;
+AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
+toc
 
 %% Solve the baseline model
 
 if SkipGE==0
     % Find the competitive equilibrium
-%     heteroagentoptions.pgrid=p_grid;
+    % heteroagentoptions.pgrid=p_grid;
     Params.r=0.045; %Params.a3
     heteroagentoptions.verbose=1;
-    [p_eqm,p_eqm_index,MarketClearance]=HeteroAgentStationaryEqm_Case2(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid,Phi_aprimeMatrix, Case2_Type, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], PhiaprimeParamNames, [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,GECondns]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
     
     % Evaluate a few objects at the equilibrium
     Params.r=p_eqm.r;
     Params.a3=p_eqm.a3;
     Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
         
-    [V, Policy]=ValueFnIter_Case2(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, [], PhiaprimeParamNames, vfoptions);
+    [V, Policy]=ValueFnIter_Case1(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
     
-    StationaryDist=StationaryDist_Case2(Policy,Phi_aprimeMatrix,Case2_Type,n_d,n_a,n_z,pi_z,simoptions);
+    StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions, Params);
         
-    save ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params MarketClearance a_grid V Policy StationaryDist
+    save ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params GECondns a_grid V Policy StationaryDist
 
 else
-    load ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params MarketClearance a_grid V Policy StationaryDist
+    load ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params GECondns a_grid V Policy StationaryDist
 end
 
 %% Reproduce Tables
@@ -167,38 +172,38 @@ CastanedaDiazGimenezRiosRull2003_Tables345
 % First, calculate all of model statistics that appear in Table 6
 FnsToEvaluate=struct(); % clear out what was previously
 FnsToEvaluate.K = @(h,kprime,k,s) k; %K
-FnsToEvaluate.I = @(h,kprime,k,s,delta) kprime-k*(1-delta); %I
+FnsToEvaluate.I = @(h,kprime,k,s,delta) kprime-k*(1-delta); % I
 FnsToEvaluate.L = @(h,kprime,k,s,e1,e2,e3,e4) h*(e1*(s==1)+e2*(s==2)+e3*(s==3)+e4*(s==4)); % Efficiency hours worked: L
-FnsToEvaluate.H = @(h,kprime,k,s) h; %H
+FnsToEvaluate.H = @(h,kprime,k,s) h; % H
 FnsToEvaluate.IncomeTaxRevenue = @(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_IncomeTaxRevenueFn(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
 FnsToEvaluate.Pensions = @(h,kprime,k,s,J,omega) omega*(s>J); % If you are retired you earn pension omega (otherwise it is zero).
 FnsToEvaluate.EstateTaxRevenue  = @(h,kprime,k,s,J,p_gg,zlowerbar,tauE) (s>J)*(1-p_gg)*tauE*max(kprime-zlowerbar,0); % If you are retired: the probability of dying times the estate tax you would pay
 FnsToEvaluate.Consumption = @(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_ConsumptionFn(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
-AggVars=EvalFnOnAgentDist_AggVars_Case2(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid);
+AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
 
 
-Y=(AggVars.K.Mean^Params.theta)*(AggVars.L.Mean^(1-Params.theta));
+Y=(AllStats.K.Mean^Params.theta)*(AllStats.L.Mean^(1-Params.theta));
 
-Table6variables(1)=AggVars.K.Mean/Y; % K/Y
-Table6variables(2)=100*AggVars.I.Mean/Y; % I/Y as %age
-Table6variables(3)=100*(AggVars.IncomeTaxRevenue.Mean+AggVars.EstateTaxRevenue.Mean-AggVars.Pensions.Mean)/Y; % G/Y  as %age: G=T-Tr=(Income Tax Revenue+ Estate Tax Revenue) - Pensions
-Table6variables(4)=100*AggVars.Pensions.Mean/Y; % Tr/Y  as %age
-Table6variables(5)=100*AggVars.EstateTaxRevenue.Mean/Y; % T_E/Y  as %age
-Table6variables(6)=100*AggVars.H.Mean/Params.elle; % h  as %age
+Table6variables(1)=AllStats.K.Mean/Y; % K/Y
+Table6variables(2)=100*AllStats.I.Mean/Y; % I/Y as %age
+Table6variables(3)=100*(AllStats.IncomeTaxRevenue.Mean+AllStats.EstateTaxRevenue.Mean-AllStats.Pensions.Mean)/Y; % G/Y  as %age: G=T-Tr=(Income Tax Revenue+ Estate Tax Revenue) - Pensions
+Table6variables(4)=100*AllStats.Pensions.Mean/Y; % Tr/Y  as %age
+Table6variables(5)=100*AllStats.EstateTaxRevenue.Mean/Y; % T_E/Y  as %age
+Table6variables(6)=100*AllStats.H.Mean/Params.elle; % h  as %age
 
-MeanMedianStdDev=EvalFnOnAgentDist_MeanMedianStdDev_Case2(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid);
+Table6variables(7)=gather((AllStats.Consumption.StdDeviation/AllStats.Consumption.Mean)/(AllStats.H.StdDeviation/AllStats.H.Mean)); % Coefficient of Variation=std deviation divided by mean. 
 
-Table6variables(7)=gather((MeanMedianStdDev.Consumption.StdDev/MeanMedianStdDev.Consumption.Mean)/(MeanMedianStdDev.H.StdDev/MeanMedianStdDev.H.Mean)); % Coefficient of Variation=std deviation divided by mean. 
+Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
 
 NSimulations=10^6;
 e=[Params.e1,Params.e2,Params.e3,Params.e4,0,0,0,0];
 tic;
 % Ratio of earnings of 40 year olds to 20 year olds. This is quite complicated to calculate and so required a dedicated script.
-Table6variables(8)=CDGRR2003_RatioEarningsOldYoung(NSimulations, StationaryDist, Policy, Phi_aprimeMatrix, n_d,n_a,n_z, d_grid, Gamma, e,Params.w,Params.J);
+Table6variables(8)=CDGRR2003_RatioEarningsOldYoung(NSimulations, StationaryDist, Policy, Params, simoptions, n_d,n_a,n_z, d_grid,a_grid,z_grid, Gamma, e,Params.w,Params.J);
 toc
 tic;
 % Intergenerational correlation coefficient. This is quite complicated to calculate and so required a dedicated script.
-Table6variables(9)=CDGRR2003_IntergenerationalEarnings(NSimulations,StationaryDist, Policy, Phi_aprimeMatrix, n_d,n_a,n_z,d_grid, Gamma, e,Params.w,Params.J);
+Table6variables(9)=CDGRR2003_IntergenerationalEarnings(NSimulations,StationaryDist, Policy, Params, simoptions, n_d,n_a,n_z,d_grid,a_grid,z_grid, Gamma, e,Params.w,Params.J);
 toc
 
 %Table 6
@@ -216,24 +221,20 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 
-% Lorenz Curves needed for Tables 7 and 8
-StationaryDist_LorenzCurves=EvalFnOnAgentDist_LorenzCurve_Case2(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid);
-
-
 % Calculate Distributions of Earnings and Wealth for Table 7
-Table7variables=nan(2,9,'gpuArray');
+Table7variables=nan(2,9);
 %  Gini for Earnings
-Table7variables(1,1)=Gini_from_LorenzCurve(StationaryDist_LorenzCurves.L);
+Table7variables(1,1)=AllStats.L.Gini;
 %  Earnings Lorenz Curve: Quintiles (%) 
-Table7variables(1,2:6)=100*(StationaryDist_LorenzCurves.L([20,40,60,80,100])-StationaryDist_LorenzCurves.L([1,21,41,61,81]));
+Table7variables(1,2:6)=100*(AllStats.L.LorenzCurve([20,40,60,80,100])-AllStats.L.LorenzCurve([1,21,41,61,81]));
 %  Earnings Lorenz Curve: 90-95, 95-99, and 99-100 (%)
-Table7variables(1,7:9)=100*(StationaryDist_LorenzCurves.L([95,99,100])-StationaryDist_LorenzCurves.L([90,95,99]));
+Table7variables(1,7:9)=100*(AllStats.L.LorenzCurve([95,99,100])-AllStats.L.LorenzCurve([90,95,99]));
 %  Gini for Wealth
-Table7variables(2,1)=Gini_from_LorenzCurve(StationaryDist_LorenzCurves.K);
+Table7variables(2,1)=AllStats.K.Gini;
 %  Wealth Lorenz Curve: Quintiles (%)
-Table7variables(2,2:6)=100*(StationaryDist_LorenzCurves.K([20,40,60,80,100])-StationaryDist_LorenzCurves.K([1,21,41,61,81]));
+Table7variables(2,2:6)=100*(AllStats.K.LorenzCurve([20,40,60,80,100])-AllStats.K.LorenzCurve([1,21,41,61,81]));
 %  Wealth Lorenz Curve: 90-95, 95-99, and 99-100 (%)
-Table7variables(2,7:9)=100*(StationaryDist_LorenzCurves.K([95,99,100])-StationaryDist_LorenzCurves.K([90,95,99]));
+Table7variables(2,7:9)=100*(AllStats.K.LorenzCurve([95,99,100])-AllStats.K.LorenzCurve([90,95,99]));
 
 %Table 7
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table7.tex', 'w');
@@ -255,28 +256,31 @@ fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fclose(FID);
 
 % Calculate Distributions of Consumption for Table 8
-Table8variables=nan(2,9,'gpuArray');
+Table8variables=nan(2,9);
 % Calculate cutoff for wealthiest 1%
 temp=cumsum(sum(StationaryDist,2)); % cdf on wealth dimension alone
 [thisshouldequal99,cutoff_wealth1percent_index]=max(temp>0.99); % index
 cutoff_wealth1percent=k_grid(cutoff_wealth1percent_index); % value
 Params.cutoff_wealth1percent=cutoff_wealth1percent;
-FnsToEvaluate2.Consumption_ExWealthiest1percent = @(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3,cutoff_wealth1percent) CDGRR2003_ConsumptionFn_ExWealthiest1percent(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3,cutoff_wealth1percent);
-evalfnoptions.exclude.condn='equal';
-evalfnoptions.exclude.values=-Inf; % 'FnsToEvaluateFn_Consumption_ExWealthiest1percent' returns a value of -Inf for the wealthiest 1%, so we want to exclude these.
-LorenzCurves_ExWealthiest1percent=EvalFnOnAgentDist_LorenzCurve_Case2(StationaryDist, Policy, FnsToEvaluate2, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid,evalfnoptions);
+% We can set up a conditional restriction based on being below this cutoff,
+% which is effectively going to exclude the top 1 percent
+simoptions2=simoptions;
+simoptions2.conditionalrestrictions.ExWealthiest1percent=@(h,kprime,k,s,cutoff_wealth1percent) (k<cutoff_wealth1percent);
+% We only want consumption for the ExWealthiest1percent
+FnsToEvaluate2.Consumption=FnsToEvaluate.Consumption;
+AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate2, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions2);
 %  Gini for Consumption_ExWealthiest1percent
-Table8variables(1,1)=Gini_from_LorenzCurve(LorenzCurves_ExWealthiest1percent.Consumption_ExWealthiest1percent);
+Table8variables(1,1)=AllStats.ExWealthiest1percent.Consumption.Gini;
 %  Consumption_ExWealthiest1percent Lorenz Curve: Quintiles (%) 
-Table8variables(1,2:6)=100*(LorenzCurves_ExWealthiest1percent.Consumption_ExWealthiest1percent([20,40,60,80,100])-LorenzCurves_ExWealthiest1percent.Consumption_ExWealthiest1percent([1,21,41,61,81]));
+Table8variables(1,2:6)=100*(AllStats.ExWealthiest1percent.Consumption.LorenzCurve([20,40,60,80,100])-AllStats.ExWealthiest1percent.Consumption.LorenzCurve([1,21,41,61,81]));
 %  Consumption_ExWealthiest1percent Lorenz Curve: 90-95, 95-99, and 99-100 (%)
-Table8variables(1,7:9)=100*(LorenzCurves_ExWealthiest1percent.Consumption_ExWealthiest1percent([95,99,100])-LorenzCurves_ExWealthiest1percent.Consumption_ExWealthiest1percent([90,95,99]));
+Table8variables(1,7:9)=100*(AllStats.ExWealthiest1percent.Consumption.LorenzCurve([95,99,100])-AllStats.ExWealthiest1percent.Consumption.LorenzCurve([90,95,99]));
 %  Gini for Consumption
-Table8variables(2,1)=Gini_from_LorenzCurve(StationaryDist_LorenzCurves.Consumption);
+Table8variables(2,1)=AllStats.Consumption.Gini;
 %  Consumption Lorenz Curve: Quintiles (%) 
-Table8variables(2,2:6)=100*(StationaryDist_LorenzCurves.Consumption([20,40,60,80,100])-StationaryDist_LorenzCurves.Consumption([1,21,41,61,81]));
+Table8variables(2,2:6)=100*(AllStats.Consumption.LorenzCurve([20,40,60,80,100])-AllStats.Consumption.LorenzCurve([1,21,41,61,81]));
 %  Consumption Lorenz Curve: 90-95, 95-99, and 99-100 (%)
-Table8variables(2,7:9)=100*(StationaryDist_LorenzCurves.Consumption([95,99,100])-StationaryDist_LorenzCurves.Consumption([90,95,99]));
+Table8variables(2,7:9)=100*(AllStats.Consumption.LorenzCurve([95,99,100])-AllStats.Consumption.LorenzCurve([90,95,99]));
 
 
 %Table 8
@@ -300,28 +304,23 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 
-
-% Calculate Mobility Statistics for Table 9
-Table9variables=nan(2,5,'gpuArray');
-% Seems like ideal method for mobility would be based on cupolas, but for
-% now just use simulation methods.
-
 % Transition Probabilities needed for Table 9
 FnsToEvaluate3.L=FnsToEvaluate.L;
 FnsToEvaluate3.K=FnsToEvaluate.K;
-% 5 period transtion probabilities
-t=5;
-% Quintiles, so
-npoints=5;
-% Number of simulations on which to base results
-NSims=10^7;
-TransitionProbabilities=EvalFnOnAgentDist_RankTransitionProbabilities_Case2(t,NSims,StationaryDist, Policy,Phi_aprimeMatrix, Case2_Type, FnsToEvaluate3, Params,[], n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, 2, npoints);
+
+simoptions.transprobs={'L','K'};
+simoptions.timehorizons=5; % 5 period transitions
+simoptions.transprobquantiles=5; % number of quantiles to use when calculating transition probabilities
+CorrTransProbs=EvalFnOnAgentDist_CorrTransProbs_InfHorz(StationaryDist,Policy,FnsToEvaluate3,Params,[],n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,simoptions);
 
 Table9variables=zeros(2,5,'gpuArray');
 for ii=1:5
-    Table9variables(1,ii)=TransitionProbabilities.L(ii,ii); % Probability of staying in same quintile, hence ii-ii entry.
-    Table9variables(2,ii)=TransitionProbabilities.K(ii,ii);
+    Table9variables(1,ii)=CorrTransProbs.L.tperiods5.TransitionProbs(ii,ii); % Probability of staying in same quintile, hence ii-ii entry.
+    Table9variables(2,ii)=CorrTransProbs.K.tperiods5.TransitionProbs(ii,ii);
 end
+% Note: the third quintile of earnings is not well defined because so many
+% agents are in first s state and choose same labor supply that it cannot
+% be distinguished from the second quintile.
 
 %Table 9
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table9.tex', 'w');
@@ -349,6 +348,8 @@ fclose(FID);
 %
 % % Where is everyone on the asset distribution (making sure no-one hits the top)
 % plot(cumsum(sum(StationaryDist,2)))
+
+
 
 %% Finished Actual Replication, now do some extra things
 
