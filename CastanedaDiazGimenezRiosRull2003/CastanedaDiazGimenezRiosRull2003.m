@@ -311,7 +311,7 @@ FnsToEvaluate3.K=FnsToEvaluate.K;
 simoptions.transprobs={'L','K'};
 simoptions.timehorizons=5; % 5 period transitions
 simoptions.transprobquantiles=5; % number of quantiles to use when calculating transition probabilities
-CorrTransProbs=EvalFnOnAgentDist_CorrTransProbs_InfHorz(StationaryDist,Policy,FnsToEvaluate3,Params,[],n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,simoptions);
+CorrTransProbs=EvalFnOnAgentDist_AutoCorrTransProbs_InfHorz(StationaryDist,Policy,FnsToEvaluate3,Params,[],n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,simoptions);
 
 Table9variables=zeros(2,5,'gpuArray');
 for ii=1:5
@@ -336,7 +336,7 @@ fprintf(FID, 'United States  & 0.67  & 0.47  &  0.45 & 0.50  & 0.71  \\\\ \n');
 fprintf(FID, 'Benchmark      & %8.2f & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', Table9variables(2,:));
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Note: Based on %d simulations. \\\\ \n', NSims);
+fprintf(FID, 'Note: Based on %d simulations. \\\\ \n', NSimulations);
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
