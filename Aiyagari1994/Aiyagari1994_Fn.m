@@ -74,8 +74,8 @@ n_a=n_k;
 %pi_z (used to calculate the integral across the SS dist fn of whatever
 %functions you define here)
 FnsToEvaluateParamNames(1).Names={};
-FnsToEvaluateFn_1 = @(aprime_val,a_val,z_val) a_val; %We just want the aggregate assets (which is this periods state)
-FnsToEvaluate={FnsToEvaluateFn_1};
+FnsToEvaluate=struct();
+FnsToEvaluate.Fn_1 = @(aprime_val,a_val,z_val) a_val; %We just want the aggregate assets (which is this periods state)
 
 %Now define the functions for the General Equilibrium conditions
     %Should be written as LHS of general eqm eqn minus RHS, so that 
@@ -83,8 +83,8 @@ FnsToEvaluate={FnsToEvaluateFn_1};
     %the general eqm condition is to holding.
 %Note: length(AggVars) is number_d_vars+number_a_vars and length(p) is number_p_vars
 GeneralEqmEqnParamNames(1).Names={'alpha','delta'};
-GeneralEqmEqn_1 = @(AggVars,GEprices,alpha,delta) GEprices-(alpha*(AggVars^(alpha-1))*(Expectation_l^(1-alpha))-delta); %The requirement that the interest rate corresponds to the agg capital level
-GeneralEqmEqns={GeneralEqmEqn_1};
+GeneralEqmEqns=struct();
+GeneralEqmEqns.Eqn_1 = @(AggVars,GEprices,alpha,delta) GEprices-(alpha*(AggVars^(alpha-1))*(Expectation_l^(1-alpha))-delta); %The requirement that the interest rate corresponds to the agg capital level
 
 disp('sizes')
 n_a
@@ -143,9 +143,9 @@ disp('Calculating various equilibrium objects')
 
 StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid)
+AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions)
 
-eqm_MC=real(GeneralEqmConditions_Case1(AggVars,Params.r, GeneralEqmEqns, Params, GeneralEqmEqnParamNames)); % Note: is just giving GeneralEqmCondn(p_eqm_index)
+eqm_MC=real(GeneralEqmConditions_Case1_v2(GeneralEqmEqns, Params, simoptions.parallel)); % IS THIS CORRECT?
 
 save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy StationaryDist
 
@@ -155,31 +155,32 @@ save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy StationaryDist
 % In equilibrium K is constant, so aggregate savings is just depreciation, which
 % equals delta*K. The agg savings rate is thus delta*K/Y.
 % So agg savings rate is given by s=delta*K/(K^{\alpha})=delta*K^{1-\alpha}
-aggsavingsrate=Params.delta*AggVars^(1-Params.alpha);
+aggsavingsrate=Params.delta*AggVars.Fn_1.Mean^(1-Params.alpha);
 
 % Calculate Lorenz curves, Gini coefficients, and Pareto tail coefficients
+FnsToEvaluateIneq=struct();
 FnsToEvaluateParamNames(1).Names={'w'};
-FnsToEvaluate_Earnings = @(aprime_val,a_val,z_val,w) w*z_val;
+FnsToEvaluateIneq.Earnings = @(aprime_val,a_val,z_val,w) w*z_val;
 FnsToEvaluateParamNames(2).Names={'r','w'};
-FnsToEvaluate_Income = @(aprime_val,a_val,z_val,r,w) w*z_val+(1+r)*a_val;
+FnsToEvaluateIneq.Income = @(aprime_val,a_val,z_val,r,w) w*z_val+(1+r)*a_val;
 FnsToEvaluateParamNames(3).Names={};
-FnsToEvaluate_Wealth = @(aprime_val,a_val,z_val) a_val;
-FnsToEvaluateIneq={FnsToEvaluate_Earnings, FnsToEvaluate_Income, FnsToEvaluate_Wealth};
-LorenzCurves=EvalFnOnAgentDist_LorenzCurve_Case1(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid);
+FnsToEvaluateIneq.Wealth = @(aprime_val,a_val,z_val) a_val;
+AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
 
 % 3.5 The Distributions of Earnings and Wealth
 %  Gini for Earnings
-EarningsGini=Gini_from_LorenzCurve(LorenzCurves(1,:));
-IncomeGini=Gini_from_LorenzCurve(LorenzCurves(2,:));
-WealthGini=Gini_from_LorenzCurve(LorenzCurves(3,:));
+EarningsGini=Gini_from_LorenzCurve(AllStats.Earnings.LorenzCurve);
+IncomeGini=Gini_from_LorenzCurve(AllStats.Income.LorenzCurve);
+WealthGini=Gini_from_LorenzCurve(AllStats.Wealth.LorenzCurve);
 
 % Calculate inverted Pareto coeff, b, from the top income shares as b=1/[log(S1%/S0.1%)/log(10)] (formula taken from Excel download of WTID database)
 % No longer used: Calculate Pareto coeff from Gini as alpha=(1+1/G)/2; ( http://en.wikipedia.org/wiki/Pareto_distribution#Lorenz_curve_and_Gini_coefficient)
 % Recalculte Lorenz curves, now with 1000 points
-LorenzCurves=EvalFnOnAgentDist_LorenzCurve_Case1(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,[],1000);
-EarningsParetoCoeff=1/((log(LorenzCurves(1,990))/log(LorenzCurves(1,999)))/log(10)); %(1+1/EarningsGini)/2;
-IncomeParetoCoeff=1/((log(LorenzCurves(2,990))/log(LorenzCurves(2,999)))/log(10)); %(1+1/IncomeGini)/2;
-WealthParetoCoeff=1/((log(LorenzCurves(3,990))/log(LorenzCurves(3,999)))/log(10)); %(1+1/WealthGini)/2;
+simoptions.npoints=1000;
+AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
+EarningsParetoCoeff=1/((log(AllStats.Earnings.LorenzCurve(990))/log(AllStats.Earnings.LorenzCurve(999)))/log(10)); %(1+1/EarningsGini)/2;
+IncomeParetoCoeff=1/((log(AllStats.Income.LorenzCurve(990))/log(AllStats.Income.LorenzCurve(999)))/log(10)); %(1+1/IncomeGini)/2;
+WealthParetoCoeff=1/((log(AllStats.Wealth.LorenzCurve(990))/log(AllStats.Wealth.LorenzCurve(999)))/log(10)); %(1+1/WealthGini)/2;
 
 
 %% Display some output about the solution
@@ -187,7 +188,7 @@ GraphString=['Aiyagari1994_MarketClearance_mu', num2str(Params.mu), 'rho', num2s
 GraphString=strrep(GraphString, '.', '_');
 % Create a graph displaying the market clearance
 fig1=figure(1);
-plot(p_grid,GeneralEqmCondn, 'x',p_grid, zeros(n_p,1),p_eqm.r, 0, 'r o')
+plot(p_grid,GeneralEqmCondn.Eqn_1, 'x',p_grid, zeros(n_p,1),p_eqm.r, 0, 'r o')
 title(['Market clearance: mu=', num2str(Params.mu), ' rho=', num2str(Params.rho), ' sigma=', num2str(Params.sigma)],'FontSize',18);
 xlabel('p','FontSize',16); ylabel('tilde(p)-p','FontSize',16);
 set(fig1, 'Color', 'white');     % white bckgr
