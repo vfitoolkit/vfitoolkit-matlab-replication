@@ -9,16 +9,12 @@ Params.phi=Params.phi_initial;
 % GL2007 misleadingly refer to this as the initial steady-state equilibrium, which it
 % is not. It is the inital stationary equilibrium. (there are plenty of shocks at the idiosyncratic level, hence not steady-state which means the absence of shocks)
 
-%Use the toolkit to find the equilibrium price index
+% Use the toolkit to find the equilibrium price index
 GEPriceParamNames={'r'}; %,'tau'
-
 heteroagentoptions.verbose=1;
-heteroagentoptions.pgrid=p_grid;
 
 disp('Calculating price vector corresponding to the stationary eqm')
-% tic;
-p_eqm_initial=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
-% findeqmtime=toc
+p_eqm_initial=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,vfoptions,simoptions);
 Params.r=p_eqm_initial.r;
 
 % Now that we know what the equilibrium price is, lets calculate a bunch of other things associated with the equilibrium
@@ -30,27 +26,27 @@ StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, sim
 % Final stationary equilibrium
 %  Only change is
 Params.phi=Params.phi_final;
-p_eqm_final=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions);
+p_eqm_final=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,vfoptions,simoptions);
 Params.r=p_eqm_final.r;
 [V_final,Policy_final]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 StationaryDist_final=StationaryDist_Case1(Policy_final,n_d,n_a,n_z,pi_z, simoptions);
-AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
+AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 %% Compute the flexible price transition path
 clear PricePath0 ParamPath
 % We want to look at a one off unanticipated path of phi. ParamPath & PathParamNames are thus given by
-ParamPath.phi=Params.phi_final*ones(T,1); % ParamPath is matrix of size T-by-'number of parameters that change over path'
+ParamPath.phi=Params.phi_final*ones(1,T); % ParamPath is matrix of size T-by-'number of parameters that change over path'
 temp=linspace(Params.phi_initial,Params.phi_final,7); ParamPath.phi(1:6)=temp(2:7); % At t=0, is inital stationary distribution, then falls over the following 6 periods to equal 0.525, remains there
 % (the way ParamPath is set is designed to allow for a series of changes in the parameters)
 
 % We need to give an initial guess for the price path on interest rates
-PricePath0.r=[linspace(-0.01, p_eqm_final.r, floor(T/3))'; p_eqm_final.r*ones(T-floor(T/3),1)]; % PricePath0 is matrix of size T-by-'number of prices'
+PricePath0.r=[linspace(-0.01, p_eqm_final.r, floor(T/3)), p_eqm_final.r*ones(1,T-floor(T/3))]; % PricePath0 is matrix of size T-by-'number of prices'
 
 fprintf('Starting flex prices transition in alt calibration \n')
-PricePath_flex=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions);
+PricePath_flex=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions,vfoptionspath,simoptions);
 
-[~,PolicyPath_flex]=ValueFnOnTransPath_Case1(PricePath_flex, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptions);
-AgentDistPath_flex=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_flex,n_d,n_a,n_z,pi_z,T);
+[~,PolicyPath_flex]=ValueFnOnTransPath_Case1(PricePath_flex, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
+AgentDistPath_flex=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_flex,n_d,n_a,n_z,pi_z,T,simoptions);
 
 %% Sticky Wages
 if altcalib_figurenumber==9 || altcalib_figurenumber==11
@@ -58,10 +54,10 @@ if altcalib_figurenumber==9 || altcalib_figurenumber==11
     PricePath0.omega=zeros(T,1);
 
     fprintf('Starting sticky wages transition in alt calibration \n')
-    PricePath_NK=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, NKTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_NK);
+    PricePath_NK=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, NKTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_NK,vfoptionspath,simoptions);
 
-    [~,PolicyPath_NK]=ValueFnOnTransPath_Case1(PricePath_NK, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptions);
-    AgentDistPath_NK=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_NK,n_d,n_a,n_z,pi_z,T);
+    [~,PolicyPath_NK]=ValueFnOnTransPath_Case1(PricePath_NK, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
+    AgentDistPath_NK=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_NK,n_d,n_a,n_z,pi_z,T,simoptions);
 end
 
 %% Figure for Alternative Calibration
@@ -73,16 +69,16 @@ Params.phi=Params.phi_initial;
 Params.r=p_eqm_initial.r;
 
 % Get the 
-AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, AltCalibFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2);
-AggVarsPath_Flex=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_flex, PolicyPath_flex, PricePath_flex, ParamPath, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
+AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, AltCalibFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+AggVarsPath_Flex=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_flex, PolicyPath_flex, PricePath_flex, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
 
 Output_pch_flex=([AggVars_initial.output.Mean; AggVarsPath_Flex.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
 Employment_pch_flex=([AggVars_initial.employment.Mean; AggVarsPath_Flex.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
 
 if altcalib_figurenumber==9 || altcalib_figurenumber==11
-    AggVarsPath_NK=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_NK, PolicyPath_NK, PricePath_NK, ParamPath, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
-    Output_pch_NK=([AggVars_initial.output.Mean; AggVarsPath_NK.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
-    Employment_pch_NK=([AggVars_initial.employment.Mean; AggVarsPath_NK.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
+    AggVarsPath_NK=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_NK, PolicyPath_NK, PricePath_NK, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
+    Output_pch_NK=([AggVars_initial.output.Mean, AggVarsPath_NK.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
+    Employment_pch_NK=([AggVars_initial.employment.Mean, AggVarsPath_NK.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
 end
 
 
@@ -91,7 +87,7 @@ if CreateFigures==1
     figure(altcalib_figurenumber)
     if altcalib_figurenumber==9
         % interest rate
-        subplot(1,2,1); plot(0:1:T,4*100*[p_eqm_initial.r; PricePath_flex.r],0:1:T,4*100*[p_eqm_initial.r; PricePath_NK.r])
+        subplot(1,2,1); plot(0:1:T,4*100*[p_eqm_initial.r, PricePath_flex.r],0:1:T,4*100*[p_eqm_initial.r, PricePath_NK.r])
         title('annual interest rate')
         % output
         subplot(1,2,2); plot(0:1:T,Output_pch_flex, 0:1:T,Output_pch_NK)
@@ -99,7 +95,7 @@ if CreateFigures==1
         % ylabel('percent deviation from inital output in stationary eqm')
     elseif altcalib_figurenumber==10
         % interest rate
-        subplot(1,3,1); plot(0:1:T,4*100*[p_eqm_initial.r; PricePath_flex.r])
+        subplot(1,3,1); plot(0:1:T,4*100*[p_eqm_initial.r, PricePath_flex.r])
         title('annual interest rate')
         % output
         subplot(1,3,2); plot(0:1:T,Output_pch_flex)
@@ -111,7 +107,7 @@ if CreateFigures==1
         % ylabel('percent deviation from inital employment in stationary eqm')
     elseif altcalib_figurenumber==11
         % interest rate
-        subplot(1,3,1); plot(0:1:T,4*100*[p_eqm_initial.r; PricePath_flex.r],0:1:T,4*100*[p_eqm_initial.r; PricePath_NK.r])
+        subplot(1,3,1); plot(0:1:T,4*100*[p_eqm_initial.r, PricePath_flex.r],0:1:T,4*100*[p_eqm_initial.r, PricePath_NK.r])
         title('annual interest rate')
         % output
         subplot(1,3,2); plot(0:1:T,Output_pch_flex, 0:1:T,Output_pch_NK)
@@ -123,7 +119,7 @@ if CreateFigures==1
         % ylabel('percent deviation from inital employment in stationary eqm')
     elseif altcalib_figurenumber==12
         % interest rate
-        subplot(1,2,1); plot(0:1:T,Full_PricePath_Flex_baseline, 0:1:T,4*100*[p_eqm_initial.r; PricePath_flex.r])
+        subplot(1,2,1); plot(0:1:T,Full_PricePath_Flex_baseline, 0:1:T,4*100*[p_eqm_initial.r, PricePath_flex.r])
         title('annual interest rate')
         % output
         subplot(1,2,2); plot(0:1:T,Full_OutputPath_pch_Flex_baseline, 0:1:T,Output_pch_flex)
