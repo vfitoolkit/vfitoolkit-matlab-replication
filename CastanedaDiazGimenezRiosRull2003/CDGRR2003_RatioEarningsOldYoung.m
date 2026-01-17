@@ -77,19 +77,19 @@ parfor i=1:K*Nsim
     for t=2:20
         if s_c>J %Check that they are still working
             TheyRetired=1; %If not working mark them as having retired.
+            break
         else
             d2_c=Policy(2,a_c,s_c);
             a_c=d2_c; %a_c=Phi_aprimeKron(d1_c,s_c,new_s_c); %Actually, can ignore the estate tax, since we are only looking at people who don't retire (and so cannot die) anyway
             [~,s_c]=max(cumsumpi_s(s_c,:)>rand(1,1));
             YoungEarnings(t)=e(s_c)*d_grid(Policy(1,a_c,s_c))*w;
         end
-        
     end
     if TheyRetired==0
         for t=21:30
-            
             if s_c>J %Check that they are still working
                 TheyRetired=1; %If not working mark them as having retired.
+                break
             else
                 d2_c=Policy(2,a_c,s_c);
                 a_c=d2_c; %a_c=Phi_aprimeKron(d1_c,s_c,new_s_c); %Actually, can ignore the estate tax, since we are only looking at people who don't retire (and so cannot die) anyway

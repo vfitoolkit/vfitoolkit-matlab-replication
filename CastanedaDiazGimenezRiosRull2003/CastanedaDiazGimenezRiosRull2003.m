@@ -520,6 +520,8 @@ ModelTargetsFn=@(Params) CDGRR2003_ModelTargetsFn(Params, n_d,n_a,n_z,a_grid,Ret
 % ModelTargets must also contain the model values for any General Equilibrium conditions.
 GeneralEqmTargetNames={'GE_InterestRate','GE_GovBudgetBalance'};
 
+return; % We return here because the following code references interfaces that no longer exist in the current library
+
 %% Do the actual calibration
 
 [Params1,fval,counteval,exitflag]=CalibrateFromModelTargetsFn(Params, ParamNamesToEstimate, EstimationTargets, ModelTargetsFn, estimationoptions, GEPriceParamNames, GeneralEqmTargetNames);
