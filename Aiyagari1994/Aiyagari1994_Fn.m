@@ -123,7 +123,7 @@ GEPriceParamNames={'r'};
 
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
-heteroagentoptions.pgrid=p_grid;
+heteroagentoptions.p_grid=p_grid;
 [p_eqm,p_eqm_index, GeneralEqmCondn]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions,vfoptions);
 % findeqmtime=toc
 Params.r=p_eqm.r;
@@ -188,7 +188,7 @@ GraphString=['Aiyagari1994_MarketClearance_mu', num2str(Params.mu), 'rho', num2s
 GraphString=strrep(GraphString, '.', '_');
 % Create a graph displaying the market clearance
 fig1=figure(1);
-plot(p_grid,GeneralEqmCondn.Eqn_1, 'x',p_grid, zeros(n_p,1),p_eqm.r, 0, 'r o')
+plot(p_grid,GeneralEqmCondn, 'x',p_grid, zeros(n_p,1),p_eqm.r, 0, 'r o')
 title(['Market clearance: mu=', num2str(Params.mu), ' rho=', num2str(Params.rho), ' sigma=', num2str(Params.sigma)],'FontSize',18);
 xlabel('p','FontSize',16); ylabel('tilde(p)-p','FontSize',16);
 set(fig1, 'Color', 'white');     % white bckgr
