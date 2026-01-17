@@ -14,7 +14,7 @@ SkipNKTransPath=0
 SkipAlternativeCalibrations=0
 SkipFiscalTransPath=0
 SkipFisherDebtDeflation=0
-SkipDurables=1
+SkipDurables=0
 
 % GL2017 take exogenous shock grid from a previous paper, and so it is just
 % loaded from a file. Following lines enforce this (rather than try
@@ -902,13 +902,13 @@ if SkipFiscalTransPath==0
     % Set Bfinal=1.2*B, and rho_b=0.95.
     Params.rho_b=0.95;
     Params.Bfinal=1.2*Params.B;
-    ParamPath_Fiscal1.B=(Params.rho_b.^(0:1:T-1)*Params.B+(1-Params.rho_b.^(0:1:T-1))*Params.Bfinal)';
+    ParamPath_Fiscal1.B=(Params.rho_b.^(0:1:T-1)*Params.B+(1-Params.rho_b.^(0:1:T-1))*Params.Bfinal);
     % Because of how the current lump-sum tax rate 'tau' is calculated we need
     % B_t over the whole path. We will actually also need B_tplus1 as well as
     % this is key to the general equilibrium condition. (See above discussion
     % when the general equilibrium condition was first described and introduced
     % when computing the initial general equilibrium.)
-    ParamPath_Fiscal1.Bprime=[ParamPath_Fiscal1.B(2:end); Params.rho_b^(T)*Params.B+(1-Params.rho_b^(T))*Params.Bfinal];
+    ParamPath_Fiscal1.Bprime=[ParamPath_Fiscal1.B(2:end), Params.rho_b^(T)*Params.B+(1-Params.rho_b^(T))*Params.Bfinal];
     % Force that Bprime=B in the final period.
     ParamPath_Fiscal1.Bprime(end)=ParamPath_Fiscal1.B(end);
     
@@ -918,10 +918,10 @@ if SkipFiscalTransPath==0
     Params.B=ParamPath_Fiscal1.Bprime(end); % Use ParamPath_Fiscal1.Bprime(end) rather than Params.Bfinal
     Params.Bprime=Params.B;
     FnsToEvaluate.A = @(d, aprime,a,z) a; % Aggregate assets (which is this periods state)
-    GeneralEqmEqn.BondMarket = @(A,p,B) A-B; %The requirement that the aggregate assets (lending and borrowing) equal zero
-    p_eqm_final_Fiscal=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,simoptions,vfoptions);
+    GeneralEqmEqn_Fiscal.BondMarket = @(A,p,B) A-B; % The requirement that the aggregate assets (lending and borrowing) equal zero
+    p_eqm_final_Fiscal=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqn_Fiscal, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,simoptions,vfoptions);
     Params.r=p_eqm_final_Fiscal.r;
-    [V_final_Fiscal,~]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, []);
+    [V_final_Fiscal,Policy_final_Fiscal]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [],vfoptions);
     % Params.phi=Params.phi_initial;
     % Params.B=Params.Binitial;
     % Params.Bprime=Params.B;
@@ -943,13 +943,13 @@ if SkipFiscalTransPath==0
     
     % Set the new path for parameters to be modelled. In addition to the same
     % path on phi as before, we now have a path for B.
-    ParamPath_Fiscal1.phi=Params.phi_final*ones(T,1);
-    temp=linspace(Params.phi_initial,Params.phi_final,7); ParamPath_Fiscal1.phi(1:6)=temp(2:7)'; % At t=0, is inital stationary distribution, then falls over the following 6 periods to equal 0.525, remains there
+    ParamPath_Fiscal1.phi=Params.phi_final*ones(1,T);
+    temp=linspace(Params.phi_initial,Params.phi_final,7); ParamPath_Fiscal1.phi(1:6)=temp(2:7); % At t=0, is inital stationary distribution, then falls over the following 6 periods to equal 0.525, remains there
     
     % The rest of the setup is just same thing as the baseline case with flexible prices. So most of the following lines are just copy-paste from there.
     
     % We need to give an initial guess for the price path on interest rates
-    PricePath0_Fiscal.r=[linspace(p_eqm_initial.r, p_eqm_final_Fiscal.r, floor(T/2))'; p_eqm_final_Fiscal.r*ones(T-floor(T/2),1)]; % PricePath0 is matrix of size T-by-'number of prices'
+    PricePath0_Fiscal.r=[linspace(p_eqm_initial.r, p_eqm_final_Fiscal.r, floor(T/2)), p_eqm_final_Fiscal.r*ones(1,T-floor(T/2))]; % PricePath0 is matrix of size T-by-'number of prices'
     % Note: tau is also being determined, but this is done inside the ReturnFn
     
     % Rewrite the aggregate variable to be next period bonds rather than current bonds as this is the
@@ -967,28 +967,28 @@ if SkipFiscalTransPath==0
     % unstable (fail to converge). Technically this is the damping factor in a shooting algorithm.
 
     % Now just run the TransitionPath_Case1 command (all of the other inputs are things we had already had to define to be able to solve for the initial and final equilibria)
-    transpathoptions_Fiscal.weightscheme=1
+    transpathoptions_Fiscal.weightscheme=1;
     transpathoptions_Fiscal.verbose=1;
-    PricePath_Fiscal1=TransitionPath_Case1(PricePath0_Fiscal, ParamPath_Fiscal1, T, V_final_Fiscal, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  FnsToEvaluate, FiscalTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_Fiscal,vfoptions);
+    PricePath_Fiscal1=TransitionPath_Case1(PricePath0_Fiscal, ParamPath_Fiscal1, T, V_final_Fiscal, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  FnsToEvaluate, FiscalTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_Fiscal,vfoptionspath,simoptions);
     
     save ./SavedOutput/GuerrieriLorenzoni2017_transpath_fiscalpolicy.mat PricePath_Fiscal1
 
-    [~,PolicyPath_Fiscal1]=ValueFnOnTransPath_Case1(PricePath_Fiscal1, ParamPath_Fiscal1, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptions);
-    AgentDistPath_Fiscal1=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_Fiscal1,n_d,n_a,n_z,pi_z,T);
+    [~,PolicyPath_Fiscal1]=ValueFnOnTransPath_Case1(PricePath_Fiscal1, ParamPath_Fiscal1, T, V_final_Fiscal, Policy_final_Fiscal, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
+    AgentDistPath_Fiscal1=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_Fiscal1,n_d,n_a,n_z,pi_z,T,simoptions);
 
     % Now for the second transition.
     % The second, transition considers a policy in which unemployment benefits are increased by 50% for the first two years after the shock.
     % Afterward the unemployment benefit reverts to its initial value and throughout the transition path tau_t adjusts to satisfy the
     % government budget constraint. This will simply involve adding the unemployment benefit path for v to ParamPath, and will be done below after we finish the first case.
     ParamPath_Fiscal2=ParamPath_Fiscal1; % Use same path for phi,B,Bprime
-    ParamPath_Fiscal2.v=Params.v*[1.5*ones(8,1); ones(T-8,1)];
+    ParamPath_Fiscal2.v=Params.v*[1.5*ones(1,8), ones(1,T-8)];
     % Final equilibrium is same as for the other Fiscal Policy transition path.
-    PricePath_Fiscal2=TransitionPath_Case1(PricePath0_Fiscal, ParamPath_Fiscal2, T, V_final_Fiscal, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  FnsToEvaluate, FiscalTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_Fiscal,vfoptions);
+    PricePath_Fiscal2=TransitionPath_Case1(PricePath0_Fiscal, ParamPath_Fiscal2, T, V_final_Fiscal, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  FnsToEvaluate, FiscalTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_Fiscal,vfoptionspath,simoptions);
     
     save ./SavedOutput/GuerrieriLorenzoni2017_transpath_fiscalpolicy.mat PricePath_Fiscal1 PricePath_Fiscal2
 
-    [~,PolicyPath_Fiscal2]=ValueFnOnTransPath_Case1(PricePath_Fiscal2, ParamPath_Fiscal2, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptions);
-    AgentDistPath_Fiscal2=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_Fiscal2,n_d,n_a,n_z,pi_z,T);
+    [~,PolicyPath_Fiscal2]=ValueFnOnTransPath_Case1(PricePath_Fiscal2, ParamPath_Fiscal2, T, V_final_Fiscal, Policy_final_Fiscal, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
+    AgentDistPath_Fiscal2=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_Fiscal2,n_d,n_a,n_z,pi_z,T,simoptions);
     
     % Now we have done the Fiscal Policy, just need to create the relevant Figure.
     FiscPolFnsToEvaluate.output = @(d, aprime,a,z) d*z; % y_it=n_it*theta_it Note that since gov budget is balanced every period it neither adds nor subtracts (unemployment benefits + interest payments on B=lump-sum tax revenue)
@@ -996,21 +996,21 @@ if SkipFiscalTransPath==0
     % Note that Params is currently all the initial values.
     
     % Get the
-    AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, FiscPolFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-    AggVarsPath_Fiscal1=EvalFnOnTransPath_AggVars_Case1(FiscPolFnsToEvaluate, AgentDistPath_Fiscal1, PolicyPath_Fiscal1, PricePath_Fiscal1, ParamPath_Fiscal1, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
-    AggVarsPath_Fiscal2=EvalFnOnTransPath_AggVars_Case1(FiscPolFnsToEvaluate, AgentDistPath_Fiscal2, PolicyPath_Fiscal2, PricePath_Fiscal2, ParamPath_Fiscal2, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
+    AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, FiscPolFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
+    AggVarsPath_Fiscal1=EvalFnOnTransPath_AggVars_Case1(FiscPolFnsToEvaluate, AgentDistPath_Fiscal1, PolicyPath_Fiscal1, PricePath_Fiscal1, ParamPath_Fiscal1, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
+    AggVarsPath_Fiscal2=EvalFnOnTransPath_AggVars_Case1(FiscPolFnsToEvaluate, AgentDistPath_Fiscal2, PolicyPath_Fiscal2, PricePath_Fiscal2, ParamPath_Fiscal2, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
     
-    Output_pch_Fiscal1=([AggVars_initial.output.Mean; AggVarsPath_Fiscal1.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
-    Output_pch_Fiscal2=([AggVars_initial.output.Mean; AggVarsPath_Fiscal2.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
+    Output_pch_Fiscal1=([AggVars_initial.output.Mean, AggVarsPath_Fiscal1.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
+    Output_pch_Fiscal2=([AggVars_initial.output.Mean, AggVarsPath_Fiscal2.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
     
     if CreateFigures==1
         % Figure 13
         figure(13)
         % interest rate
-        subplot(1,2,1); plot(0:1:T,4*100*[p_eqm_initial.r; PricePath_Flex.r; ones(T-length(PricePath_Flex.r),1)*PricePath_Flex.r(end)],0:1:T,4*100*[p_eqm_initial.r; PricePath_Fiscal1.r],0:1:T,4*100*[p_eqm_initial.r; PricePath_Fiscal2.r])
+        subplot(1,2,1); plot(0:1:T,4*100*[p_eqm_initial.r, PricePath_Flex.r, ones(1,T-length(PricePath_Flex.r))*PricePath_Flex.r(end)],0:1:T,4*100*[p_eqm_initial.r, PricePath_Fiscal1.r],0:1:T,4*100*[p_eqm_initial.r, PricePath_Fiscal2.r])
         title('annual interest rate')
         % output
-        subplot(1,2,2); plot(0:1:T,100*[0; OutputPath_pch_Flex; ones(T-length(OutputPath_pch_Flex),1)*OutputPath_pch_Flex(end)], 0:1:T,100*Output_pch_Fiscal1, 0:1:T,100*Output_pch_Fiscal2)
+        subplot(1,2,2); plot(0:1:T,100*[0, OutputPath_pch_Flex, ones(1,T-length(OutputPath_pch_Flex))*OutputPath_pch_Flex(end)], 0:1:T,100*Output_pch_Fiscal1, 0:1:T,100*Output_pch_Fiscal2)
         title('output')
         saveas(gcf,['./SavedOutput/Graphs/GuerrieriLorenzoni2017_Figure13.pdf'])
     else
@@ -1050,19 +1050,19 @@ if SkipFisherDebtDeflation==0
     Params.phi=Params.phi_final;
     FnsToEvaluate.A = @(d, aprime,a,z) a; % Aggregate assets (which is this periods state)
     GEPriceParamNames={'r'};
-    GeneralEqmEqns.AssetMarket = @(A,B) A-B; %The requirement that the aggregate assets (lending and borrowing) equal zero
-    p_eqm_final_Fisher=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,simoptions,vfoptions);
+    GeneralEqmEqns_Fischer.AssetMarket = @(A,B) A-B; % The requirement that the aggregate assets (lending and borrowing) equal zero
+    p_eqm_final_Fisher=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns_Fischer, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,simoptions,vfoptions);
     Params.r=p_eqm_final_Fisher.r;
     [V_final,~]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
     Params.phi=Params.phi_initial;
     % Then the transition path. The param path is trivial, as it is just the
     % new parameters, together with the usual path on borrowing limit (phi).
-    ParamPath_Fisher.phi=Params.phi_final*ones(T,1);
-    temp=linspace(Params.phi_initial,Params.phi_final,7); ParamPath_Fisher.phi(1:6,1)=temp(2:7)'; % At t=0, is inital stationary distribution, then falls over the following 6 periods to equal 0.525, remains there
-    ParamPath_Fisher.B=Params.B*ones(T,1);
-    ParamPath_Fisher.Bprime=Params.Bprime*ones(T,1);
+    ParamPath_Fisher.phi=Params.phi_final*ones(1,T);
+    temp=linspace(Params.phi_initial,Params.phi_final,7); ParamPath_Fisher.phi(1:6)=temp(2:7); % At t=0, is inital stationary distribution, then falls over the following 6 periods to equal 0.525, remains there
+    ParamPath_Fisher.B=Params.B*ones(1,T);
+    ParamPath_Fisher.Bprime=Params.Bprime*ones(1,T);
     
-    PricePath0_Fisher.r=p_eqm_final_Fisher.r*ones(T,1);
+    PricePath0_Fisher.r=p_eqm_final_Fisher.r*ones(1,T);
     % Rewrite the aggregate variable to be next period bonds rather than
     % current bonds as this is the actual timing of the decision which the
     % interest rate (r) effects
@@ -1081,30 +1081,30 @@ if SkipFisherDebtDeflation==0
 
     % Now just run the TransitionPath_Case1 command
     transpathoptions_Fisher.verbose=1;
-    PricePath_Fisher=TransitionPath_Case1(PricePath0_Fisher, ParamPath_Fisher, T, V_final, newStationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  FnsToEvaluate, FisherTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_Fisher,vfoptions);
+    PricePath_Fisher=TransitionPath_Case1(PricePath0_Fisher, ParamPath_Fisher, T, V_final, newStationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  FnsToEvaluate, FisherTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_Fisher,vfoptionspath,simoptions);
     
     save ./SavedOutput/GuerrieriLorenzoni2017_transpath_fischerdeflation.mat PricePath_Fisher V_final p_eqm_final_Fisher
     
-    [~,PolicyPath_Fisher]=ValueFnOnTransPath_Case1(PricePath_Fisher, ParamPath_Fisher, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptions);
-    AgentDistPath_Fisher=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_Fisher,n_d,n_a,n_z,pi_z,T);
+    [~,PolicyPath_Fisher]=ValueFnOnTransPath_Case1(PricePath_Fisher, ParamPath_Fisher, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
+    AgentDistPath_Fisher=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_Fisher,n_d,n_a,n_z,pi_z,T,simoptions);
 
     % Now we have done the Fischer Deflation, just need to create the relevant Figure.
     FisherDefFnsToEvaluate.output = @(d, aprime,a,z) d*z; % y_it=n_it*theta_it Note that since gov budget is balanced every period it neither adds nor subtracts (unemployment benefits + interest payments on B=lump-sum tax revenue)
     
     % Already have the AggVars_initial from previously, so just use those.
-    AggVarsPath_Fisher=EvalFnOnTransPath_AggVars_Case1(FisherDefFnsToEvaluate, AgentDistPath_Fisher, PolicyPath_Fisher, PricePath_Fisher, ParamPath_Fisher, Params, T, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, simoptions);
+    AggVarsPath_Fisher=EvalFnOnTransPath_AggVars_Case1(FisherDefFnsToEvaluate, AgentDistPath_Fisher, PolicyPath_Fisher, PricePath_Fisher, ParamPath_Fisher, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
     
-    Output_pch_Fisher=([AggVars_initial.output.Mean; AggVarsPath_Fisher.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
+    Output_pch_Fisher=([AggVars_initial.output.Mean, AggVarsPath_Fisher.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
     
     if CreateFigures==1
         % Figure 14
         figure(14)
         % interest rate
-        subplot(1,2,1); plot(0:1:T,4*100*[p_eqm_initial.r; PricePath_Flex,r;ones(T-length(PricePath_Flex.r),1)*PricePath_Flex.r(end)], 0:1:T,4*100*[p_eqm_initial.r; PricePath_Fisher.r])
+        subplot(1,2,1); plot(0:1:T,4*100*[p_eqm_initial.r, PricePath_Flex.r, ones(1,T-length(PricePath_Flex.r))*PricePath_Flex.r(end)], 0:1:T,4*100*[p_eqm_initial.r, PricePath_Fisher.r])
         legend('Baseline','Fisher Deflation')
         title('annual interest rate')
         % output
-        subplot(1,2,2); plot(0:1:T,100*[0; OutputPath_pch_Flex; ones(T-length(OutputPath_pch_Flex),1)*OutputPath_pch_Flex(end)], 0:1:T,100*Output_pch_Fisher)
+        subplot(1,2,2); plot(0:1:T,100*[0, OutputPath_pch_Flex, ones(1,T-length(OutputPath_pch_Flex))*OutputPath_pch_Flex(end)], 0:1:T,100*Output_pch_Fisher)
         title('output')
         saveas(gcf,['./SavedOutput/Graphs/GuerrieriLorenzoni2017_Figure14.pdf'])
     else
@@ -1183,7 +1183,6 @@ if SkipDurables==0
     Output_DurableGoods1=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a, T, ParamPath_Durables1);
     figurenumber=16;
     Output_DurableGoods2=GuerrieriLorenzoni2017_DurableGoods(figurenumber,Params,n_d,n_a, T, ParamPath_Durables2);
-    
     
     if CreateFigures==1
         for figurenumber=15:16
