@@ -205,9 +205,9 @@ fprintf(FID, 'I/Y & - & %8.3f \\\\ \n', AllStats.I.Mean/AllStats.Y.Mean); % Note
 fprintf(FID, 'Investment rate (I/K) & - & %8.3f \\\\ \n', AllStats.I.Mean/AllStats.K.Mean); % Note: this is what GM2010 actually report as the investment rate (clear from their codes)
 fprintf(FID, 'Aggregate dividends/earnings & - & %8.3f \\\\ \n', AllStats.D.Mean/AllStats.earnings.Mean); % My impression is that GM2010 report the ratio of aggregates (rather than mean of ratios)
 fprintf(FID, 'Aggregate new equity/investment & - & %8.3f \\\\ \n', AllStats.S.Mean/AllStats.I.Mean);
-fprintf(FID, 'Volatility of investment rate & - & %8.3f \\\\ \n', AllStats.investmentrate.StdDev);
+fprintf(FID, 'Volatility of investment rate & - & %8.3f \\\\ \n', AllStats.investmentrate.StdDeviation);
 fprintf(FID, 'Autocorrelation of investment rate & - & %8.3f \\\\ \n', autocorr_Irate);
-fprintf(FID, 'Volatility of earnings/capital & - & %8.3f \\\\ \n', AllStats.earningscapitalratio.StdDev); % Guessing 'volatility' means std dev based on top of page 154 says "The model also underpredicts the standard deviation of the ratio of earnings to capital."
+fprintf(FID, 'Volatility of earnings/capital & - & %8.3f \\\\ \n', AllStats.earningscapitalratio.StdDeviation); % Guessing 'volatility' means std dev based on top of page 154 says "The model also underpredicts the standard deviation of the ratio of earnings to capital."
 fprintf(FID, 'Autocorrelation of earnings/capital & - & %8.3f \\\\ \n', autocorr_earningscapital);
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
@@ -222,7 +222,7 @@ fclose(FID);
 
 
 C=AllStats.Y.Mean-AllStats.I.Mean-AllStats.CapitalAdjCosts.Mean; % Aggregate consumption, not used for anything just calculated to check it
-Tobins_q=sum(nansum(V.*StationaryDist))/AllStats.K.Mean; % Tobin's q, not used for anything just calculated to check it [note: nansum is needed because of V being -Inf times 0 mass gives nan]
+Tobins_q=sum(sum(V.*StationaryDist,"omitnan"))/AllStats.K.Mean; % Tobin's q, not used for anything just calculated to check it [note: nansum is needed because of V being -Inf times 0 mass gives nan]
 fprintf('Check some things (just post Table 4 in codes) \n')
 [AllStats.investmentrate.Mean, AllStats.I.Mean/AllStats.K.Mean] % investment/capital
 [AllStats.newequityinvestmentratio.Mean, AllStats.S.Mean/AllStats.I.Mean] % new equity/investment
@@ -276,8 +276,13 @@ simoptions.eval_valuefn=V; % If you want to use the value function as part of a 
 simoptions.eval_valuefnname={'V'}; % ...and the name you will use in the function to evaluate in this option
 % To use the value function in a function to evaluate, it must be the first
 % entry after z. And you must input it into EvalFnOnAgentDist_AggVars_Case1() in the position after simoptions.
-ValueOfFirmStats=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
-
+ValueOfFirmStats=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions,[]);
+        
+for regime={'equityregime','neitherregime','dividendregime'}
+    for metric={'K','I','earnings'}
+        AllStats.(regime{1}).(metric{1}).Total=AllStats.(regime{1}).(metric{1}).Mean;
+    end
+end
 
 % Table 5
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table5.tex', 'w');
@@ -366,7 +371,7 @@ for Reform=1:4
 
     % Use value function to calculate the value of firm (value of firm is just the value function)
     simoptions.eval_valuefn=V; % If you want to use the value function as part of a function to evaluate you must put the value function into this option...
-    ValueOfFirmStats=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
+    ValueOfFirmStats=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions,[]);
 
     
     Table6(1,Reform)=(AllStats.K.Mean-AllStats_baseline.K.Mean)/AllStats_baseline.K.Mean;
@@ -381,6 +386,11 @@ for Reform=1:4
     % Create what we need for Table 7
     if Reform==1
         % Just a repeat of what we did for Table 5 (note AllStats already includes the conditional restrictions)
+        for regime={'equityregime','neitherregime','dividendregime'}
+            for metric={'K','I','earnings'}
+                AllStats.(regime{1}).(metric{1}).Total=AllStats.(regime{1}).(metric{1}).Mean;
+            end
+        end
         Table7=zeros(6,3);
         Table7(1,:)=[AllStats.equityregime.RestrictedSampleMass, AllStats.neitherregime.RestrictedSampleMass, AllStats.dividendregime.RestrictedSampleMass];
         Table7(2,:)=[AllStats.equityregime.K.Total/AllStats.K.Mean, AllStats.neitherregime.K.Total/AllStats.K.Mean, AllStats.dividendregime.K.Total/AllStats.K.Mean];
@@ -526,9 +536,9 @@ for otherparametrizations=1:7
 
     Table9(1,otherparametrizations)=AllStats.D.Mean/AllStats.earnings.Mean;
     Table9(2,otherparametrizations)=AllStats.S.Mean/AllStats.I.Mean;
-    Table9(3,otherparametrizations)=AllStats.investmentrate.StdDev;
+    Table9(3,otherparametrizations)=AllStats.investmentrate.StdDeviation;
     Table9(4,otherparametrizations)=autocorr_Irate;
-    Table9(5,otherparametrizations)=AllStats.earningscapitalratio.StdDev;
+    Table9(5,otherparametrizations)=AllStats.earningscapitalratio.StdDeviation;
     Table9(6,otherparametrizations)=autocorr_earningscapital;
 
     % The main tax reform for Table 10
