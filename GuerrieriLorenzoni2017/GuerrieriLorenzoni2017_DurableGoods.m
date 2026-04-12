@@ -118,7 +118,7 @@ StationaryDist=StationaryDist_Case1(Policy1,n_d,n_a,n_z,pi_z, simoptions, Params
 disttime=toc;
 
 tic;
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy1, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2,simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy1, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 aggvarstime=toc;
 
 max(abs(V1(:)-V2(:)))
@@ -142,8 +142,8 @@ fprintf('Calculating initial eqm (for durable goods) \n')
 [p_eqm_initial, ~,MarketClearance_initial]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 Params.r=p_eqm_initial.r;
 [~,Policy_initial]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, simoptions);
-AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2);
+StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, simoptions, Params);
+AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_initial.mat Params p_eqm_initial StationaryDist_initial AggVars_initial Policy_initial MarketClearance_initial
 
@@ -159,8 +159,8 @@ fprintf('Calculating final eqm (for durable goods) \n')
 [p_eqm_final, ~,MarketClearance_final]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 Params.r=p_eqm_final.r;
 [V_final,Policy_final]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist_final=StationaryDist_Case1(Policy_final,n_d,n_a,n_z,pi_z, simoptions);
-AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,2);
+StationaryDist_final=StationaryDist_Case1(Policy_final,n_d,n_a,n_z,pi_z, simoptions,Params);
+AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_final.mat Params p_eqm_final StationaryDist_final AggVars_final Policy_final MarketClearance_final
 
@@ -200,7 +200,8 @@ DurableGoodsFigFnsToEvaluate.durablespurchases = @(d, aprime, kprime,a,k,z,delta
 DurableGoodsFigFnsToEvaluate.nondurablespurchases = @(d, aprime, kprime,a,k,z,r, delta, zeta, chi, v, B, Bprime)  GuerrieriLorenzoni2017_DurableGoods_ConsumptionFn(d, aprime, kprime,a,k,z,r, delta, zeta, chi, v, B, Bprime);
 
 AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, DurableGoodsFigFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-AggVarsPath=EvalFnOnTransPath_AggVars_Case1(DurableGoodsFigFnsToEvaluate,PricePath, ParamPath, Params, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn,transpathoptions);
+AgentDistPath=AgentDistOnTransPath_Case1(StationaryDist_initial, PolicyPath,n_d,n_a,n_z,pi_z,T,simoptions);
+AggVarsPath=EvalFnOnTransPath_AggVars_Case1(DurableGoodsFigFnsToEvaluate,AgentDistPath,PolicyPath,PricePath, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,transpathoptions);
 
 Output_pch=([AggVars_initial.output.Mean; AggVarsPath.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
 durablespurchases_pch=([AggVars_initial.durablespurchases.Mean; AggVarsPath.durablespurchases.Mean]-AggVars_initial.durablespurchases.Mean)/AggVars_initial.durablespurchases.Mean;
