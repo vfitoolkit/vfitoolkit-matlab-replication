@@ -24,15 +24,12 @@ n_theta=6;
 [theta1_grid,pi_theta1]=discretizeAR1_Tauchen(0,Params.rho,sqrt(Params.sigmasq_epsilon),n_theta-1,Params.tauchenq);
 z_grid=[0; exp(theta1_grid)];
 pistar_theta1=ones(n_theta-1,1)/(n_theta-1);
-for ii=1:10^4 % G&L2017, pg 1438 "when first employed, workers draw theta from its unconditional distribution"
-    pistar_theta1=pi_theta1'*pistar_theta1; % There is a more efficient form to do this directly from a formula but I am feeling lazy. %FIX THIS LATER!!!
-end
+% G&L2017, pg 1438 "when first employed, workers draw theta from its unconditional distribution"
+pistar_theta1=(pi_theta1'^10000)*pistar_theta1; % Efficient iterative multiplication of a matrix by a vector
 pi_z=[(1-Params.pi_ue), Params.pi_ue*pistar_theta1'; Params.pi_eu*ones(n_theta-1,1),(1-Params.pi_eu)*pi_theta1];
 pi_z=pi_z./sum(pi_z,2);
 pistar_z=ones(n_theta,1)/n_theta;
-for ii=1:10^4 %  % There is a more efficient way to do this directly from a formula but I am feeling lazy. %FIX THIS LATER!!!
-    pistar_z=pi_z'*pistar_z; % Formula could be used to find stationary dist of the employment unemployment process, then just combine with stationary dist of theta1, which is already calculated
-end
+pistar_z=(pi_z'^10000)*pistar_z; % Formula could be used to find stationary dist of the employment unemployment process, then just combine with stationary dist of theta1, which is already calculated
 z_grid=z_grid/sum(z_grid.*pistar_z);
 
 %% Grids
