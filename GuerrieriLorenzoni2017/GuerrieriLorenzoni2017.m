@@ -117,9 +117,8 @@ end
 z_grid=[0; exp(theta1_grid)];
 % G&L2017, pg 1438 "when first employed, workers draw theta from its unconditional distribution"; so here compute the unconditional distribution
 pistar_theta1=ones(n_theta-1,1)/(n_theta-1);
-for ii=1:10^4 % There is a more efficient form to do this directly from a formula but I am feeling lazy. %FIX THIS LATER!!!
-    pistar_theta1=pi_theta1'*pistar_theta1; 
-end
+% Efficient iterative multiplication of a matrix by a vector
+pistar_theta1=(pi_theta1'^10000)*pistar_theta1; 
 
 % Floden & Linde (2001) report annual values for the AR(1) on log(z) as
 % rho_FL=0.9136, sigmasq_epsilon_FL=0.0426; can calculate sigmasq_z_FL=sigmasq_epsilon_FL/(1-rho_FL^2)=0.2577;
@@ -135,9 +134,7 @@ pi_z=[(1-Params.pi_ue), Params.pi_ue*pistar_theta1'; Params.pi_eu*ones(n_theta-1
 % Rows did not sum to one due to rounding errors at order of 10^(-11), fix this
 pi_z=pi_z./sum(pi_z,2);
 pistar_z=ones(n_theta,1)/n_theta;
-for ii=1:10^4 %  % There is a more efficient way to do this directly from a formula but I am feeling lazy. %FIX THIS LATER!!!
-    pistar_z=pi_z'*pistar_z; % Formula could be used to find stationary dist of the employment unemployment process, then just combine with stationary dist of theta1, which is already calculated
-end
+pistar_z=(pi_z'^10000)*pistar_z; % Formula could be used to find stationary dist of the employment unemployment process, then just combine with stationary dist of theta1, which is already calculated
 % "The average level of theta is chosen so that yearly output in the initial steady state is normalized to 1"
 z_grid=z_grid/sum(z_grid.*pistar_z);
 % Double-check that this is 1
@@ -479,7 +476,7 @@ else
 end
 
 [VPath,PolicyPath]=ValueFnOnTransPath_Case1(PricePath, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
-AgentDistPath=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath,n_d,n_a,n_z,pi_z,T);
+AgentDistPath=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath,n_d,n_a,n_z,pi_z,T,simoptions);
 
 % For later we will keep another copy
 PricePath_Flex=PricePath;
