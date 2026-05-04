@@ -39,7 +39,7 @@ FnsToEvaluateFn_3 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,w1
 FnsToEvaluateFn_4 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
 FnsToEvaluateFn_5 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val) a2_val; % Capital (Housing Stock)
 FnsToEvaluate={FnsToEvaluateFn_1, FnsToEvaluateFn_2, FnsToEvaluateFn_3, FnsToEvaluateFn_4, FnsToEvaluateFn_5};
-AggVars3=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
+AggVars3=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, simoptions);
 g=8*(AggVars3(3)-(AggVars3(4)+AggVars3(1)+AggVars3(2)+Params.mew*AggVars3(5)));
 
 v2dist=Inf;

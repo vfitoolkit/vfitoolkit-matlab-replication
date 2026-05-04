@@ -103,14 +103,14 @@ ReturnFnParamNames={'alpha','delta','mu','r'}; %It is important that these are i
 
 % Test is currently commented out as not needed.
 % tic;
-% [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
+% [V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
 % toc
 % 
 % tic;
-% StationaryDist=SteadyState_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions);
+% StationaryDist=SteadyState_InfHorz(Policy,n_d,n_a,n_z,pi_z,simoptions);
 % toc
 % tic;
-% AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid)
+% AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid)
 % toc
 % MC=p_test - (alpha*(SSvalues_AggVars^(alpha-1))*(Expectation_l^(1-alpha))-delta);
 % surf(StationaryDist)
@@ -124,7 +124,7 @@ GEPriceParamNames={'r'};
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 heteroagentoptions.p_grid=p_grid;
-[p_eqm,p_eqm_index, GeneralEqmCondn]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions,vfoptions);
+[p_eqm,p_eqm_index, GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions,vfoptions);
 % findeqmtime=toc
 Params.r=p_eqm.r;
 
@@ -137,15 +137,13 @@ Params.w=(1-Params.alpha)*((Params.r+Params.delta)/Params.alpha)^(Params.alpha/(
 % %other things associated with the equilibrium
 p_eqm_index
 disp('Calculating various equilibrium objects')
-[~,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
+[~,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions);
 
-% PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_z,d_grid,a_grid, Parallel);
+% PolicyValues=PolicyInd2Val_InfHorz(Policy,n_d,n_a,n_z,d_grid,a_grid, vfoptions);
 
-StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
+StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions)
-
-eqm_MC=real(GeneralEqmConditions_Case1_v2(GeneralEqmEqns, Params, simoptions.parallel)); % IS THIS CORRECT?
+AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 save ./SavedOutput/Aiyagari1994SSObjects.mat p_eqm Policy StationaryDist
 
@@ -165,7 +163,7 @@ FnsToEvaluateParamNames(2).Names={'r','w'};
 FnsToEvaluateIneq.Income = @(aprime_val,a_val,z_val,r,w) w*z_val+(1+r)*a_val;
 FnsToEvaluateParamNames(3).Names={};
 FnsToEvaluateIneq.Wealth = @(aprime_val,a_val,z_val) a_val;
-AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
 
 % 3.5 The Distributions of Earnings and Wealth
 %  Gini for Earnings
@@ -177,7 +175,7 @@ WealthGini=Gini_from_LorenzCurve(AllStats.Wealth.LorenzCurve);
 % No longer used: Calculate Pareto coeff from Gini as alpha=(1+1/G)/2; ( http://en.wikipedia.org/wiki/Pareto_distribution#Lorenz_curve_and_Gini_coefficient)
 % Recalculte Lorenz curves, now with 1000 points
 simoptions.npoints=1000;
-AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluateIneq, Params,FnsToEvaluateParamNames, n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
 EarningsParetoCoeff=1/((log(AllStats.Earnings.LorenzCurve(990))/log(AllStats.Earnings.LorenzCurve(999)))/log(10)); %(1+1/EarningsGini)/2;
 IncomeParetoCoeff=1/((log(AllStats.Income.LorenzCurve(990))/log(AllStats.Income.LorenzCurve(999)))/log(10)); %(1+1/IncomeGini)/2;
 WealthParetoCoeff=1/((log(AllStats.Wealth.LorenzCurve(990))/log(AllStats.Wealth.LorenzCurve(999)))/log(10)); %(1+1/WealthGini)/2;

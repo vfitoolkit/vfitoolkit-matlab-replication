@@ -15,7 +15,7 @@ function StationaryDist=DiazGimenezPrescottAlvarezFitzgerald1992_StationaryDist(
 
 % The following makes use of some 'internal functions' of the VFI Toolkit
 % to deal with the non-standard agent distribution. Most of it is simply a
-% minor modification of contents of StationaryDist_Case1().
+% minor modification of contents of StationaryDist_InfHorz().
 simoptions.parallel=2;
 simoptions.tolerance=10^(-9);
 simoptions.maxit=5*10^4;

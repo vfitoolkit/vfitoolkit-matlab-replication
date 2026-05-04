@@ -131,13 +131,13 @@ GeneralEqmEqns.GovBudget = @(G,Pensions,IncomeTaxRevenue,EstateTaxRevenue) G+Pen
 %% Test a few commands out before getting into the main part of General equilibrium
 Params.r=0.045;
 tic;
-[V, Policy]=ValueFnIter_Case1(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V, Policy]=ValueFnIter_InfHorz(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 toc
 tic;
-StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions,Params);
+StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z,simoptions,Params);
 toc
 tic;
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
 toc
 
 %% Solve the baseline model
@@ -147,16 +147,16 @@ if SkipGE==0
     % heteroagentoptions.pgrid=p_grid;
     Params.r=0.045; %Params.a3
     heteroagentoptions.verbose=1;
-    [p_eqm,GECondns]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,GECondns]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
     
     % Evaluate a few objects at the equilibrium
     Params.r=p_eqm.r;
     Params.a3=p_eqm.a3;
     Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
         
-    [V, Policy]=ValueFnIter_Case1(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+    [V, Policy]=ValueFnIter_InfHorz(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
     
-    StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions, Params);
+    StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z,simoptions, Params);
         
     save ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params GECondns a_grid V Policy StationaryDist
 
@@ -179,7 +179,7 @@ FnsToEvaluate.IncomeTaxRevenue = @(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e
 FnsToEvaluate.Pensions = @(h,kprime,k,s,J,omega) omega*(s>J); % If you are retired you earn pension omega (otherwise it is zero).
 FnsToEvaluate.EstateTaxRevenue  = @(h,kprime,k,s,J,p_gg,zlowerbar,tauE) (s>J)*(1-p_gg)*tauE*max(kprime-zlowerbar,0); % If you are retired: the probability of dying times the estate tax you would pay
 FnsToEvaluate.Consumption = @(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_ConsumptionFn(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
-AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
 
 
 Y=(AllStats.K.Mean^Params.theta)*(AllStats.L.Mean^(1-Params.theta));
@@ -268,7 +268,7 @@ simoptions2=simoptions;
 simoptions2.conditionalrestrictions.ExWealthiest1percent=@(h,kprime,k,s,cutoff_wealth1percent) (k<cutoff_wealth1percent);
 % We only want consumption for the ExWealthiest1percent
 FnsToEvaluate2.Consumption=FnsToEvaluate.Consumption;
-AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate2, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions2);
+AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate2, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions2);
 %  Gini for Consumption_ExWealthiest1percent
 Table8variables(1,1)=AllStats.ExWealthiest1percent.Consumption.Gini;
 %  Consumption_ExWealthiest1percent Lorenz Curve: Quintiles (%) 

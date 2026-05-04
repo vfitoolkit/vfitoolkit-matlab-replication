@@ -50,7 +50,7 @@ end
 Phi_aprimeMatrix=CastanedaDiazGimenezRiosRull2003_PhiaprimeMatrix(n_d,n_z,a_grid,Params.J,Params.zlowerbar,Params.tauE);
 
 fprintf('TargetsFn: Solve value fn \n')
-[~, Policy]=ValueFnIter_Case2(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, [], PhiaprimeParamNames, vfoptions);
+[~, Policy]=ValueFnIter_InfHorz(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, Phi_aprimeMatrix, Case2_Type, ReturnFn, Params, DiscountFactorParamNames, [], PhiaprimeParamNames, vfoptions);
 % fprintf('TargetsFn: Some parts of the Policy function: \n')
 % [Policy(2,1:10,1);...
 %  Policy(2,end-9:end,1);...
@@ -62,7 +62,7 @@ fprintf('TargetsFn: Solve value fn \n')
 % fprintf('TargetsFn: Value of max(max(max(Policy(1,:,:)))) =%8.2f \n', max(max(max(Policy(1,:,:)))) )
 
 fprintf('TargetsFn: Solve stationary dist \n')
-StationaryDist=StationaryDist_Case2(Policy,Phi_aprimeMatrix,Case2_Type,n_d,n_a,n_z,pi_z,simoptions);
+StationaryDist=StationaryDist_InfHorz(Policy,Phi_aprimeMatrix,Case2_Type,n_d,n_a,n_z,pi_z,simoptions);
 
 temp=min(min(StationaryDist));
 if temp<0
@@ -74,7 +74,7 @@ if temp<0
 end
 fprintf('TargetsFn: Total mass of stationary dist=%8.2f \n', sum(sum(StationaryDist)))
 
-AggVars=EvalFnOnAgentDist_AggVars_Case2(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid);
+AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
 
 % use of real() is a hack that could disguise errors, but I couldn't find why matlab was treating output as complex
 AggVarNames=fieldnames(AggVars); % Using GeneralEqmEqns as a struct presupposes using FnsToEvaluate (and hence AggVars) as a stuct
@@ -97,7 +97,7 @@ FnsToEvaluate.IncomeTaxRevenue = @(l,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e
 FnsToEvaluate.Pensions = @(l,kprime,k,s,J,omega) omega*(s>J); % If you are retired you earn pension omega (otherwise it is zero).
 FnsToEvaluate.EstateTaxRevenue  = @(l,kprime,k,s,J,p_gg,zlowerbar,tauE) (s>J)*(1-p_gg)*tauE*max(kprime-zlowerbar,0); % If you are retired: the probability of dying times the estate tax you would pay
 FnsToEvaluate.Consumption = @(l,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3) CDGRR2003_ConsumptionFn(l,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e4,a0,a1,a2,a3);
-AggVars=EvalFnOnAgentDist_AggVars_Case2(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid);
+AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
 
 Y=(AggVars.K.Mean^Params.theta)*(AggVars.L.Mean^(1-Params.theta));
 
@@ -117,23 +117,24 @@ for ii=1:length(AggVarNames)
     fprintf('	%s: %8.4f \n',AggVarNames{ii},AggVars.(AggVarNames{ii}).Mean)
 end
 
+% Ratio of std dev to mean, we need
 FnsToEvaluate2.H=FnsToEvaluate.H;
 FnsToEvaluate2.Consumption=FnsToEvaluate.Consumption;
-MeanMedianStdDev=EvalFnOnAgentDist_MeanMedianStdDev_Case2(StationaryDist, Policy, FnsToEvaluate2, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid);
+% Lorenz curves, we need
+FnsToEvaluate2.L=FnsToEvaluate.L;
+FnsToEvaluate2.K=FnsToEvaluate.K;
+simoptions.npoints=100; % number of points for Lorenz Curve
+AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate2, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
 
-ModelTargets.RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked=gather((MeanMedianStdDev.Consumption.StdDev/MeanMedianStdDev.Consumption.Mean)/(MeanMedianStdDev.H.StdDev/MeanMedianStdDev.H.Mean)); % Coefficient of Variation=std deviation divided by mean. 
+ModelTargets.RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked=gather((AllStats.Consumption.StdDev/AllStats.Consumption.Mean)/(AllStats.H.StdDev/AllStats.H.Mean)); % Coefficient of Variation=std deviation divided by mean. 
 
-% Lorenz Curves
-FnsToEvaluate3.L=FnsToEvaluate.L;
-FnsToEvaluate3.K=FnsToEvaluate.K;
-LorenzCurves=EvalFnOnAgentDist_LorenzCurve_Case2(StationaryDist, Policy, FnsToEvaluate3, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid);
 % Calculate Distributions of Earnings and Wealth
-ModelTargets.EarningsGini=Gini_from_LorenzCurve(LorenzCurves.L);
-ModelTargets.EarningsQuintileSharesAsFraction=LorenzCurves.L([20,40,60,80,100])-LorenzCurves.L([1,21,41,61,81]);
-ModelTargets.EarningsTopSharesAsFraction=LorenzCurves.L([95,99,100])-LorenzCurves.L([90,95,99]);
-ModelTargets.WealthGini=Gini_from_LorenzCurve(LorenzCurves.K);
-ModelTargets.WealthQuintileSharesAsFraction=LorenzCurves.K([20,40,60,80,100])-LorenzCurves.K([1,21,41,61,81]);
-ModelTargets.WealthTopSharesAsFraction=LorenzCurves.K([95,99,100])-LorenzCurves.K([90,95,99]);
+ModelTargets.EarningsGini=Gini_from_LorenzCurve(AllStats.L.LorenzCurve);
+ModelTargets.EarningsQuintileSharesAsFraction=AllStats.L.LorenzCurve([20,40,60,80,100])-AllStats.L.LorenzCurve([1,21,41,61,81]);
+ModelTargets.EarningsTopSharesAsFraction=AllStats.L.LorenzCurve([95,99,100])-LorenzCurves.L([90,95,99]);
+ModelTargets.WealthGini=AllStast.K.Gini;
+ModelTargets.WealthQuintileSharesAsFraction=AllStats.K.LorenzCurve([20,40,60,80,100])-AllStats.K.LorenzCurve([1,21,41,61,81]);
+ModelTargets.WealthTopSharesAsFraction=AllStats.K.LorenzCurve([95,99,100])-AllStats.K.LorenzCurve([90,95,99]);
 
 % The following two model moments are somewhat unusual so required custom functions rather than using more standard VFI toolkit commands.
 NSimulations=10^6;

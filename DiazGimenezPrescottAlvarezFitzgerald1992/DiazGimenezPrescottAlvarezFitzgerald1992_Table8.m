@@ -1,4 +1,4 @@
-function Table8=DiazGimenezPrescottAlvarezFitzgerald1992_Table8;
+function Table8=DiazGimenezPrescottAlvarezFitzgerald1992_Table8
 % For Table 8 the model period is now one-year (rather than one-eigth of a year)
 Table8=zeros(3,7);
 
@@ -97,8 +97,8 @@ n_d=length(N_grid);
 
 DiscountFactorParamNames={'beta'};
 
-ReturnFn=@(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ReturnFn(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment)
-ReturnFnParamNames={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
+ReturnFn=@(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment)... 
+    DiazGimenezPrescottAlvarezFitzgerald1992_ReturnFn(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment)
 
 
 %%
@@ -118,14 +118,12 @@ for ii=1:4
     Params.i_d=(1-Params.rho)*Params.iota-Params.eta_d;%=0 in practice anyway %interest rate on deposits
     Params.e=Params.epsilon_inflation-1; %pricing/inflation process on reserves
     
-    V0=ones([n_a,n_sz]);
-    vfoptions.policy_forceintegertype=1;
-    [V, Policy]=ValueFnIter_Case1(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
+    [V, Policy]=ValueFnIter_InfHorz(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, [],vfoptions); %
     
     % Since there is no longer the death and rebirth can just use standard VFI
     % Toolkit codes for getting agent distribution.
     
-    StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_sz,pi_sz);
+    StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_sz,pi_sz,simoptions);
     
     [ValueFnofPublicandPrivateConsumption,v1,v2,W]=DiazGimenezPrescottAlvarezFitzgerald1992_Welfare(Params,V,n_A,n_K,n_s,n_z,n_d,n_a,n_sz,sigma_sz,w_sz,pi_sz,A_grid,K_grid,d_grid, a_grid,sz_grid,StationaryDist, Policy);
 
