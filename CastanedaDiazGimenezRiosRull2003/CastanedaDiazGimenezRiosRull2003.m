@@ -11,12 +11,13 @@
 % equilibrium using a discrete grid on interest rates, rather than just solving the fixed-point problem on interest rates directly by using optimization. 
 % This is done for robustness reasons; see my paper on BHA models.
 
-SkipGE=0 % Just a placeholder I am using to work on codes without rerunning the GE step.
+SkipGE=1 % Just a placeholder I am using to work on codes without rerunning the GE step.
 
 %% Set some basic variables
 
 n_l=101;
 n_k=1201;
+n_z=8; % hardcoded, has to be 2*J
 n_r=551; % Two General Eqm variables: interest rate r, tax rate a3.
 % Note: d1 is l (labour supply), d2 is a (assets)
 
@@ -25,8 +26,6 @@ n_r=551; % Two General Eqm variables: interest rate r, tax rate a3.
 % simoptions.gridinterplayer=vfoptions.gridinterplayer;
 % simoptions.ngridinterp=vfoptions.ngridinterp;
 vfoptions=struct();
-
-simoptions.ncores=feature('numcores'); % Number of CPU cores
 
 %% Parameters
 
@@ -72,7 +71,16 @@ Params.Gamma_ee_41=0.1066; Params.Gamma_ee_42=0.0049; Params.Gamma_ee_43=0.0611;
 
 %% Create the grids
 
-[e_grid,Gamma,gammastar,gammastarfull]=CastanedaDiazGimenezRiosRull2003_Create_Exog_Shock(Params,vfoptions);
+vfoptions.ExogShockFn=@(e2,e3,e4,J,p_eg,p_gg,phi1,phi2,Gamma_ee_12,Gamma_ee_13,Gamma_ee_14,Gamma_ee_21,Gamma_ee_23,Gamma_ee_24,Gamma_ee_31,Gamma_ee_32,Gamma_ee_34,Gamma_ee_41,Gamma_ee_42,Gamma_ee_43)...
+    CDGRR2003_ExogShockFn(e2,e3,e4,J,p_eg,p_gg,phi1,phi2,Gamma_ee_12,Gamma_ee_13,Gamma_ee_14,Gamma_ee_21,Gamma_ee_23,Gamma_ee_24,Gamma_ee_31,Gamma_ee_32,Gamma_ee_34,Gamma_ee_41,Gamma_ee_42,Gamma_ee_43);
+% Inputs are all things in parameter structure (in Params), and the output is [z_grid,pi_z];
+simoptions.ExogShockFn=vfoptions.ExogShockFn;
+
+% Evaluate vfoptions.ExogShockFn to create a copy of z_grid and pi_z (the following command is what the toolkit uses internally)
+[z_grid,pi_z,~]=ExogShockSetup_InfHorz(n_z,[],[],Params,vfoptions,3);
+
+% we later want to report the stationary distribution of the shocks
+[~,~,~,gammastarfull]=MarkovChainMoments(z_grid,pi_z);
 
 l_grid=linspace(0,Params.elle,n_l)';
 k_grid=2500*(linspace(0,1,n_k).^3)'; % Note that the upper limit on my asset grid is larger than the 1500 in CDGRR2003, but a look at the stationary distribution shows noone gets this high (although the policy functions would get them there the exogenous shock for s==4 is not persistent enough)
@@ -83,16 +91,9 @@ k_grid=2500*(linspace(0,1,n_k).^3)'; % Note that the upper limit on my asset gri
 % Bring model into the notational conventions used by the toolkit
 d_grid=[l_grid; k_grid];
 a_grid=k_grid;
-z_grid=linspace(1,2*Params.J,2*Params.J)'; % age (& determines retirement)
-pi_z=Gamma;
-
-% r_grid=linspace(0,1/Params.beta-1,n_r)';
-% a3_grid=linspace(0.9*Params.a3,1.1*Params.a3,n_a3)';
-% p_grid=[r_grid; a3_grid];
 
 n_d=[n_l,n_k];
 n_a=n_k;
-n_z=length(z_grid);
 
 %% Setup for the interitance asset a'(d,z,z')
 
@@ -109,7 +110,8 @@ simoptions.z_grid=z_grid;
 %% Setup return fn
 DiscountFactorParamNames={'beta'};
 
-ReturnFn=@(l, kprime, k, z,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3) CastanedaDiazGimenezRiosRull2003_ReturnFn(l, kprime, k, z,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3);
+ReturnFn=@(l, kprime, k, z,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3)... 
+    CastanedaDiazGimenezRiosRull2003_ReturnFn(l, kprime, k, z,r,sigma1,sigma2,chi,elle,theta,delta,e1,e2,e3,e4,omega,a0,a1,a2,a3);
 
 
 %% Set up for stationary general eqm
@@ -132,13 +134,13 @@ GeneralEqmEqns.GovBudget = @(G,Pensions,IncomeTaxRevenue,EstateTaxRevenue) G+Pen
 Params.r=0.045;
 tic;
 [V, Policy]=ValueFnIter_InfHorz(n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-toc
+vftime=toc
 tic;
 StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z,simoptions,Params);
-toc
+statdisttime=toc
 tic;
 AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
-toc
+aggvarstime=toc
 
 %% Solve the baseline model
 
@@ -164,7 +166,12 @@ else
     load ./SavedOutput/CastanedaDiazGimenezRiosRull2003.mat p_eqm Params GECondns a_grid V Policy StationaryDist
 end
 
+
 %% Reproduce Tables
+
+% pi_z is Gamma
+Gamma=pi_z; % Just allows me to write code that is more obviously in line with notation of paper
+
 % Tables 3, 4, & 5 simply report the calibrated parameters. 
 % While not really part of replication I reproduce these anyway (combining Tables 4 & 5 into a single table)
 CastanedaDiazGimenezRiosRull2003_Tables345
@@ -195,16 +202,18 @@ Table6variables(7)=gather((AllStats.Consumption.StdDeviation/AllStats.Consumptio
 
 Params.w=(1-Params.theta)*(((Params.r+Params.delta)/(Params.theta))^(Params.theta/(Params.theta-1)));
 
-NSimulations=10^6;
+NSimulations=1e6;
 e=[Params.e1,Params.e2,Params.e3,Params.e4,0,0,0,0];
-tic;
+
 % Ratio of earnings of 40 year olds to 20 year olds. This is quite complicated to calculate and so required a dedicated script.
-Table6variables(8)=CDGRR2003_RatioEarningsOldYoung(NSimulations, StationaryDist, Policy, Params, simoptions, n_d,n_a,n_z, d_grid,a_grid,z_grid, Gamma, e,Params.w,Params.J);
-toc
 tic;
+Table6variables(8)=CDGRR2003_RatioEarningsOldYoung(NSimulations, StationaryDist, Policy, Params, simoptions, n_d,n_a,n_z, d_grid,a_grid,z_grid, Gamma);
+ratiotime=toc
+
 % Intergenerational correlation coefficient. This is quite complicated to calculate and so required a dedicated script.
-Table6variables(9)=CDGRR2003_IntergenerationalEarnings(NSimulations,StationaryDist, Policy, Params, simoptions, n_d,n_a,n_z,d_grid,a_grid,z_grid, Gamma, e,Params.w,Params.J);
-toc
+tic;
+Table6variables(9)=CDGRR2003_IntergenerationalEarnings(NSimulations,StationaryDist, Policy, Params, simoptions, n_d,n_a,n_z,d_grid,a_grid,z_grid, Gamma);
+intergentime=toc
 
 %Table 6
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table6.tex', 'w');
@@ -236,7 +245,7 @@ Table7variables(2,2:6)=100*(AllStats.K.LorenzCurve([20,40,60,80,100])-AllStats.K
 %  Wealth Lorenz Curve: 90-95, 95-99, and 99-100 (%)
 Table7variables(2,7:9)=100*(AllStats.K.LorenzCurve([95,99,100])-AllStats.K.LorenzCurve([90,95,99]));
 
-%Table 7
+% Table 7
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table7.tex', 'w');
 fprintf(FID, 'Distributions of Earnings and of Wealth in the United States and in the Benchmark Model Economies (\\%%) \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccccc} \n \\hline \\hline \n');
@@ -283,7 +292,7 @@ Table8variables(2,2:6)=100*(AllStats.Consumption.LorenzCurve([20,40,60,80,100])-
 Table8variables(2,7:9)=100*(AllStats.Consumption.LorenzCurve([95,99,100])-AllStats.Consumption.LorenzCurve([90,95,99]));
 
 
-%Table 8
+% Table 8
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table8.tex', 'w');
 fprintf(FID, 'Distribution of Consumption in the United States and in the Benchmark Model Economies (\\%%) \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccccc} \n \\hline \\hline \n');
@@ -351,6 +360,23 @@ fclose(FID);
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %% Finished Actual Replication, now do some extra things
 
 %% Comparison of Calibrations
@@ -358,29 +384,45 @@ fclose(FID);
 % moment in CDGRR2003 have been lost to the sands of time this will not actually return the parameter values in CDGRR2003, nor should it be expected to.
 
 % Ordering of following is unimportant. (25 params)
-ParamNamesToEstimate={'beta','sigma2','chi','G','phi1','phi2','omega','a2','zlowerbar','tauE','e2','e3','e4',...
-    'Gamma_ee_12','Gamma_ee_13','Gamma_ee_14','Gamma_ee_21','Gamma_ee_23','Gamma_ee_24','Gamma_ee_31','Gamma_ee_32','Gamma_ee_34','Gamma_ee_41','Gamma_ee_42','Gamma_ee_43'};
+CalibParamNames={'beta','sigma2','chi','G','phi1','phi2','omega','a2','zlowerbar','tauE','e2','e3','e4',...
+    'Gamma_ee_12','Gamma_ee_13','Gamma_ee_14',...
+    'Gamma_ee_21','Gamma_ee_23','Gamma_ee_24',...
+    'Gamma_ee_31','Gamma_ee_32','Gamma_ee_34',...
+    'Gamma_ee_41','Gamma_ee_42','Gamma_ee_43'};
 % Additionally 'r' and 'a3' are determined by the general eqm conditions, rather than the calibration.
 
-% Ordering of following is unimportant. (27 targets)
-EstimationTargetNames={'CapitalOutputRatio','GovExpenditureToOutputRatio','TransfersToOutputRatio',...
-    'ShareOfDisposableTimeAllocatedToMarket','EffectiveTaxRateOnAverageHHIncome', 'zlowerbarMinus10timesAverageIncome', 'EstateTaxRevenueAsFractionOfGDP',...
-    'RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked','RatioOfEarningsOldtoYoung','CrossSectionalCorrelationOfIncomeBetweenFathersAndSons',...
-    'EarningsGini', 'WealthGini','EarningsQuintileSharesAsFraction', 'WealthQuintileSharesAsFraction','EarningsTopSharesAsFraction','WealthTopSharesAsFraction'};
+% 27 calibration targets
+% Following is full list of them by category, below that we set them up
+% Macro Aggregates, 3 targets: 
+%      CapitalOutputRatio,GovExpenditureToOutputRatio,TransfersToOutputRatio,
+% Estate Taxation, 2 targets:
+%      EstateTaxRevenueAsFractionOfGDP, zlowerbarMinus10timesAverageIncome
+% Allocation of Time and Consumption, 3 targets:
+%      ShareOfDisposableTimeAllocatedToMarket,EffectiveTaxRateOnAverageHHIncome,
+%      RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked
+% Life-Cycle Profile of Earnings, 1 target:
+%      RatioOfEarningsOldtoYoung
+% Intergenerational Transmission of Earnings Ability, 1 target:
+%      CrossSectionalCorrelationOfIncomeBetweenFathersAndSons
+% Earnings and Wealth Inequality, 18 targets
+%      EarningsGini, WealthGini,
+%      EarningsQuintileSharesAsFraction, WealthQuintileSharesAsFraction,
+%      EarningsTopSharesAsFraction,WealthTopSharesAsFraction
 
+%% Create TargetMoments (the data values of the targets)
 % B.2 Macroeconomic Aggregates
-EstimationTargets.CapitalOutputRatio=3.13;
+TargetMoments.CustomModelStats.CapitalOutputRatio=3.13;
 % EstimationTargets.CapitalIncomeShare=0.376;
 % Params.theta=0.376; % Follows immediately from CapitalIncomeShare
 % EstimationTargets.InvestmentToOutputRatio=0.186;
 % Params.delta=0.0594; % Follows immediately from delta=I/K in stationary general eqm; hence delta=(I/Y)/(K/Y)
-EstimationTargets.GovExpenditureToOutputRatio=0.202;
-EstimationTargets.TransfersToOutputRatio=0.049;
+TargetMoments.CustomModelStats.GovExpenditureToOutputRatio=0.202;
+TargetMoments.CustomModelStats.TransfersToOutputRatio=0.049;
 
 % B.3 Allocation of Time and Consumption
 % Params.elle=3.2;
-EstimationTargets.ShareOfDisposableTimeAllocatedToMarket=0.3;
-EstimationTargets.RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked=3.0;
+TargetMoments.CustomModelStats.ShareOfDisposableTimeAllocatedToMarket=0.3;
+TargetMoments.CustomModelStats.RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked=3.0;
 % Params.sigma1=1.5; % Based on literature on risk aversion
 
 % B.4 The Age Structure of the Population
@@ -395,15 +437,15 @@ EstimationTargets.RatioOfCoeffOfVarForConsumptionToCoeffOfVarForHoursWorked=3.0;
 % B.5 Life-Cycle Profile of Earnings
 % RatioOfEarningsOldtoYoung: ratio of average earnings for households
 % between ages of 41 & 60 to average earnings of households between ages of 21 & 40.
-EstimationTargets.RatioOfEarningsOldtoYoung=1.303;
+TargetMoments.CustomModelStats.RatioOfEarningsOldtoYoung=1.303;
 
 % B.6 The Intergenerational Transmission of Earnings Ability
-EstimationTargets.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.4;
+TargetMoments.CustomModelStats.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.4;
 
 % B.7 Income Taxation
 % Params.a0=0.258;
 % Params.a1=0.768;
-EstimationTargets.EffectiveTaxRateOnAverageHHIncome=0.0762;
+TargetMoments.CustomModelStats.EffectiveTaxRateOnAverageHHIncome=0.0762;
 % The 'EffectiveTaxRateOnAverageHHIncome' is not reported in Castañeda, Diaz-Gimenez, & Rios-Rull (2003). 
 % The number used here is 
 % According to the 1998 Economic Report of the President, Table B80, revenue from 'Individual Income Taxes' in 1992 was $476 billion.
@@ -421,8 +463,8 @@ EstimationTargets.EffectiveTaxRateOnAverageHHIncome=0.0762;
 
 % B.8 Estate Taxation
 % Params.zlowerbar=10*AverageIncome;
-EstimationTargets.zlowerbarMinus10timesAverageIncome=0;
-EstimationTargets.EstateTaxRevenueAsFractionOfGDP=0.002;
+TargetMoments.CustomModelStats.zlowerbarMinus10timesAverageIncome=0;
+TargetMoments.CustomModelStats.EstateTaxRevenueAsFractionOfGDP=0.002;
 
 % B.9 Normalization
 % Params.e1=1; % Based on my own experience with variants of this model you are actually
@@ -444,12 +486,12 @@ EstimationTargets.EstateTaxRevenueAsFractionOfGDP=0.002;
 % Note also that paper does not actually specify which elements of Gamma_ee were normalized.
 
 % B.10 The Distributions of Earnings and Wealth
-EstimationTargets.EarningsGini=0.63;
-EstimationTargets.WealthGini=0.78;
-EstimationTargets.EarningsQuintileSharesAsFraction=[-0.004,0.0319, 0.1249, 0.2333, 0.6139]; % Quintiles: Bottom to Top
-EstimationTargets.WealthQuintileSharesAsFraction=[-0.0039, 0.0174, 0.0572, 0.1343, 0.7949];
-EstimationTargets.EarningsTopSharesAsFraction=[0.1238,0.1637,0.1476]; % 90-95, 95-99, 99-100.
-EstimationTargets.WealthTopSharesAsFraction=[0.1262,0.2395,0.2955]; % 90-95, 95-99, 99-100.
+TargetMoments.AllStats.Earnings.Gini=0.63;
+TargetMoments.AllStats.Wealth.Gini=0.78;
+TargetMoments.CustomModelStats.EarningsQuintileSharesAsFraction=[-0.004,0.0319, 0.1249, 0.2333, 0.6139]; % Quintiles: Bottom to Top
+TargetMoments.CustomModelStats.WealthQuintileSharesAsFraction=[-0.0039, 0.0174, 0.0572, 0.1343, 0.7949];
+TargetMoments.CustomModelStats.EarningsTopSharesAsFraction=[0.1238,0.1637,0.1476]; % 90-95, 95-99, 99-100.
+TargetMoments.CustomModelStats.WealthTopSharesAsFraction=[0.1262,0.2395,0.2955]; % 90-95, 95-99, 99-100.
 
 % The Pension Function
 % Castañeda, Diaz-Gimenez, & Rio-Rull (2003) do not describe the
@@ -458,52 +500,58 @@ EstimationTargets.WealthTopSharesAsFraction=[0.1262,0.2395,0.2955]; % 90-95, 95-
 % suggesting the idea was to target the replacement rate.
 % Actually this is covered by 'Transfers to Output Ratio' as being a target.
 
-% By default the VFI Toolkit estimation commands set bounds on
-% parameter values (lower bound of 1/10th of initial value, upper bound of
-% 10 times initial value). You can set these bounds manually where you wish to do
-% so in the following manner. [First number is lower bound, Second number
-% is upper bound].
-estimationoptions.ParamBounds.beta=[0.8,0.99]; % Reasonable range for discount rate.
-estimationoptions.ParamBounds.r=[0,0.15]; % Seems reasonable range for interest rate.
-estimationoptions.ParamBounds.Gamma_ee_12=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_13=[0,0.2]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_14=[0,0.2]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_21=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_23=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_24=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_31=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_32=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_34=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_41=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_42=[0,0.3]; % Must be between 0 & 1 as is a probability.
-estimationoptions.ParamBounds.Gamma_ee_43=[0,0.3]; % Must be between 0 & 1 as is a probability.
+%% Settings for caliboptions
 
-% By default the VFI Toolkit estimation commands assume that you want the
-% distance for each of the targets to be measured as the square difference as a percentage of the
-% target value. You can overrule these as follows.
-estimationoptions.TargetDistanceFns.EarningsQuintileSharesAsFraction='absolute-difference';
-estimationoptions.TargetDistanceFns.WealthQuintileSharesAsFraction='absolute-difference';
+% Set some bounds on the parameters being calibrated, this is mostly about
+% the probabilities in Gamma as they must obviously all remain in 0 to 1
+% (although I restrict them more tightly than this).
+caliboptions.constrainAtoB={'beta','r',...
+    'Gamma_ee_12','Gamma_ee_13','Gamma_ee_14',...
+    'Gamma_ee_21','Gamma_ee_23','Gamma_ee_24',...
+    'Gamma_ee_31','Gamma_ee_32','Gamma_ee_34',...
+    'Gamma_ee_41','Gamma_ee_42','Gamma_ee_43'};
+caliboptions.constrainAtoBlimits.beta=[0.8,0.99]; % Reasonable range for discount rate.
+caliboptions.constrainAtoBlimits.r=[0,0.15]; % Seems reasonable range for interest rate.
+% Note: The setup of Gamma, means we thing most of the mass should remain
+% on the diagonal. So we will limit the off-diagonals to smaller probabilites.
+caliboptions.constrainAtoBlimits.Gamma_ee_12=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_13=[0,0.2]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_14=[0,0.2]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_21=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_23=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_24=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_31=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_32=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_34=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_41=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_42=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrainAtoBlimits.Gamma_ee_43=[0,0.3]; % Must be between 0 & 1 as is a probability.
 
-% By default the VFI Toolkit weights each of the targets equally (with a
-% value of 1). You can manually increase or decrease these weights as follows.
-estimationoptions.TargetWeights.CapitalIncomeRatio=20;
-% EstimationTargets.TargetWeights.GovernmentBudgetBalance=100; % This is one of the general eqm conditions, so by 
-      % default it gets a weight of 100 when we are using the (default) 'joint-fixed-pt' estimation algorithm.
-% Targets include an excess of inequality stats, so decrease slightly the weights given to these.
-estimationoptions.TargetWeights.EarningsQuintileSharesAsFraction=0.8;
-% estimationoptions.TargetWeights.EarningsTopSharesAsFraction=1; % 90-95, 95-99, 99-100.
-estimationoptions.TargetWeights.WealthQuintileSharesAsFraction=0.8;
-estimationoptions.TargetWeights.WealthTopSharesAsFraction=1.5; % Increased these as they are important part of the purpose of model, and were otherwise being ignored during the calibration (in earlier runs)
-% The data and link to model are not strongest for the following two, so I give them lower weights.
-estimationoptions.TargetWeights.RatioOfEarningsOldtoYoung=0.7;
-estimationoptions.TargetWeights.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.7;
-% An early estimation attempt ended up going off-track and making almost nobody work. Following makes the fraction of time worked estimation target important.
-estimationoptions.TargetWeights.ShareOfDisposableTimeAllocatedToMarket=10;
+% By default the weights are as follows, I include them just so it is
+% obvious how you would overwrite them
+caliboptions.weights=ones(1,28);
+heteroagentoptions.multiGEweights=ones(1,length(fieldnames(GeneralEqmEqns)));
+caliboptions.relativeGEweight=10;
 
+% % By default the VFI Toolkit weights each of the targets equally (with a
+% % value of 1). You can manually increase or decrease these weights as follows.
+% caliboptions.TargetWeights.CapitalIncomeRatio=20;
+% % EstimationTargets.TargetWeights.GovernmentBudgetBalance=100; % This is one of the general eqm conditions, so by 
+%       % default it gets a weight of 100 when we are using the (default) 'joint-fixed-pt' estimation algorithm.
+% % Targets include an excess of inequality stats, so decrease slightly the weights given to these.
+% caliboptions.TargetWeights.EarningsQuintileSharesAsFraction=0.8;
+% % estimationoptions.TargetWeights.EarningsTopSharesAsFraction=1; % 90-95, 95-99, 99-100.
+% caliboptions.TargetWeights.WealthQuintileSharesAsFraction=0.8;
+% caliboptions.TargetWeights.WealthTopSharesAsFraction=1.5; % Increased these as they are important part of the purpose of model, and were otherwise being ignored during the calibration (in earlier runs)
+% % The data and link to model are not strongest for the following two, so I give them lower weights.
+% caliboptions.TargetWeights.RatioOfEarningsOldtoYoung=0.7;
+% caliboptions.TargetWeights.CrossSectionalCorrelationOfIncomeBetweenFathersAndSons=0.7;
+% % An early estimation attempt ended up going off-track and making almost nobody work. Following makes the fraction of time worked estimation target important.
+% caliboptions.TargetWeights.ShareOfDisposableTimeAllocatedToMarket=10;
 
-% VFI Toolkit uses CMA-ES algorithm to perform the calibration. You can
-% manually set some of its options if you want.
-estimationoptions.CMAES.MaxIter=1000;
+%% Set up CustomModelStats
+caliboptions.CustomModelStats=@(V,Policy,StationaryDist,Parameters,FnsToEvaluate,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,caliboptions,vfoptions,simoptions)...
+    CDGRR2003_CustomModelStats(V,Policy,StationaryDist,Parameters,FnsToEvaluate,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z,caliboptions,vfoptions,simoptions);
 
 %% Before estimation we need to set some things back to what they were for underlying model
 clear FnsToEvaluate
@@ -513,25 +561,21 @@ FnsToEvaluate.IncomeTaxRevenue = @(h,kprime,k,s,J,r,theta,delta,omega,e1,e2,e3,e
 FnsToEvaluate.Pensions = @(h,kprime,k,s,J,omega) omega*(s>J); % If you are retired you earn pension omega (otherwise it is zero).
 FnsToEvaluate.EstateTaxRevenue  = @(h,kprime,k,s,J,p_gg,zlowerbar,tauE) (s>J)*(1-p_gg)*tauE*max(kprime-zlowerbar,0); % If you are retired: the probability of dying times the estate tax you would pay
 
-%% Now we just need to create the 'ModelTargetsFn'. This will be a Matlab function
-% that takes Params as an input and creates ModelTargets as an output.
-% ModelTargets must be a structure containing the model values for the EstimationTargets.
-ModelTargetsFn=@(Params) CDGRR2003_ModelTargetsFn(Params, n_d,n_a,n_z,a_grid,ReturnFn, DiscountFactorParamNames,Case2_Type,PhiaprimeParamNames,FnsToEvaluate,GEPriceParamNames,GeneralEqmEqns, vfoptions,simoptions)
-% ModelTargets must also contain the model values for any General Equilibrium conditions.
-GeneralEqmTargetNames={'GE_InterestRate','GE_GovBudgetBalance'};
+FnsToEvaluate.Earnings = @(h,kprime,k,s,w,e1,e2,e3,e4) w*h*(e1*(s==1)+e2*(s==2)+e3*(s==3)+e4*(s==4)); 
+FnsToEvaluate.Wealth = @(h,kprime,k,s) k; % This duplicates K, but makes things easier to read as I can use 'K' in general eqm eqns and 'Wealth' in calibration targets [runtime loss is minor]
+
 
 %% Do the actual calibration
 
-[Params1,fval,counteval,exitflag]=CalibrateFromModelTargetsFn(Params, ParamNamesToEstimate, EstimationTargets, ModelTargetsFn, estimationoptions, GEPriceParamNames, GeneralEqmTargetNames);
+% Note: This calibration is kind of silly as just two moments,
+% RatioOfEarningsOldtoYoung and CrossSectionalCorrelationOfIncomeBetweenFathersAndSons
+% take 99% of the runtime. They both depend on NSims simulations,
+Params.NSims=1e5;
+% If you reduce this number the codes run way faster.
 
-save ./SavedOutput/Calib/CDGRR2003_Calib1.mat Params1 fval counteval exitflag
-% load ./SavedOutput/Calib/CDGRR2003_Calib1.mat Params1 fval counteval exitflag
+[CalibParams,calibsummary]=CalibrateBIHAModel(CalibParamNames,TargetMoments,n_d,n_a,n_z,d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], GEPriceParamNames, FnsToEvaluate, GeneralEqmEqns, heteroagentoptions, caliboptions, vfoptions,simoptions);
 
-%% Get the model estimation target values based on the estimated parameters.
-ModelTargets=ModelTargetsFn(Params1);
-
-save ./SavedOutput/Calib/CDGRR2003_Calib2.mat ModelTargets
-
+save ./SavedOutput/Calib/CDGRR2003_Calib1.mat CalibParams calibsummary
 
 
 

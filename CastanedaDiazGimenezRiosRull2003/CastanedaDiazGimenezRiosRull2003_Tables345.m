@@ -2,6 +2,7 @@
 % These Tables simply report the calibrated model parameters.
 
 
+
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table3.tex', 'w');
 fprintf(FID, 'Parameter Values for the Benchmark Model Economy \\\\ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}llr} \n \\hline \\hline \n');
@@ -35,7 +36,7 @@ fprintf(FID, 'Some minor changes to the precise description of the parameters ar
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
-%Table for the transition matix
+% Table for the transition matix
 Gamma_ee=Gamma(1:Params.J,1:Params.J)./(1-Params.p_eg);
 FID = fopen('./SavedOutput/LatexInputs/CastanedaDiazGimenezRiosRull2003_Table4and5_TransMatrix.tex', 'w');
 fprintf(FID, 'Transition Probabilities of the Process on the Endowment of Efficiency Labor  \\\\ \n');
