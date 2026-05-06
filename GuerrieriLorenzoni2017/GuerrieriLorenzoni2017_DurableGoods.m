@@ -90,7 +90,7 @@ vfoptions.verbose=1;
 % vfoptions.divideandconquer=0; % for transition path, turn on divide-and-conquer
 % vfoptions.maxhowards=0;
 % tic;
-% [V0,Policy0]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+% [V0,Policy0]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 % time0=toc;
 % % THIS IS JUST AS A COMPARISON
 
@@ -98,7 +98,7 @@ vfoptions.divideandconquer=1; % for transition path, turn on divide-and-conquer
 vfoptions.maxhowards=0;
 % vfoptions.maxiter=2;
 tic;
-[V1,Policy1]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V1,Policy1]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 time1=toc;
 % This works
 
@@ -106,16 +106,16 @@ vfoptions.divideandconquer=1; % for transition path, turn on divide-and-conquer
 vfoptions.maxhowards=1;
 % vfoptions.maxiter=2;
 tic;
-[V2,Policy2]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V2,Policy2]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 time2=toc;
 % HOWARDS IS NOT YET WORKING
 
 tic;
-StationaryDist=StationaryDist_Case1(Policy1,n_d,n_a,n_z,pi_z, simoptions, Params);
+StationaryDist=StationaryDist_InfHorz(Policy1,n_d,n_a,n_z,pi_z, simoptions, Params);
 disttime=toc;
 
 tic;
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy1, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy1, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 aggvarstime=toc;
 
 max(abs(V1(:)-V2(:)))
@@ -136,11 +136,11 @@ heteroagentoptions.verbose=1;
 GEPriceParamNames={'r'};
 
 fprintf('Calculating initial eqm (for durable goods) \n')
-[p_eqm_initial, ~,MarketClearance_initial]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm_initial, ~,MarketClearance_initial]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 Params.r=p_eqm_initial.r;
-[~,Policy_initial]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, simoptions, Params);
-AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+[~,Policy_initial]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist_initial=StationaryDist_InfHorz(Policy_initial,n_d,n_a,n_z,pi_z, simoptions, Params);
+AggVars_initial=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist_initial, Policy_initial, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_initial.mat Params p_eqm_initial StationaryDist_initial AggVars_initial Policy_initial MarketClearance_initial
 
@@ -153,11 +153,11 @@ for ii=1:length(ParamPathNames)  % Note: it is actually just length 1, but whate
 end
 
 fprintf('Calculating final eqm (for durable goods) \n')
-[p_eqm_final, ~,MarketClearance_final]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm_final, ~,MarketClearance_final]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 Params.r=p_eqm_final.r;
-[V_final,Policy_final]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist_final=StationaryDist_Case1(Policy_final,n_d,n_a,n_z,pi_z, simoptions,Params);
-AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+[V_final,Policy_final]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist_final=StationaryDist_InfHorz(Policy_final,n_d,n_a,n_z,pi_z, simoptions,Params);
+AggVars_final=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_final.mat Params p_eqm_final StationaryDist_final AggVars_final Policy_final MarketClearance_final
 
@@ -188,7 +188,7 @@ transpathoptions.GEnewprice3.howtoupdate=... % a row is: GEcondn, price, add, fa
 
 
 
-PricePath=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames,transpathoptions,vfoptions,simoptions);
+PricePath=TransitionPath_InfHorz(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, d_grid,a_grid,z_grid, pi_z, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames,transpathoptions,vfoptions,simoptions);
 
 save ./SavedOutput/GuerrieriLorenzoni2017_durablegoods_transition.mat PricePath
 
@@ -196,9 +196,9 @@ DurableGoodsFigFnsToEvaluate.output = @(d, aprime, kprime,a,k,z) d*z; % y_it=n_i
 DurableGoodsFigFnsToEvaluate.durablespurchases = @(d, aprime, kprime,a,k,z,delta) kprime-delta*k; % am not certain of this definition for "purchases"
 DurableGoodsFigFnsToEvaluate.nondurablespurchases = @(d, aprime, kprime,a,k,z,r, delta, zeta, chi, v, B, Bprime)  GuerrieriLorenzoni2017_DurableGoods_ConsumptionFn(d, aprime, kprime,a,k,z,r, delta, zeta, chi, v, B, Bprime);
 
-AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, DurableGoodsFigFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
-AgentDistPath=AgentDistOnTransPath_Case1(StationaryDist_initial, PolicyPath,n_d,n_a,n_z,pi_z,T,simoptions);
-AggVarsPath=EvalFnOnTransPath_AggVars_Case1(DurableGoodsFigFnsToEvaluate,AgentDistPath,PolicyPath,PricePath, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,transpathoptions);
+AggVars_initial=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist_initial, Policy_initial, DurableGoodsFigFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
+AgentDistPath=AgentDistOnTransPath_InfHorz(StationaryDist_initial, PolicyPath,n_d,n_a,n_z,pi_z,T,simoptions);
+AggVarsPath=EvalFnOnTransPath_AggVars_InfHorz(DurableGoodsFigFnsToEvaluate,AgentDistPath,PolicyPath,PricePath, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,transpathoptions);
 
 Output_pch=([AggVars_initial.output.Mean; AggVarsPath.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
 durablespurchases_pch=([AggVars_initial.durablespurchases.Mean; AggVarsPath.durablespurchases.Mean]-AggVars_initial.durablespurchases.Mean)/AggVars_initial.durablespurchases.Mean;

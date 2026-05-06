@@ -14,23 +14,23 @@ GEPriceParamNames={'r'}; %,'tau'
 heteroagentoptions.verbose=1;
 
 disp('Calculating price vector corresponding to the stationary eqm')
-p_eqm_initial=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,vfoptions,simoptions);
+p_eqm_initial=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,vfoptions,simoptions);
 Params.r=p_eqm_initial.r;
 
 % Now that we know what the equilibrium price is, lets calculate a bunch of other things associated with the equilibrium
 disp('Calculating various equilibrium objects')
-[~,Policy_initial]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist_initial=StationaryDist_Case1(Policy_initial,n_d,n_a,n_z,pi_z, simoptions);
-% AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
+[~,Policy_initial]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist_initial=StationaryDist_InfHorz(Policy_initial,n_d,n_a,n_z,pi_z, simoptions);
+% AggVars_initial=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist_initial, Policy_initial, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid);
 
 % Final stationary equilibrium
 %  Only change is
 Params.phi=Params.phi_final;
-p_eqm_final=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,vfoptions,simoptions);
+p_eqm_final=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, [], pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions,vfoptions,simoptions);
 Params.r=p_eqm_final.r;
-[V_final,Policy_final]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist_final=StationaryDist_Case1(Policy_final,n_d,n_a,n_z,pi_z, simoptions);
-AggVars_final=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+[V_final,Policy_final]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist_final=StationaryDist_InfHorz(Policy_final,n_d,n_a,n_z,pi_z, simoptions);
+AggVars_final=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist_final, Policy_final, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 %% Compute the flexible price transition path
 clear PricePath0 ParamPath
@@ -43,10 +43,10 @@ temp=linspace(Params.phi_initial,Params.phi_final,7); ParamPath.phi(1:6)=temp(2:
 PricePath0.r=[linspace(-0.01, p_eqm_final.r, floor(T/3)), p_eqm_final.r*ones(1,T-floor(T/3))]; % PricePath0 is matrix of size T-by-'number of prices'
 
 fprintf('Starting flex prices transition in alt calibration \n')
-PricePath_flex=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions,vfoptionspath,simoptions);
+PricePath_flex=TransitionPath_InfHorz(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, d_grid,a_grid,z_grid, pi_z, ReturnFn,  TransPathFnsToEvaluate, TransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions,vfoptionspath,simoptions);
 
-[~,PolicyPath_flex]=ValueFnOnTransPath_Case1(PricePath_flex, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
-AgentDistPath_flex=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_flex,n_d,n_a,n_z,pi_z,T,simoptions);
+[~,PolicyPath_flex]=ValueFnOnTransPath_InfHorz(PricePath_flex, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, d_grid, a_grid,z_grid, pi_z, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
+AgentDistPath_flex=AgentDistOnTransPath_InfHorz(StationaryDist_initial,PolicyPath_flex,n_d,n_a,n_z,pi_z,T,simoptions);
 
 %% Sticky Wages
 if altcalib_figurenumber==9 || altcalib_figurenumber==11
@@ -54,29 +54,29 @@ if altcalib_figurenumber==9 || altcalib_figurenumber==11
     PricePath0.omega=zeros(T,1);
 
     fprintf('Starting sticky wages transition in alt calibration \n')
-    PricePath_NK=TransitionPath_Case1(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, pi_z, d_grid,a_grid,z_grid, ReturnFn,  TransPathFnsToEvaluate, NKTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_NK,vfoptionspath,simoptions);
+    PricePath_NK=TransitionPath_InfHorz(PricePath0, ParamPath, T, V_final, StationaryDist_initial, n_d, n_a, n_z, d_grid,a_grid,z_grid, ReturnFn,  pi_z, TransPathFnsToEvaluate, NKTransPathGeneralEqmEqns, Params, DiscountFactorParamNames, transpathoptions_NK,vfoptionspath,simoptions);
 
-    [~,PolicyPath_NK]=ValueFnOnTransPath_Case1(PricePath_NK, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, pi_z, d_grid, a_grid,z_grid, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
-    AgentDistPath_NK=AgentDistOnTransPath_Case1(StationaryDist_initial,PolicyPath_NK,n_d,n_a,n_z,pi_z,T,simoptions);
+    [~,PolicyPath_NK]=ValueFnOnTransPath_InfHorz(PricePath_NK, ParamPath, T, V_final, Policy_final, Params, n_d, n_a, n_z, d_grid, a_grid,z_grid, pi_z, DiscountFactorParamNames, ReturnFn, transpathoptions, vfoptionspath);
+    AgentDistPath_NK=AgentDistOnTransPath_InfHorz(StationaryDist_initial,PolicyPath_NK,n_d,n_a,n_z,pi_z,T,simoptions);
 end
 
 %% Figure for Alternative Calibration
-AltCalibFnsToEvaluate.output = @(d_val, aprime_val,a_val,z_val) d_val*z_val; % y_it=n_it*theta_it Note that since gov budget is balanced every period it neither adds nor subtracts (unemployment benefits + interest payments on B=lump-sum tax revenue)
-AltCalibFnsToEvaluate.employment = @(d_val, aprime_val,a_val,z_val) d_val; %n_it in notation of GL2017
+AltCalibFnsToEvaluate.output = @(d, aprime,a,z) d*z; % y_it=n_it*theta_it Note that since gov budget is balanced every period it neither adds nor subtracts (unemployment benefits + interest payments on B=lump-sum tax revenue)
+AltCalibFnsToEvaluate.employment = @(d, aprime,a,z) d; %n_it in notation of GL2017
 
 % For the initial dist will need
 Params.phi=Params.phi_initial;
 Params.r=p_eqm_initial.r;
 
 % Get the 
-AggVars_initial=EvalFnOnAgentDist_AggVars_Case1(StationaryDist_initial, Policy_initial, AltCalibFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
-AggVarsPath_Flex=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_flex, PolicyPath_flex, PricePath_flex, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
+AggVars_initial=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist_initial, Policy_initial, AltCalibFnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+AggVarsPath_Flex=EvalFnOnTransPath_AggVars_InfHorz(AltCalibFnsToEvaluate, AgentDistPath_flex, PolicyPath_flex, PricePath_flex, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
 
 Output_pch_flex=([AggVars_initial.output.Mean, AggVarsPath_Flex.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
 Employment_pch_flex=([AggVars_initial.employment.Mean, AggVarsPath_Flex.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
 
 if altcalib_figurenumber==9 || altcalib_figurenumber==11
-    AggVarsPath_NK=EvalFnOnTransPath_AggVars_Case1(AltCalibFnsToEvaluate, AgentDistPath_NK, PolicyPath_NK, PricePath_NK, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
+    AggVarsPath_NK=EvalFnOnTransPath_AggVars_InfHorz(AltCalibFnsToEvaluate, AgentDistPath_NK, PolicyPath_NK, PricePath_NK, ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid, simoptions);
     Output_pch_NK=([AggVars_initial.output.Mean, AggVarsPath_NK.output.Mean]-AggVars_initial.output.Mean)/AggVars_initial.output.Mean;
     Employment_pch_NK=([AggVars_initial.employment.Mean, AggVarsPath_NK.employment.Mean]-AggVars_initial.employment.Mean)/AggVars_initial.employment.Mean;
 end
