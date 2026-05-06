@@ -31,7 +31,7 @@ end
 n_p=0;
 disp('Calculating price vector corresponding to the stationary eqm')
 % NOTE: EntryExitParamNames has to be passed as an additional input compared to the standard case.
-[p_eqm,~, ~]=HeteroAgentStationaryEqm_Case1(0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
+[p_eqm,~, ~]=HeteroAgentStationaryEqm_InfHorz(0, n_a, n_z, n_p, pi_z, [], a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions, EntryExitParamNames);
 Params.w=p_eqm.w;
 Params.ebar=p_eqm.ebar;
 if sum(Params.upsilon(:,1))>0 && fixedsubsidy_c==0  % If using subsidies
@@ -40,11 +40,11 @@ if sum(Params.upsilon(:,1))>0 && fixedsubsidy_c==0  % If using subsidies
 end
 
 % Calculate some things in the general eqm
-[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions, Params, EntryExitParamNames);
+[V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,[],a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions, Params, EntryExitParamNames);
 
 
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
+AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
 
 if sum(Params.upsilon(:,1))==0 || fixedsubsidy_c==1 % If no subsidies (or subsidy is fixed)
     % Without subsides we are not attempting to keep K unchanged (equal to
@@ -53,7 +53,7 @@ if sum(Params.upsilon(:,1))==0 || fixedsubsidy_c==1 % If no subsidies (or subsid
     % as a renormalization without having to worry about this breaking 
     % the K equals Kbaseline condition.
     % Impose the labour market clearance, which involves calculating Ne.
-    % AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
+    % AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions.parallel,simoptions,EntryExitParamNames);
     InitialNe=Params.Ne;
     Params.Ne=1/AggVars.nbar.Aggregate; % AggValues is presently equal to Nbar. This line is imposing/satisfying the labour market clearance condition.
     StationaryDist.mass=StationaryDist.mass*(Params.Ne/InitialNe); % Take advantage of linearity of the stationary distribution in new entrants distribution.
