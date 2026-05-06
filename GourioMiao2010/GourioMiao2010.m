@@ -106,14 +106,14 @@ ReturnFn=@(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_
 
 %% Test value function calculation
 % vfoptions=struct(); % just use defaults
-[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 
 % V is value function
 % Policy is policy function (but as an index of k_grid, not the actual values)
 
 %% Test stationary distribution calculation
 simoptions=struct(); % just use defaults
-StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
+StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
 %% Define aggregates and general eqm conditions
 % Create functions to be evaluated
@@ -142,12 +142,12 @@ GeneralEqmEqns.LaborMarket = @(L,Y,I,CapitalAdjCosts,hweight,tau_i,w) hweight*(Y
 heteroagentoptions.verbose=1; % verbose means that you want it to give you feedback on what is going on
 
 fprintf('Calculating price vector corresponding to the stationary general eqm \n')
-[p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 
 Params.w=p_eqm.w; % GM2010 find that general eqm wage is 1.26
 
-[V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
+[V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
 
 % % Code of GM2010 contains a plot of the first of the following graphs of agent distribution, mine and theirs look broadly similar
@@ -184,11 +184,11 @@ FnsToEvaluate.z = @(d,kprime,k,z) z; % needed for table 8
 
 
 
-AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 % Note: autocorrelations have to done manually from simulated panel data
 simoptions.simperiods=500; % Default is to do 1000 simulations, each with this many periods
-SimPanelValues=SimPanelValues_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
+SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
 tempIrate=SimPanelValues.investmentrate(2:end,:);
 tempIratelag=SimPanelValues.investmentrate(1:end-1,:);
 autocorr_Irate=corr(tempIrate(:),tempIratelag(:)); % This is going to include some where it is last period of one firm correlated with first period of next firm, but given the length of the time series is 500 periods this should be negligible
@@ -264,7 +264,7 @@ simoptions.conditionalrestrictions.equityregime= @(dividend,kprime,k,z,w,delta,a
 simoptions.conditionalrestrictions.neitherregime= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (abs(dividend)<zerotol)*(abs(GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi))<zerotol);
 
 % Recalculate all the statistics, but this time also doing so for the conditional restrictions
-AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
 % Following two should give the same answer (this is just a double-check
 % that conditional restrictions are being correctly calculated)
@@ -275,8 +275,8 @@ FnsToEvaluate2.firmvalue=@(dividend,kprime,k,z,V) V; % V has to refer to value f
 simoptions.eval_valuefn=V; % If you want to use the value function as part of a function to evaluate you must put the value function into this option...
 simoptions.eval_valuefnname={'V'}; % ...and the name you will use in the function to evaluate in this option
 % To use the value function in a function to evaluate, it must be the first
-% entry after z. And you must input it into EvalFnOnAgentDist_AggVars_Case1() in the position after simoptions.
-ValueOfFirmStats=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
+% entry after z. And you must input it into EvalFnOnAgentDist_AggVars_InfHorz() in the position after simoptions.
+ValueOfFirmStats=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
 
 
 % Table 5
@@ -349,14 +349,14 @@ for Reform=1:4
     Params.firmbeta=1/(1+Params.r*(1-Params.tau_i)/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
 
     % Solve the tax reform
-    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
     Params.w=p_eqm.w;
 
-    [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-    StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
+    [V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+    StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
     % Create what we need for Table 6
-    AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+    AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
     % For the welfare calculations of last row of Table 6 we need to calculate the utility of the representative household
     % GM2010, pg 155: "The welfare benefit can be measured by the equivalent increase in consumption holding leisure constant."
@@ -366,7 +366,7 @@ for Reform=1:4
 
     % Use value function to calculate the value of firm (value of firm is just the value function)
     simoptions.eval_valuefn=V; % If you want to use the value function as part of a function to evaluate you must put the value function into this option...
-    ValueOfFirmStats=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
+    ValueOfFirmStats=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
 
     
     Table6(1,Reform)=(AllStats.K.Mean-AllStats_baseline.K.Mean)/AllStats_baseline.K.Mean;
@@ -392,7 +392,7 @@ for Reform=1:4
     
     % Create what we need for Table 8
     if Reform==1 || Reform==2
-        SimPanelValues=SimPanelValues_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
+        SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
 
         Table8(1,Reform+1)=AllStats.Y.Mean/((AllStats.K.Mean^Params.alpha_k)*(AllStats.L.Mean^Params.alpha_l)); % TFP
         Table8(2,Reform+1)=AllStats.Y.Mean/AllStats.L.Mean; % TFP
@@ -506,17 +506,17 @@ for otherparametrizations=1:7
     end
 
     % Original economy for table 9
-    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 
     Params.w=p_eqm.w;
 
-    [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-    StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
+    [V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+    StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
-    AllStats=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+    AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
     % Note: autocorrelations have to done manually from simulated panel data
-    SimPanelValues=SimPanelValues_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
+    SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
     tempIrate=SimPanelValues.investmentrate(2:end,:);
     tempIratelag=SimPanelValues.investmentrate(1:end-1,:);
     autocorr_Irate=corr(tempIrate(:),tempIratelag(:));  % This is going to include some where it is last period of one firm correlated with first period of next firm, but given the length of the time series is 500 periods this should be negligible
@@ -537,14 +537,14 @@ for otherparametrizations=1:7
     % Changing tau_cg means we have to recalculate firmbeta
     Params.firmbeta=1/(1+Params.r*(1-Params.tau_i)/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
     
-    [p_eqm2,~,GeneralEqmCondn2]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm2,~,GeneralEqmCondn2]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
     
     Params.w=p_eqm2.w;
     
-    [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-    StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
+    [V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+    StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
     
-    AllStats2=EvalFnOnAgentDist_AllStats_Case1(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+    AllStats2=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
     
     Table10(otherparametrizations,1)=(AllStats2.K.Mean-AllStats.K.Mean)/AllStats.K.Mean;
     Table10(otherparametrizations,2)=(AllStats2.Y.Mean-AllStats.Y.Mean)/AllStats.Y.Mean;
