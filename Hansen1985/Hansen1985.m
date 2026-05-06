@@ -110,11 +110,11 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
     Params.Economy=Economy;
     %% Solve
     disp('Solve value fn problem')
-    [V,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames,[],vfoptions);
+    [V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames,[],vfoptions);
 
     %No need for asyptotic distribution.
     %simoptions.simperiods=10^4; simoptions.iterate=1;
-    %StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z,simoptions);
+    %StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z,simoptions);
     %plot(1:1:n_z, N/sum(N), 1:1:n_z, sum(StationaryDist,1)) % Can see that the z discretization is working as two lines are identical.
     
     if AlternativeProductivityShocks==0
@@ -137,7 +137,7 @@ for Economy=1:2 % Divisible and Indivisible labour respectively
         FnsToEvaluate.TFP = @(d,aprime,a,z,alpha) (z*(a^alpha)*(d^(1-alpha)))/d; %Productivity (measured in data as output divided by hours)
         FnsToEvaluate.z = @(d,aprime,a,z) z; %Tech Shock (Hansen 1985 does not report this, just for interest)
 
-        TimeSeries=TimeSeries_Case1(Policy, FnsToEvaluate, Params, n_d, n_a, n_z, d_grid, a_grid, z_grid,pi_z,simoptions);
+        TimeSeries=TimeSeries_InfHorz(Policy, FnsToEvaluate, Params, n_d, n_a, n_z, d_grid, a_grid, z_grid,pi_z,simoptions);
 
         [OutputTrend,OutputCyc]=hpfilter(gather(log(TimeSeries.Y)),1600); % hpfilter() does not yet exist for gpu
         FnNames=fieldnames(FnsToEvaluate);
