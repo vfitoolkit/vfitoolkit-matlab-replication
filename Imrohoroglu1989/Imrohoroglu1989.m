@@ -83,8 +83,8 @@ for WhichSigma=1:2
         %% Now, create the return function
         DiscountFactorParamNames={'beta'};
         
-        ReturnFn=@(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ReturnFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
-        ReturnFnParamNames={'r_l','r_b','y','theta','sigma'}; %It is important that these are in same order as they appear in 'Imrohoroglu1989_ReturnFn'
+        ReturnFn=@(aprime, a, s,z,r_l,r_b,y,theta,sigma)...
+            Imrohoroglu1989_ReturnFn(aprime, a, s,z,r_l,r_b,y,theta,sigma);
         
         
         %% Solve
@@ -95,7 +95,7 @@ for WhichSigma=1:2
         
         tic;
         V0=ones([n_a,n_sz]);
-        [V, Policy]=ValueFnIter_Case1(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames, vfoptions);
+        [V, Policy]=ValueFnIter_InfHorz(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 
         time=toc;
         
@@ -120,7 +120,7 @@ for WhichSigma=1:2
         %%
         % Imrohoroglu (1989) does 500000 period simulations (seemingly without
         % burnin). Here we instead use the more robust method of iterating on whole distribution.
-        StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_sz,pi_sz);
+        StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_sz,pi_sz);
         
         %% Generate some output following what is reported in Imrohoroglu (1989)
         nsample=10^6; npts=301;
@@ -182,7 +182,7 @@ for WhichSigma=1:2
         
         %
         fig2=figure(2);
-        PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_sz,d_grid,a_grid,vfoptions.parallel);
+        PolicyValues=PolicyInd2Val_InfHorz(Policy,n_d,n_a,n_sz,d_grid,a_grid,vfoptions.parallel);
         if EconomyEnvironment==1 || EconomyEnvironment==3 || EconomyEnvironment==5
             plot(a_grid,PolicyValues(1,:,1,1)-a_grid',a_grid,PolicyValues(1,:,1,2)-a_grid',a_grid,PolicyValues(1,:,2,1)-a_grid',a_grid,PolicyValues(1,:,2,2)-a_grid')
         elseif EconomyEnvironment==2 || EconomyEnvironment==4 || EconomyEnvironment==6
@@ -219,27 +219,18 @@ for WhichSigma=1:2
         end
         
         %%
-        FnsToEvaluateParamNames={};
-        FnsToEvaluateParamNames(1).Names={'r_l','r_b','y','theta','sigma'};
-        FnsToEvaluate_Utility = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ReturnFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
-        FnsToEvaluateParamNames(2).Names={'r_l','r_b','y','theta','sigma'};
-        FnsToEvaluate_Consumption = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ConsFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
-        FnsToEvaluateParamNames(3).Names={};
-        FnsToEvaluate_AssetsBorrowed = @(aprime_val,a_val,s_val,z_val) -a_val*(a_val<0);
-        FnsToEvaluateParamNames(4).Names={};
-        FnsToEvaluate_AssetsStored = @(aprime_val,a_val,s_val,z_val) a_val;
-        FnsToEvaluateParamNames(5).Names={};
-        FnsToEvaluate_AssetsSaved = @(aprime_val,a_val,s_val,z_val) a_val*(a_val>0);
-        FnsToEvaluateParamNames(6).Names={'y','theta'};
-        FnsToEvaluate_Earnings = @(aprime_val,a_val,s_val,z_val,y,theta) y*((s_val==1)+theta*(s_val==2));
-        FnsToEvaluateParamNames(7).Names={'r_l','r_b','y','theta','sigma'};
-        FnsToEvaluate_Income = @(aprime_val,a_val,s_val,z_val,r_l,r_b,y,theta,sigma) Imrohoroglu1989_IncomeFn(aprime_val, a_val, s_val,z_val,r_l,r_b,y,theta,sigma);
-        FnsToEvaluate={FnsToEvaluate_Utility, FnsToEvaluate_Consumption, FnsToEvaluate_AssetsBorrowed, FnsToEvaluate_AssetsStored, FnsToEvaluate_AssetsSaved,FnsToEvaluate_Earnings,FnsToEvaluate_Income};
+        FnsToEvaluate.Utility = @(aprime,a,s,z,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ReturnFn(aprime, a, s,z,r_l,r_b,y,theta,sigma);
+        FnsToEvaluate.Consumption = @(aprime,a,s,z,r_l,r_b,y,theta,sigma) Imrohoroglu1989_ConsFn(aprime, a, s,z,r_l,r_b,y,theta,sigma);
+        FnsToEvaluate.AssetsBorrowed = @(aprime,a,s,z) -a*(a<0);
+        FnsToEvaluate.AssetsStored = @(aprime,a,s,z) a;
+        FnsToEvaluate.AssetsSaved = @(aprime,a,s,z) a*(a>0);
+        FnsToEvaluate.Earnings = @(aprime,a,s,z,y,theta) y*((s==1)+theta*(s==2));
+        FnsToEvaluate.Income = @(aprime,a,s,z,r_l,r_b,y,theta,sigma) Imrohoroglu1989_IncomeFn(aprime, a, s,z,r_l,r_b,y,theta,sigma);
         
-        AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_sz, d_grid, a_grid,sz_grid,vfoptions.parallel);
+        AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_sz, d_grid, a_grid,sz_grid,vfoptions.parallel);
         
-        AvgUtility(WhichSigma,EconomyEnvironment)=gather(AggVars(1));
-        AvgConsumption(WhichSigma,EconomyEnvironment)=gather(AggVars(2));
+        AvgUtility(WhichSigma,EconomyEnvironment)=gather(AggVars.Utility.Mean);
+        AvgConsumption(WhichSigma,EconomyEnvironment)=gather(AggVars.Consumption.Mean);
         
         temp=V.*StationaryDist;
 %         temp=reshape(temp,[length(temp),1]); %this line is probably unnecessary
@@ -247,9 +238,9 @@ for WhichSigma=1:2
                
         if WhichSigma==1
             if EconomyEnvironment==1
-                Table2(1:5,2)=gather([AggVars(3),AggVars(4),AggVars(5),AggVars(7),AggVars(2)]);%[SSvalue_AssetsBorrowed; SSvalue_AssetsStored; SSvalue_AssetsSaved; SSvalue_Income; SSvalue_Consumption];
+                Table2(1:5,2)=gather([AggVars.AssetsBorrowed.Mean,AggVars.AssetsStored.Mean,AggVars.AssetsSaved.Mean,AggVars.Income.Mean,AggVars.Consumption.Mean]);
             elseif EconomyEnvironment==3
-                Table2(1:5,1)=gather([AggVars(3),AggVars(4),AggVars(5),AggVars(7),AggVars(2)]);
+                Table2(1:5,1)=gather([AggVars.AssetsBorrowed.Mean,AggVars.AssetsStored.Mean,AggVars.AssetsSaved.Mean,AggVars.Income.Mean,AggVars.Consumption.Mean]);
             end
         end
         
