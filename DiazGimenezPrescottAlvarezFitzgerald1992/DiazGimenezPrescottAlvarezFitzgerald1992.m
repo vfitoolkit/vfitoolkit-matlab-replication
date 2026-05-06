@@ -90,8 +90,8 @@ n_d=length(N_grid);
 
 DiscountFactorParamNames={'beta'};
 
-ReturnFn=@(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment)... 
-    DiazGimenezPrescottAlvarezFitzgerald1992_ReturnFn(N_val,Aprime_val,Kprime_val, A_val,K_val, s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment);
+ReturnFn=@(N_val,Aprime_val,Kprime_val, A_val,K_val, s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment)... 
+    DiazGimenezPrescottAlvarezFitzgerald1992_ReturnFn(N_val,Aprime_val,Kprime_val, A_val,K_val, s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment);
 
 %% Solve the model
 tic;
@@ -132,41 +132,41 @@ if Experiment==0
     %functions you define here)
     FnsToEvaluateParamNames=struct();
     FnsToEvaluateParamNames(1).Names={};
-    FnsToEvaluateFn_1 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val) a2_val; % Capital (Housing Stock)
+    FnsToEvaluateFn_1 = @(d,a1prime,a2prime,a1,a2,s,z) a2; % Capital (Housing Stock)
     FnsToEvaluateParamNames(2).Names={'e'};
-    FnsToEvaluateFn_2 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,e) (1+e)*a1_val*(a1_val>0); % Deposits
+    FnsToEvaluateFn_2 = @(d,a1prime,a2prime,a1,a2,s,z,e) (1+e)*a1*(a1>0); % Deposits
     FnsToEvaluateParamNames(3).Names={'e'};
-    FnsToEvaluateFn_3 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,e) -(1+e)*a1_val*(a1_val<0); % Loans
+    FnsToEvaluateFn_3 = @(d,a1prime,a2prime,a1,a2,s,z,e) -(1+e)*a1*(a1<0); % Loans
     FnsToEvaluateParamNames(4).Names={'e'};
-    FnsToEvaluateFn_4 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,e) (1+e)*a1_val+a2_val; % Net Worth: here just as a double-check as should equal Capital+Deposits-Loans
+    FnsToEvaluateFn_4 = @(d,a1prime,a2prime,a1,a2,s,z,e) (1+e)*a1+a2; % Net Worth: here just as a double-check as should equal Capital+Deposits-Loans
     % Reserves: equals reserve requirement rho, multiplied by Deposits
     % Gov Debt: equals Deposits-Loans (by banks balance sheet)
     FnsToEvaluate={FnsToEvaluateFn_1, FnsToEvaluateFn_2, FnsToEvaluateFn_3, FnsToEvaluateFn_4};
-    AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
+    AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
     
     AggVars
     
     FnsToEvaluateParamNames=struct();
     FnsToEvaluateParamNames(1).Names={'phi'};
-    FnsToEvaluateFn_1 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi) a2prime_val*(a2prime_val-a2_val>0)-phi*a2_val*(a2prime_val-a2_val<0); % Investment (Housing investment)
+    FnsToEvaluateFn_1 = @(d,a1prime,a2prime,a1,a2,s,z,phi) a2prime*(a2prime-a2>0)-phi*a2*(a2prime-a2<0); % Investment (Housing investment)
     FnsToEvaluateParamNames(2).Names={'gamma'};
-    FnsToEvaluateFn_2 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,gamma) gamma*(a2_val==0); % Imputed rents of non-homeowners
+    FnsToEvaluateFn_2 = @(d,a1prime,a2prime,a1,a2,s,z,gamma) gamma*(a2==0); % Imputed rents of non-homeowners
     FnsToEvaluateParamNames(3).Names={'eta_d','eta_l'};
-    FnsToEvaluateFn_3 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,eta_d,eta_l) eta_d*a1_val*(a1_val>0)-eta_l*a1_val*(a1_val<0); % Banking Value Added
+    FnsToEvaluateFn_3 = @(d,a1prime,a2prime,a1,a2,s,z,eta_d,eta_l) eta_d*a1*(a1>0)-eta_l*a1*(a1<0); % Banking Value Added
     FnsToEvaluateParamNames(4).Names={'w1','w2'};
-    FnsToEvaluateFn_4 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,w1,w2) w1*(s_val==1)*d_val+w2*(s_val==2)*d_val; % Wage income
+    FnsToEvaluateFn_4 = @(d,a1prime,a2prime,a1,a2,s,z,w1,w2) w1*(s==1)*d+w2*(s==2)*d; % Wage income
     FnsToEvaluateParamNames(5).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
-    FnsToEvaluateFn_5 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
+    FnsToEvaluateFn_5 = @(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
     FnsToEvaluateParamNames(6).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
-    FnsToEvaluateFn_6 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) (s_val==1||s_val==2)*DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of workers
+    FnsToEvaluateFn_6 = @(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) (s==1||s==2)*DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of workers
     FnsToEvaluateParamNames(7).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
-    FnsToEvaluateFn_7 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) (s_val==1||s_val==2)*(a2_val>0)*DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
+    FnsToEvaluateFn_7 = @(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) (s==1||s==2)*(a2>0)*DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
     FnsToEvaluateParamNames(8).Names={};
-    FnsToEvaluateFn_8 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val) a2_val*(s_val==1||s_val==2); % Capital (Housing Stock) owned by workers
+    FnsToEvaluateFn_8 = @(d,a1prime,a2prime,a1,a2,s,z) a2*(s==1||s==2); % Capital (Housing Stock) owned by workers
     FnsToEvaluateParamNames(9).Names={'omega'};
-    FnsToEvaluateFn_9 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,omega) omega*(s_val==3); % Pension income
+    FnsToEvaluateFn_9 = @(d,a1prime,a2prime,a1,a2,s,z,omega) omega*(s==3); % Pension income
     FnsToEvaluate={FnsToEvaluateFn_1, FnsToEvaluateFn_2, FnsToEvaluateFn_3, FnsToEvaluateFn_4, FnsToEvaluateFn_5, FnsToEvaluateFn_6, FnsToEvaluateFn_7, FnsToEvaluateFn_8, FnsToEvaluateFn_9};
-    AggVars2=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
+    AggVars2=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
     
     AggVars2 %*(2.7/2.24)
     
@@ -280,13 +280,13 @@ end
 % FnsToEvaluateParamNames(3).Names={'w1','w2'};
 % FnsToEvaluateParamNames(4).Names={'phi','e','omega','w1','w2','w3','w4','theta','i_d','i_l','mew','alpha','alpha_k','gamma','tau','psi','delta_r','Experiment'};
 % FnsToEvaluateParamNames(5).Names={};
-% FnsToEvaluateFn_1 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi) a2prime_val*(a2prime_val-a2_val>0)-phi*a2_val*(a2prime_val-a2_val<0); % Investment (Housing investment)
-% FnsToEvaluateFn_2 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,eta_d,eta_l) eta_d*a1_val*(a1_val>0)-eta_l*a1_val*(a1_val<0); % Banking Value Added
-% FnsToEvaluateFn_3 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,w1,w2) w1*(s_val==1)*d_val+w2*(s_val==2)*d_val; % Wage income
-% FnsToEvaluateFn_4 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
-% FnsToEvaluateFn_5 = @(d_val,a1prime_val,a2prime_val,a1_val,a2_val,s_val,z_val) a2_val; % Capital (Housing Stock)
+% FnsToEvaluateFn_1 = @(d,a1prime,a2prime,a1,a2,s,z,phi) a2prime*(a2prime-a2>0)-phi*a2*(a2prime-a2<0); % Investment (Housing investment)
+% FnsToEvaluateFn_2 = @(d,a1prime,a2prime,a1,a2,s,z,eta_d,eta_l) eta_d*a1*(a1>0)-eta_l*a1*(a1<0); % Banking Value Added
+% FnsToEvaluateFn_3 = @(d,a1prime,a2prime,a1,a2,s,z,w1,w2) w1*(s==1)*d+w2*(s==2)*d; % Wage income
+% FnsToEvaluateFn_4 = @(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment) DiazGimenezPrescottAlvarezFitzgerald1992_ConsumptionFn(d,a1prime,a2prime,a1,a2,s,z,phi,e,omega,w1,w2,w3,w4,theta,i_d,i_l,mew,alpha,alpha_k,gamma,tau,psi,delta_r,Experiment); % Goods Consumption of Homeowners
+% FnsToEvaluateFn_5 = @(d,a1prime,a2prime,a1,a2,s,z) a2; % Capital (Housing Stock)
 % FnsToEvaluate={FnsToEvaluateFn_1, FnsToEvaluateFn_2, FnsToEvaluateFn_3, FnsToEvaluateFn_4, FnsToEvaluateFn_5};
-% AggVars3=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
+% AggVars3=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, FnsToEvaluateParamNames, n_d, n_a, n_sz, d_grid, a_grid,sz_grid, 2);
 % g=8*(AggVars3(3)-(AggVars3(4)+AggVars3(1)+AggVars3(2)+Params.mew*AggVars3(5)));
 % 
 % v2dist=Inf;
@@ -348,7 +348,7 @@ for ii=1:3
     
     V0=ones([n_a,n_sz]);
     vfoptions.policy_forceintegertype=1;
-    [V, Policy]=ValueFnIter_Case1(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
+    [V, Policy]=ValueFnIter_InfHorz(n_d,n_a,n_sz,d_grid,a_grid,sz_grid, pi_sz, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames,vfoptions); %
     
     StationaryDist=DiazGimenezPrescottAlvarezFitzgerald1992_StationaryDist(Policy,Params,n_d,n_a,n_s,n_z,n_sz,n_A_zero,pi_sz);
     
