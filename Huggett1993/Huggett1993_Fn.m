@@ -61,7 +61,7 @@ GEPriceParamNames={'q'};
 disp('Calculating price vector corresponding to the stationary eqm')
 % tic;
 heteroagentoptions.pgrid=p_grid;
-[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_Case1(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions);
+[p_eqm,p_eqm_index, MarketClearance]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, n_p, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, ReturnFnParamNames, FnsToEvaluateParamNames, GeneralEqmEqnParamNames, GEPriceParamNames,heteroagentoptions, simoptions);
 % findeqmtime=toc
 Params.q=p_eqm.q;
 save ./SavedOutput/Huggett1993Market.mat p_eqm p_eqm_index MarketClearance
@@ -73,15 +73,15 @@ Params.r=(1+(1-Params.q)/Params.q)^6-1;
 % %other things associated with the equilibrium
 p_eqm_index
 disp('Calculating various equilibrium objects')
-[~,Policy]=ValueFnIter_Case1(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames);
+[~,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, ReturnFnParamNames);
 
-% PolicyValues=PolicyInd2Val_Case1(Policy,n_d,n_a,n_s,d_grid,a_grid, Parallel);
+% PolicyValues=PolicyInd2Val_InfHorz(Policy,n_d,n_a,n_s,d_grid,a_grid, Parallel);
 
-StationaryDist=StationaryDist_Case1(Policy,n_d,n_a,n_z,pi_z, simoptions);
+StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
-AggVars=EvalFnOnAgentDist_AggVars_Case1(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid);
+AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, FnsToEvaluateParamNames,n_d, n_a, n_z, d_grid, a_grid,z_grid);
 
-eqm_MC=real(GeneralEqmConditions_Case1(AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
+eqm_MC=real(GeneralEqmConditions_InfHorz(AggVars,Params.q, GeneralEqmEqns, Params, GeneralEqmEqnParamNames));
 
 save ./SavedOutput/Huggett1993SSObjects.mat p_eqm Policy StationaryDist
 
