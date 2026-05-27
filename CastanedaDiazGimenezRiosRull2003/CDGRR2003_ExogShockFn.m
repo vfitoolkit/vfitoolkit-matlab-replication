@@ -9,6 +9,22 @@ function [z_grid,pi_z]=CDGRR2003_ExogShockFn(e2,e3,e4,J,p_eg,p_gg,phi1,phi2,Gamm
 % model. [Calibrating transition matrices can be tricky, because all the
 % elements must be between 0 and 1, and the row must sum to one.]
 
+% The grid is based on [1,e2,e3,e4]
+%
+% The transition probabilities between the working age productivities are
+% based on the sixteen Gamma_ee_11, Gamma_ee_12,...,Gamma_ee_14,Gamma_ee_21,...,Gamma_ee_24,Gamma_ee_31,...,Gamma_ee_34,Gamma_ee_41,...,Gamma_ee_44
+%
+% p_eg is probability of working-age to retired
+% p_gg is probability of remaining retired (so 1-p_gg is probability of dying)
+%
+% phi1 is the Earnings life cycle controller, reweights 'newborns' towards lower productivity so it can increase as they age
+% phi2 is the Intergenerational earnings persistence controller, reweights 'newborns' towards the diagonal (so they correlate with the 'deceased parent')
+
+% Note:
+% p_eg,p_gg,phi1,phi2 must all be 0 to 1
+% Gamma_ee_11, etc must all be positive
+% Each row of Gamma_ee must sum to one (you can see this used just below to construct Gamma_ee_11 and the other diagonal elements)
+
 %% First, build Gamma_ee
 Gamma_ee_11=1-Gamma_ee_12-Gamma_ee_13-Gamma_ee_14-p_eg;
 Gamma_ee_22=1-Gamma_ee_21-Gamma_ee_23-Gamma_ee_24-p_eg;
@@ -69,7 +85,7 @@ Gamma_re=Gamma_re./(sum(Gamma_re,2)*ones(1,J,'gpuArray')); %This is a normalizat
 
 z_grid=linspace(1,2*J,2*J)'; % age (& determines retirement)
 
-pi_z=[Gamma_ee.*(1-p_eg), diag(p_eg*ones(J,1,'gpuArray')); Gamma_re.*(1-p_gg), diag(p_gg*ones(J,1,'gpuArray'))];  %transmatix is (z,zprime) %dim N_s-by-N_s (s by sprime)
+pi_z=[Gamma_ee.*(1-p_eg), diag(p_eg*ones(J,1,'gpuArray')); Gamma_re.*(1-p_gg), diag(p_gg*ones(J,1,'gpuArray'))];  % transmatix is (z,zprime)
 
 
 

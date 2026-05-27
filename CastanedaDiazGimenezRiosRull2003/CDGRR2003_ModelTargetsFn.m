@@ -77,7 +77,7 @@ fprintf('TargetsFn: Total mass of stationary dist=%8.2f \n', sum(sum(StationaryD
 AggVars=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid,simoptions);
 
 % use of real() is a hack that could disguise errors, but I couldn't find why matlab was treating output as complex
-AggVarNames=fieldnames(AggVars); % Using GeneralEqmEqns as a struct presupposes using FnsToEvaluate (and hence AggVars) as a stuct
+AggVarNames=fieldnames(AggVars); % Using GeneralEqmEqns as a struct presupposes using FnsToEvaluate (and hence AggVars) as a struct
 for ii=1:length(AggVarNames)
     Params.(AggVarNames{ii})=AggVars.(AggVarNames{ii}).Mean;
 end

@@ -11,7 +11,7 @@
 % equilibrium using a discrete grid on interest rates, rather than just solving the fixed-point problem on interest rates directly by using optimization. 
 % This is done for robustness reasons; see my paper on BHA models.
 
-SkipGE=1 % Just a placeholder I am using to work on codes without rerunning the GE step.
+SkipGE=0 % Just a placeholder I am using to work on codes without rerunning the GE step.
 
 %% Set some basic variables
 
@@ -376,8 +376,10 @@ fclose(FID);
 
 
 
-
 %% Finished Actual Replication, now do some extra things
+% save ./SavedOutput/CDGRR2003precalib.mat
+load ./SavedOutput/CDGRR2003precalib.mat
+
 
 %% Comparison of Calibrations
 % The following shows how to use the VFI Toolkit to implement a calibration of this kind. However because the original weights assigned to each
@@ -505,14 +507,15 @@ TargetMoments.CustomModelStats.WealthTopSharesAsFraction=[0.1262,0.2395,0.2955];
 % Set some bounds on the parameters being calibrated, this is mostly about
 % the probabilities in Gamma as they must obviously all remain in 0 to 1
 % (although I restrict them more tightly than this).
-caliboptions.constrainAtoB={'beta','r',...
+caliboptions.constrainAtoB={'beta',...
     'Gamma_ee_12','Gamma_ee_13','Gamma_ee_14',...
     'Gamma_ee_21','Gamma_ee_23','Gamma_ee_24',...
     'Gamma_ee_31','Gamma_ee_32','Gamma_ee_34',...
     'Gamma_ee_41','Gamma_ee_42','Gamma_ee_43'};
 caliboptions.constrainAtoBlimits.beta=[0.8,0.99]; % Reasonable range for discount rate.
-caliboptions.constrainAtoBlimits.r=[0,0.15]; % Seems reasonable range for interest rate.
-% Note: The setup of Gamma, means we thing most of the mass should remain
+caliboptions.constrainAtoBlimits.beta=[0.8,0.99]; % Is a probability/fraction, so must be 0 to 1
+caliboptions.constrainAtoBlimits.beta=[0.8,0.99]; % Reasonable range for discount rate.
+% Note: The setup of Gamma, means we think most of the mass should remain
 % on the diagonal. So we will limit the off-diagonals to smaller probabilites.
 caliboptions.constrainAtoBlimits.Gamma_ee_12=[0,0.3]; % Must be between 0 & 1 as is a probability.
 caliboptions.constrainAtoBlimits.Gamma_ee_13=[0,0.2]; % Must be between 0 & 1 as is a probability.
@@ -526,6 +529,12 @@ caliboptions.constrainAtoBlimits.Gamma_ee_34=[0,0.3]; % Must be between 0 & 1 as
 caliboptions.constrainAtoBlimits.Gamma_ee_41=[0,0.3]; % Must be between 0 & 1 as is a probability.
 caliboptions.constrainAtoBlimits.Gamma_ee_42=[0,0.3]; % Must be between 0 & 1 as is a probability.
 caliboptions.constrainAtoBlimits.Gamma_ee_43=[0,0.3]; % Must be between 0 & 1 as is a probability.
+caliboptions.constrain0to1={'phi1','phi2'}; % These must both be 0 to 1 as they are 'probabilities' used to reweight the transition probabilities
+% We also want to constrain r, which is in GEPriceParamNames, not in
+% CalibPriceNames, so it has to be done via heteroagentoptions
+heteroagentoptions.constrainAtoB={'r'};
+heteroagentoptions.constrainAtoBlimits.r=[0,0.15]; % Seems reasonable range for interest rate.
+
 
 % By default the weights are as follows, I include them just so it is
 % obvious how you would overwrite them
