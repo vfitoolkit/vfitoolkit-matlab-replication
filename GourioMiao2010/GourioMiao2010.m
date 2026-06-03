@@ -7,11 +7,13 @@
 % GM2010 uses pure discretization with n_a=300 (they call it nK, line 64 of their divGEsetparametersBASELINE.m)
 % As far as I can tell my results differ mainly just because they are substantially more accurate (no big differences, but everything is a bit different)
 
-n_d=901; % Dividend
+n_d=0; % No d: dividend and new equity are pinned down by the firm budget constraint (see ReturnFn)
 n_a=701; % Capital
 n_z=10; % Productivity (GM2010 use 10 points for productivity)
 
 vfoptions.lowmemory=1;
+vfoptions.gridinterplayer=1;
+vfoptions.ngridinterp=20;
 
 % A line I needed for running on the Server
 addpath(genpath('./MatlabToolkits/'))
@@ -51,7 +53,7 @@ Params.firmbeta=1/(1+Params.r*(1-Params.tau_i)/(1-Params.tau_cg)); % 1/(1+r) but
 
 % Table 3
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table3.tex', 'w');
-fprintf(FID, 'Baseline Parametrization \\\\ \n');
+fprintf(FID, 'Baseline Parametrization \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcc} \n \\hline \n');
 fprintf(FID, '  & Parameter & Value  \\\\ \\hline \n');
 fprintf(FID, 'Corporate income tax & $\\tau_{corp}$ & %8.3f \\\\ \n', Params.tau_corp);
@@ -71,8 +73,7 @@ fclose(FID);
 
 
 %% Grids
-d_grid=8*linspace(0,1,n_d)';
-dgridspacing=d_grid(2)-d_grid(1);
+d_grid=[]; % No d (dividend is closed-form in (kprime,k,z), not a grid)
 
 % a_grid=5*(linspace(0.001^(1/3),1,n_a).^3)'; % The ^3 means most points are near zero, which is where the derivative of the value fn changes most.
 % GM2010 say they use minimum capital of 0.001
@@ -86,12 +87,6 @@ agridspacing=a_grid(2)-a_grid(1); % Use an evenly spaced grid so that this can b
 % a_grid=[linspace(1e-3,1.9,200),linspace(1.905,kstarhigh,n_a-200)]';
 % Note: cannot really use it with current codes as a_grid is not evenly spaced
 
-% Because of how the codes work I use agridspacing to determine the regime,
-% and thus it must be that dgridspacing<agridspacing
-if dgridspacing>=agridspacing
-    error('You have to have smaller grid spacing for dividends than capital (so increase n_d or decrease n_a)')
-end
-
 % GM2010 say they use Tauchen-Hussey. Nowadays this is a bad idea and you should use Farmer-Toda instead (it is much better).
 tauchenhusseyoptions.baseSigma=Params.sigma_z_e; % By default Tauchen-Hussey method uses the Floden improvement, this forces just the basic/original Tauchen-Hussey
 [z_grid,pi_z] = discretizeAR1_TauchenHussey(0,Params.rho_z,Params.sigma_z_e,n_z,tauchenhusseyoptions); 
@@ -102,7 +97,8 @@ z_grid=exp(z_grid);
 DiscountFactorParamNames={'firmbeta'};
 
 % Notice we use 'GourioMiao2010_ReturnFn'
-ReturnFn=@(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg) GourioMiao2010_ReturnFn(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg);
+ReturnFn=@(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)...
+    GourioMiao2010_ReturnFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg);
 
 %% Test value function calculation
 % vfoptions=struct(); % just use defaults
@@ -112,15 +108,24 @@ ReturnFn=@(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_
 % Policy is policy function (but as an index of k_grid, not the actual values)
 
 %% Test stationary distribution calculation
-simoptions=struct(); % just use defaults
+simoptions=struct();
+simoptions.gridinterplayer=1;
+simoptions.ngridinterp=20;
+simoptions_forGE=simoptions; % Clean copy for HeteroAgentStationaryEqm calls. Captured BEFORE any conditionalrestrictions / eval_valuefn fields get added later.
 StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
 %% Define aggregates and general eqm conditions
 % Create functions to be evaluated
-FnsToEvaluate.L = @(d,kprime,k,z,w,alpha_k,alpha_l) (w/(alpha_l*z*(k^alpha_k)))^(1/(alpha_l-1)); % labor (demanded by firms)
-FnsToEvaluate.Y = @(d,kprime,k,z,w,alpha_k,alpha_l) z*(k^alpha_k)*( ((w/(alpha_l*z*(k^alpha_k)))^(1/(alpha_l-1))) ^alpha_l); % Output (have to substitute for l)
-FnsToEvaluate.I = @(d,kprime,k,z,delta) kprime-(1-delta)*k; % Investment
-FnsToEvaluate.CapitalAdjCosts = @(d,kprime,k,z,delta,capadjconstant) (capadjconstant/2)*((kprime-(1-delta)*k)^2)/k; % Capital Adjustment Costs
+FnsToEvaluate.L = @(kprime,k,z,w,alpha_k,alpha_l) (alpha_l*z*k^alpha_k/w)^(1/(1-alpha_l)); % labor (after static FOC)
+FnsToEvaluate.Y = @(kprime,k,z,w,alpha_k,alpha_l) (z*k^alpha_k)^(1/(1-alpha_l)) * (alpha_l/w)^(alpha_l/(1-alpha_l)); % Output (l substituted out)
+FnsToEvaluate.I = @(kprime,k,z,delta) kprime-(1-delta)*k; % Investment
+FnsToEvaluate.CapitalAdjCosts = @(kprime,k,z,delta,capadjconstant) (capadjconstant/2)*((kprime-(1-delta)*k)^2)/k; % Capital Adjustment Costs
+
+% Subset used during GE search (only what GeneralEqmEqns.LaborMarket references). Avoids evaluating all of the table-only Fns on every fminsearch iteration.
+FnsToEvaluate_forGE.L = FnsToEvaluate.L;
+FnsToEvaluate_forGE.Y = FnsToEvaluate.Y;
+FnsToEvaluate_forGE.I = FnsToEvaluate.I;
+FnsToEvaluate_forGE.CapitalAdjCosts = FnsToEvaluate.CapitalAdjCosts;
 
 
 GEPriceParamNames={'w'}; % We don't need r because of the representative household means we can just clear the capital market analytically due to the (tax-adjusted version of) the usual requirement that r=1/beta-1. Namely, beta(r(1-tau_i)+1)=1 (eqn 20 of GM2010). (That is, we made sure our choices of beta, r and tau_i satisfy this equation, so we know that capital markets will clear)
@@ -142,7 +147,7 @@ GeneralEqmEqns.LaborMarket = @(L,Y,I,CapitalAdjCosts,hweight,tau_i,w) hweight*(Y
 heteroagentoptions.verbose=1; % verbose means that you want it to give you feedback on what is going on
 
 fprintf('Calculating price vector corresponding to the stationary general eqm \n')
-[p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+[p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate_forGE, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions_forGE, vfoptions);
 
 Params.w=p_eqm.w; % GM2010 find that general eqm wage is 1.26
 
@@ -159,59 +164,50 @@ StationaryDist=StationaryDist_InfHorz(Policy,n_d,n_a,n_z,pi_z, simoptions);
 
 
 fprintf('Check for trying to leave top of grid')
-[max(max(Policy(1,:,:))),n_d]
-[max(max(Policy(2,:,:))),n_a]
+[max(Policy(1,:,:),[],'all'),n_a] % Policy(1,:,:) is the kprime grid index (Policy(2,:,:) is the gridinterplayer sub-index)
 sum(sum(StationaryDist(end-10:end,:)))
-
-% % Look more closely at hitting top of d_grid
-% figure(1)
-% plot(1:1:n_a,Policy(1,:,1),1:1:n_a,Policy(1,:,n_z),1:1:n_a,n_d*ones(1,n_a))
-% legend('z1','zend','maxvalueofd')
 
 
 %% Create Table 4
 % Definition of 'earnings' is unclear from GM2010, guessing it is just profits?
-FnsToEvaluate.investmentrate = @(d,kprime,k,z,w,alpha_k,alpha_l,delta) (kprime-(1-delta)*k) / k; % investment/capital (this is what GM2010 define the investment rate as, I had originally thought it would be investment/output)
-FnsToEvaluate.investmentoutputratio = @(d,kprime,k,z,w,alpha_k,alpha_l,delta) (kprime-(1-delta)*k) / (z*(k^alpha_k)*( ((w/(alpha_l*z*(k^alpha_k)))^(1/(alpha_l-1))) ^alpha_l));
-FnsToEvaluate.D = @(d,kprime,k,z) d; % dividends
-FnsToEvaluate.S = @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi); % new equity: from firm budget constraint
-FnsToEvaluate.earnings = @(dividend,kprime,k,z,w,alpha_k,alpha_l) GourioMiao2010_EarningsFn(dividend,kprime,k,z,w,alpha_k,alpha_l); % earnings
-FnsToEvaluate.dividendearningsratio = @(dividend,kprime,k,z,w,alpha_k,alpha_l) dividend/GourioMiao2010_EarningsFn(dividend,kprime,k,z,w,alpha_k,alpha_l); % dividend/earnings
-FnsToEvaluate.earningscapitalratio = @(dividend,kprime,k,z,w,alpha_k,alpha_l) GourioMiao2010_EarningsFn(dividend,kprime,k,z,w,alpha_k,alpha_l)/k; % earnings/capital
-FnsToEvaluate.newequityinvestmentratio = @(dividend,kprime,k,z,w,alpha_k,alpha_l,capadjconstant,tau_corp,phi,delta) GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)/(kprime-(1-delta)*k); % new equity/investment
-FnsToEvaluate.K = @(d,kprime,k,z) k; % capital
-FnsToEvaluate.z = @(d,kprime,k,z) z; % needed for table 8
+FnsToEvaluate.investmentrate = @(kprime,k,z,delta) (kprime-(1-delta)*k) / k; % investment/capital (this is what GM2010 define the investment rate as, I had originally thought it would be investment/output)
+FnsToEvaluate.investmentoutputratio = @(kprime,k,z,w,alpha_k,alpha_l,delta) (kprime-(1-delta)*k) / ((z*k^alpha_k)^(1/(1-alpha_l)) * (alpha_l/w)^(alpha_l/(1-alpha_l)));
+FnsToEvaluate.D = @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) GourioMiao2010_DividendFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi); % dividends d=max(A,0)
+FnsToEvaluate.S = @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) GourioMiao2010_NewEquityFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi); % new equity s=max(-A,0)
+FnsToEvaluate.earnings = @(kprime,k,z,w,alpha_k,alpha_l) GourioMiao2010_EarningsFn(kprime,k,z,w,alpha_k,alpha_l); % earnings = (1-alpha_l)*y
+FnsToEvaluate.dividendearningsratio = @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) GourioMiao2010_DividendFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)/GourioMiao2010_EarningsFn(kprime,k,z,w,alpha_k,alpha_l); % dividend/earnings
+FnsToEvaluate.earningscapitalratio = @(kprime,k,z,w,alpha_k,alpha_l) GourioMiao2010_EarningsFn(kprime,k,z,w,alpha_k,alpha_l)/k; % earnings/capital
+FnsToEvaluate.newequityinvestmentratio = @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) GourioMiao2010_NewEquityFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)/(kprime-(1-delta)*k); % new equity/investment
+FnsToEvaluate.K = @(kprime,k,z) k; % capital
+FnsToEvaluate.z = @(kprime,k,z) z; % needed for table 8
 
 
 
 AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
-% Note: autocorrelations have to done manually from simulated panel data
-simoptions.simperiods=500; % Default is to do 1000 simulations, each with this many periods
-SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
-tempIrate=SimPanelValues.investmentrate(2:end,:);
-tempIratelag=SimPanelValues.investmentrate(1:end-1,:);
-autocorr_Irate=corr(tempIrate(:),tempIratelag(:)); % This is going to include some where it is last period of one firm correlated with first period of next firm, but given the length of the time series is 500 periods this should be negligible
-tempearningscapital=SimPanelValues.earningscapitalratio(2:end,:);
-tempearningscapitallag=SimPanelValues.earningscapitalratio(1:end-1,:);
-autocorr_earningscapital=corr(tempearningscapital(:),tempearningscapitallag(:)); % This is going to include some where it is last period of one firm correlated with first period of next firm, but given the length of the time series is 500 periods this should be negligible
+% Autocorrelations: exact from the agent distribution + (kprime,z) transition (no simulation)
+FnsToEvalAutoCorr.investmentrate=FnsToEvaluate.investmentrate;
+FnsToEvalAutoCorr.earningscapitalratio=FnsToEvaluate.earningscapitalratio;
+CorrTransProbs=EvalFnOnAgentDist_AutoCorrTransProbs_InfHorz(StationaryDist, Policy, FnsToEvalAutoCorr, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, simoptions);
+autocorr_Irate=CorrTransProbs.investmentrate.AutoCorrelation;
+autocorr_earningscapital=CorrTransProbs.earningscapitalratio.AutoCorrelation;
 
 % Table 4
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table4.tex', 'w');
-fprintf(FID, 'Aggregate and Cross-Sectional Moments in the Baseline Model \\\\ \n');
+fprintf(FID, 'Aggregate and Cross-Sectional Moments in the Baseline Model \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcc} \n \\hline \n');
 fprintf(FID, 'Variable & Data & Model  \\\\ \\hline \n');
 fprintf(FID, 'I/Y & - & %8.3f \\\\ \n', AllStats.I.Mean/AllStats.Y.Mean); % Note: we know in this will just equal Params.delta
 fprintf(FID, 'Investment rate (I/K) & - & %8.3f \\\\ \n', AllStats.I.Mean/AllStats.K.Mean); % Note: this is what GM2010 actually report as the investment rate (clear from their codes)
 fprintf(FID, 'Aggregate dividends/earnings & - & %8.3f \\\\ \n', AllStats.D.Mean/AllStats.earnings.Mean); % My impression is that GM2010 report the ratio of aggregates (rather than mean of ratios)
 fprintf(FID, 'Aggregate new equity/investment & - & %8.3f \\\\ \n', AllStats.S.Mean/AllStats.I.Mean);
-fprintf(FID, 'Volatility of investment rate & - & %8.3f \\\\ \n', AllStats.investmentrate.StdDev);
+fprintf(FID, 'Volatility of investment rate & - & %8.3f \\\\ \n', AllStats.investmentrate.StdDeviation);
 fprintf(FID, 'Autocorrelation of investment rate & - & %8.3f \\\\ \n', autocorr_Irate);
-fprintf(FID, 'Volatility of earnings/capital & - & %8.3f \\\\ \n', AllStats.earningscapitalratio.StdDev); % Guessing 'volatility' means std dev based on top of page 154 says "The model also underpredicts the standard deviation of the ratio of earnings to capital."
+fprintf(FID, 'Volatility of earnings/capital & - & %8.3f \\\\ \n', AllStats.earningscapitalratio.StdDeviation); % Guessing 'volatility' means std dev based on top of page 154 says "The model also underpredicts the standard deviation of the ratio of earnings to capital."
 fprintf(FID, 'Autocorrelation of earnings/capital & - & %8.3f \\\\ \n', autocorr_earningscapital);
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
-fprintf(FID, 'Notes: The autocorrelations are calculated at firm level (based on time series) and then averaged across firms. Volatility is calculated as standard deviation based on pooled observations. From codes of GM2010 it is clear that Investment Rate is actually reporting I/K, not I/Y. I include I/Y as reading the paper this is what I had initially assumed it to be. \n');
+fprintf(FID, 'Notes: Autocorrelations are computed exactly from the stationary distribution and the (kprime,z) transition (no simulation). Volatility is the cross-sectional standard deviation under the stationary distribution. From codes of GM2010 it is clear that Investment Rate is actually reporting I/K, not I/Y. I include I/Y as reading the paper this is what I had initially assumed it to be. \n');
 fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 % I looked through GM2010 codes, they define "Volatility of investment
@@ -231,37 +227,22 @@ fprintf('Check some things (just post Table 4 in codes) \n')
 % Just save the workspace
 save ./SavedOutput/GM2010.mat
 
-%% In baseline tau_d and tau_cg are not equal, so firms should not both issue new equity and pay dividends
-% Look at values of grid for s and dividends, make sure they seem to be mutally exclusive.
-
 %% Create Table 5
-% Things won't be precisely zero due to numerical approximation error, so we define a tolerance for what we consider zero
-% zerotol is space between grid points, following the original code of GM2010 (which also requires using an evenly spaced grid).
+% d=max(A,0) and s=max(-A,0) are closed-form in (kprime,k,z), so by
+% construction exactly one of d,s is strictly positive at any (kprime,k,z).
+% The liquidity-constrained regime corresponds to A ~ 0 (firms at the kink
+% in F where the per-period payoff transitions from F=A to F=((1-tau_d)/(1-tau_cg))*A).
+% With a discrete a_grid, optimal kprime sits on a grid point, so we use a
+% small tolerance for the liquidity-constrained regime.
 Params.zerotol=agridspacing; % Needs to be in Params so can pass it as a function input
-FnsToEvaluate.dividendregime2=@(dividend,kprime,k,z,zerotol) (dividend>zerotol); % 0.001 rather than zero to allow numerical error in exact zeros
-FnsToEvaluate.equityregime2= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)>zerotol); % new equity: from firm budget constraint
-FnsToEvaluate.neitherregime2= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (abs(dividend)<zerotol)*(abs(GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi))<zerotol);
-FnsToEvaluate.neitherregime_test1= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (abs(dividend)<zerotol);
-FnsToEvaluate.neitherregime_test2= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (dividend<zerotol);
-FnsToEvaluate.neitherregime_test3= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (abs(GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi))<zerotol);
-% Comment: I looked through GM2010 codes to see how they deal with this
-% issue (that dividends and new equity issuance will never exactly equal
-% zero due to numerical approximation error). They do something like what I
-% do here, but it is not exactly the same. You can find it in their "divGEstatdis" on lines 155-174.
-% They calculate what the dividend would be if there is no equity issuance
-% (if s=0), and call this divifszero. When divifszero<0 they call it
-% 'is_constrained', which is a firm not issuing dividends ("cannot finance
-% with internal funds an investment greater than the optimal one, i.e.
-% d=0"). When s policy is greater than divifszero-divifszero(k_policy one
-% grid point below), then they call this 'is_using_external' ("is really
-% using external fund; i.e. s>0"). They then define
-% constrained_notext=is_constraied-is_using_external (%d=0, s=0), and
-% is_using_external=1-is_constrained (%d>0).
+FnsToEvaluate.dividendregime2= @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_DividendFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)>zerotol);
+FnsToEvaluate.equityregime2=   @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_NewEquityFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)>zerotol);
+FnsToEvaluate.neitherregime2=  @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_DividendFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)<=zerotol)*(GourioMiao2010_NewEquityFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)<=zerotol);
 
 % Figure out the three financing regimes
-simoptions.conditionalrestrictions.dividendregime=@(dividend,kprime,k,z,zerotol) (dividend>zerotol);
-simoptions.conditionalrestrictions.equityregime= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)>zerotol); % new equity: from firm budget constraint
-simoptions.conditionalrestrictions.neitherregime= @(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (abs(dividend)<zerotol)*(abs(GourioMiao2010_NewEquityFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi))<zerotol);
+simoptions.conditionalrestrictions.dividendregime= @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_DividendFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)>zerotol);
+simoptions.conditionalrestrictions.equityregime=   @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_NewEquityFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)>zerotol);
+simoptions.conditionalrestrictions.neitherregime=  @(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,zerotol) (GourioMiao2010_DividendFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)<=zerotol)*(GourioMiao2010_NewEquityFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi)<=zerotol);
 
 % Recalculate all the statistics, but this time also doing so for the conditional restrictions
 AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
@@ -271,25 +252,26 @@ AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluat
 [AllStats.equityregime2.Mean,AllStats.neitherregime2.Mean,AllStats.dividendregime2.Mean]
 [AllStats.equityregime.RestrictedSampleMass,AllStats.neitherregime.RestrictedSampleMass,AllStats.dividendregime.RestrictedSampleMass]
 
-FnsToEvaluate2.firmvalue=@(dividend,kprime,k,z,V) V; % V has to refer to value function
+FnsToEvaluate2.firmvalue=@(kprime,k,z,V) V; % V has to refer to value function
 simoptions.eval_valuefn=V; % If you want to use the value function as part of a function to evaluate you must put the value function into this option...
 simoptions.eval_valuefnname={'V'}; % ...and the name you will use in the function to evaluate in this option
 % To use the value function in a function to evaluate, it must be the first
-% entry after z. And you must input it into EvalFnOnAgentDist_AggVars_InfHorz() in the position after simoptions.
-ValueOfFirmStats=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
+% entry after z. The function is read from simoptions.eval_valuefn — no separate positional argument.
+ValueOfFirmStats=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+simoptions=rmfield(simoptions,{'eval_valuefn','eval_valuefnname'}); % clean up so the field doesn't leak into later (non-V) calls
 
 
 % Table 5
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table5.tex', 'w');
-fprintf(FID, 'Distribution of Firms across Finance Regimes in the Baseline Model \\\\ \n');
+fprintf(FID, 'Distribution of Firms across Finance Regimes in the Baseline Model \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccc} \n \\hline \\hline \n');
 fprintf(FID, ' & Equity & Liquidity & Dividend  \\\\ \n');
 fprintf(FID, ' & issuance regine & constrained regime & distribution regime  \\\\ \\hline \n');
 fprintf(FID, 'Share of firms & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.RestrictedSampleMass, AllStats.neitherregime.RestrictedSampleMass, AllStats.dividendregime.RestrictedSampleMass); 
-fprintf(FID, 'Share of capital & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.K.Total/AllStats.K.Mean, AllStats.neitherregime.K.Total/AllStats.K.Mean, AllStats.dividendregime.K.Total/AllStats.K.Mean); 
-fprintf(FID, 'Share of investment & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.I.Total/AllStats.I.Mean, AllStats.neitherregime.I.Total/AllStats.I.Mean, AllStats.dividendregime.I.Total/AllStats.I.Mean); 
-fprintf(FID, 'Earnings-Capital Ratio & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.earnings.Total/AllStats.equityregime.K.Total, AllStats.neitherregime.earnings.Total/AllStats.neitherregime.K.Total, AllStats.dividendregime.earnings.Total/AllStats.dividendregime.K.Total);
-fprintf(FID, 'Investment-Capital Ratio & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.I.Total/AllStats.equityregime.K.Total, AllStats.neitherregime.I.Total/AllStats.neitherregime.K.Total, AllStats.dividendregime.I.Total/AllStats.dividendregime.K.Total);
+fprintf(FID, 'Share of capital & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.K.Mean*AllStats.equityregime.RestrictedSampleMass/AllStats.K.Mean, AllStats.neitherregime.K.Mean*AllStats.neitherregime.RestrictedSampleMass/AllStats.K.Mean, AllStats.dividendregime.K.Mean*AllStats.dividendregime.RestrictedSampleMass/AllStats.K.Mean); 
+fprintf(FID, 'Share of investment & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.I.Mean*AllStats.equityregime.RestrictedSampleMass/AllStats.I.Mean, AllStats.neitherregime.I.Mean*AllStats.neitherregime.RestrictedSampleMass/AllStats.I.Mean, AllStats.dividendregime.I.Mean*AllStats.dividendregime.RestrictedSampleMass/AllStats.I.Mean); 
+fprintf(FID, 'Earnings-Capital Ratio & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.earnings.Mean/AllStats.equityregime.K.Mean, AllStats.neitherregime.earnings.Mean/AllStats.neitherregime.K.Mean, AllStats.dividendregime.earnings.Mean/AllStats.dividendregime.K.Mean);
+fprintf(FID, 'Investment-Capital Ratio & %8.3f & %8.3f & %8.3f \\\\ \n', AllStats.equityregime.I.Mean/AllStats.equityregime.K.Mean, AllStats.neitherregime.I.Mean/AllStats.neitherregime.K.Mean, AllStats.dividendregime.I.Mean/AllStats.dividendregime.K.Mean);
 fprintf(FID, 'Average Tobins q & %8.3f & %8.3f & %8.3f \\\\ \n', ValueOfFirmStats.equityregime.firmvalue.Mean/AllStats.equityregime.K.Mean, ValueOfFirmStats.neitherregime.firmvalue.Mean/AllStats.neitherregime.K.Mean, ValueOfFirmStats.dividendregime.firmvalue.Mean/AllStats.dividendregime.K.Mean); % 'market value of a company divided by its assets replacement cost'
 fprintf(FID, '\\hline \n \\end{tabular*} \n');
 fprintf(FID, '\\begin{minipage}[t]{1.00\\textwidth}{\\baselineskip=.5\\baselineskip \\vspace{.3cm} \\footnotesize{ \n');
@@ -301,10 +283,22 @@ fclose(FID);
 Table8=zeros(4,3);
 Table8(1,1)=AllStats.Y.Mean/((AllStats.K.Mean^Params.alpha_k)*(AllStats.L.Mean^Params.alpha_l)); % TFP
 Table8(2,1)=AllStats.Y.Mean/AllStats.L.Mean; % TFP
-temp=corrcoef(log(SimPanelValues.K(:)),log(SimPanelValues.z(:)));
-Table8(3,1)=temp(1,2);
-temp=regress(log(SimPanelValues.K(:)),[ones(numel(SimPanelValues.z),1),log(SimPanelValues.z(:))]);
-Table8(4,1)=temp(2); % temp(1) is the constant coeff
+% Cross-section correlation and regression slope of log(k) on log(z), computed
+% exactly from the stationary distribution (no simulation). The OLS slope of
+% log(k) on log(z) equals Cov(log k, log z) / Var(log z).
+FnsToEvalCorr.logK = @(kprime,k,z) log(k);
+FnsToEvalCorr.logz = @(kprime,k,z) log(z);
+CrossSectionCorr=EvalFnOnAgentDist_CrossSectionCovarCorr_InfHorz(StationaryDist, Policy, FnsToEvalCorr, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
+Table8(3,1)=CrossSectionCorr.logK.CorrelationWith.logz;
+Table8(4,1)=CrossSectionCorr.logK.CovarianceWith.logz / CrossSectionCorr.logz.StdDeviation^2;
+% --- Previously, the same two moments were computed from a simulated panel
+%     (left here commented out for reference / cross-check):
+% simoptions.simperiods=500;
+% SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
+% temp=corrcoef(log(SimPanelValues.K(:)),log(SimPanelValues.z(:)));
+% Table8(3,1)=temp(1,2);
+% temp=regress(log(SimPanelValues.K(:)),[ones(numel(SimPanelValues.z),1),log(SimPanelValues.z(:))]);
+% Table8(4,1)=temp(2); % temp(1) is the constant coeff
 
 % Store some things for Table 10
 Table10prereform=zeros(1,4);
@@ -349,7 +343,7 @@ for Reform=1:4
     Params.firmbeta=1/(1+Params.r*(1-Params.tau_i)/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
 
     % Solve the tax reform
-    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate_forGE, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions_forGE, vfoptions);
     Params.w=p_eqm.w;
 
     [V,Policy]=ValueFnIter_InfHorz(n_d,n_a,n_z,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
@@ -366,7 +360,9 @@ for Reform=1:4
 
     % Use value function to calculate the value of firm (value of firm is just the value function)
     simoptions.eval_valuefn=V; % If you want to use the value function as part of a function to evaluate you must put the value function into this option...
-    ValueOfFirmStats=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,[],simoptions);
+    simoptions.eval_valuefnname={'V'};
+    ValueOfFirmStats=EvalFnOnAgentDist_AggVars_InfHorz(StationaryDist, Policy, FnsToEvaluate2,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+    simoptions=rmfield(simoptions,{'eval_valuefn','eval_valuefnname'}); % clean up so the field doesn't leak into later (non-V) calls
 
     
     Table6(1,Reform)=(AllStats.K.Mean-AllStats_baseline.K.Mean)/AllStats_baseline.K.Mean;
@@ -383,25 +379,30 @@ for Reform=1:4
         % Just a repeat of what we did for Table 5 (note AllStats already includes the conditional restrictions)
         Table7=zeros(6,3);
         Table7(1,:)=[AllStats.equityregime.RestrictedSampleMass, AllStats.neitherregime.RestrictedSampleMass, AllStats.dividendregime.RestrictedSampleMass];
-        Table7(2,:)=[AllStats.equityregime.K.Total/AllStats.K.Mean, AllStats.neitherregime.K.Total/AllStats.K.Mean, AllStats.dividendregime.K.Total/AllStats.K.Mean];
-        Table7(3,:)=[AllStats.equityregime.I.Total/AllStats.I.Mean, AllStats.neitherregime.I.Total/AllStats.I.Mean, AllStats.dividendregime.I.Total/AllStats.I.Mean];
-        Table7(4,:)=[AllStats.equityregime.earnings.Total/AllStats.equityregime.K.Total, AllStats.neitherregime.earnings.Total/AllStats.neitherregime.K.Total, AllStats.dividendregime.earnings.Total/AllStats.dividendregime.K.Total];
-        Table7(5,:)=[AllStats.equityregime.I.Total/AllStats.equityregime.K.Total, AllStats.neitherregime.I.Total/AllStats.neitherregime.K.Total, AllStats.dividendregime.I.Total/AllStats.dividendregime.K.Total];
+        Table7(2,:)=[AllStats.equityregime.K.Mean*AllStats.equityregime.RestrictedSampleMass/AllStats.K.Mean, AllStats.neitherregime.K.Mean*AllStats.neitherregime.RestrictedSampleMass/AllStats.K.Mean, AllStats.dividendregime.K.Mean*AllStats.dividendregime.RestrictedSampleMass/AllStats.K.Mean];
+        Table7(3,:)=[AllStats.equityregime.I.Mean*AllStats.equityregime.RestrictedSampleMass/AllStats.I.Mean, AllStats.neitherregime.I.Mean*AllStats.neitherregime.RestrictedSampleMass/AllStats.I.Mean, AllStats.dividendregime.I.Mean*AllStats.dividendregime.RestrictedSampleMass/AllStats.I.Mean];
+        Table7(4,:)=[AllStats.equityregime.earnings.Mean/AllStats.equityregime.K.Mean, AllStats.neitherregime.earnings.Mean/AllStats.neitherregime.K.Mean, AllStats.dividendregime.earnings.Mean/AllStats.dividendregime.K.Mean];
+        Table7(5,:)=[AllStats.equityregime.I.Mean/AllStats.equityregime.K.Mean, AllStats.neitherregime.I.Mean/AllStats.neitherregime.K.Mean, AllStats.dividendregime.I.Mean/AllStats.dividendregime.K.Mean];
         Table7(6,:)=[ValueOfFirmStats.equityregime.firmvalue.Mean/AllStats.equityregime.K.Mean, ValueOfFirmStats.neitherregime.firmvalue.Mean/AllStats.neitherregime.K.Mean, ValueOfFirmStats.dividendregime.firmvalue.Mean/AllStats.dividendregime.K.Mean];
     end
     
     % Create what we need for Table 8
     if Reform==1 || Reform==2
-        SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
-
         Table8(1,Reform+1)=AllStats.Y.Mean/((AllStats.K.Mean^Params.alpha_k)*(AllStats.L.Mean^Params.alpha_l)); % TFP
         Table8(2,Reform+1)=AllStats.Y.Mean/AllStats.L.Mean; % TFP
-        temp=corrcoef(log(SimPanelValues.K(:)),log(SimPanelValues.z(:)));
-        Table8(3,Reform+1)=temp(1,2);
-        temp=regress(log(SimPanelValues.K(:)),[ones(numel(SimPanelValues.z),1),log(SimPanelValues.z(:))]);
-        Table8(4,Reform+1)=temp(2); % temp(1) is the constant coeff
-
-    end    
+        % Cross-section correlation and regression slope of log(k) on log(z),
+        % computed exactly from the stationary distribution (no simulation).
+        CrossSectionCorr=EvalFnOnAgentDist_CrossSectionCovarCorr_InfHorz(StationaryDist, Policy, FnsToEvalCorr, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, simoptions);
+        Table8(3,Reform+1)=CrossSectionCorr.logK.CorrelationWith.logz;
+        Table8(4,Reform+1)=CrossSectionCorr.logK.CovarianceWith.logz / CrossSectionCorr.logz.StdDeviation^2;
+        % --- Previously, the same two moments were computed from a simulated panel
+        %     (left here commented out for reference / cross-check):
+        % SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
+        % temp=corrcoef(log(SimPanelValues.K(:)),log(SimPanelValues.z(:)));
+        % Table8(3,Reform+1)=temp(1,2);
+        % temp=regress(log(SimPanelValues.K(:)),[ones(numel(SimPanelValues.z),1),log(SimPanelValues.z(:))]);
+        % Table8(4,Reform+1)=temp(2);
+    end
     
     % Some things that I just check to make sure everything seems to be doing what it should
     OtherParametrizeationsCheck(Reform).Params=Params;
@@ -419,7 +420,7 @@ save ./SavedOutput/GM2010_v2.mat
 
 
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table6.tex', 'w');
-fprintf(FID, 'Aggregate Effects of the Dividend Tax Reform in the Baseline Model \\\\ \n');
+fprintf(FID, 'Aggregate Effects of the Dividend Tax Reform in the Baseline Model \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcccc} \n \\hline \\hline \n');
 fprintf(FID, ' & $\\tau_d=0.22$ & $\\tau_d=0.20$ & $\\tau_d=0.15$ & $\\tau_d=0$ \\\\ \n');
 fprintf(FID, ' & $\\tau_{cg}=0.20$ & $\\tau_{cg}=0.20$ & $\\tau_{cg}=0.15$ & $\\tau_{cg}=0$ \\\\ \\hline \n');
@@ -439,7 +440,7 @@ fclose(FID);
 
 
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table7.tex', 'w');
-fprintf(FID, 'Distribution of Firms across Finance Regimes for $\\tau_d=0.22$ and $\\tau_{cg}=0.20$ \\\\ \n');
+fprintf(FID, 'Distribution of Firms across Finance Regimes for $\\tau_d=0.22$ and $\\tau_{cg}=0.20$ \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccc} \n \\hline \\hline \n');
 fprintf(FID, ' & Equity & Liquidity & Dividend  \\\\ \n');
 fprintf(FID, ' & issuance regine & constrained regime & distribution regime  \\\\ \\hline \n');
@@ -456,7 +457,7 @@ fprintf(FID, '}} \\end{minipage}');
 fclose(FID);
 
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table8.tex', 'w');
-fprintf(FID, 'Productivty Gains from the Dividend Tax Cut \\\\ \n');
+fprintf(FID, 'Productivty Gains from the Dividend Tax Cut \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccc} \n \\hline \\hline \n');
 fprintf(FID, ' & $\\tau_d=0.25$ & $\\tau_d=0.22$ & $\\tau_d=0.20$  \\\\ \\hline \n');
 fprintf(FID, 'Percentage change in TFP & %8.3f & %8.3f & %8.3f \\\\ \n', 100*Table8(1,:)); 
@@ -506,7 +507,7 @@ for otherparametrizations=1:7
     end
 
     % Original economy for table 9
-    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm,~,GeneralEqmCondn]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate_forGE, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions_forGE, vfoptions);
 
     Params.w=p_eqm.w;
 
@@ -515,20 +516,16 @@ for otherparametrizations=1:7
 
     AllStats=EvalFnOnAgentDist_AllStats_InfHorz(StationaryDist, Policy, FnsToEvaluate,Params, [],n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
 
-    % Note: autocorrelations have to done manually from simulated panel data
-    SimPanelValues=SimPanelValues_InfHorz(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,d_grid,a_grid,z_grid,pi_z, simoptions);
-    tempIrate=SimPanelValues.investmentrate(2:end,:);
-    tempIratelag=SimPanelValues.investmentrate(1:end-1,:);
-    autocorr_Irate=corr(tempIrate(:),tempIratelag(:));  % This is going to include some where it is last period of one firm correlated with first period of next firm, but given the length of the time series is 500 periods this should be negligible
-    tempearningscapital=SimPanelValues.earningscapitalratio(2:end,:);
-    tempearningscapitallag=SimPanelValues.earningscapitalratio(1:end-1,:);
-    autocorr_earningscapital=corr(tempearningscapital(:),tempearningscapitallag(:)); % This is going to include some where it is last period of one firm correlated with first period of next firm, but given the length of the time series is 500 periods this should be negligible
+    % Autocorrelations: exact from the agent distribution + (kprime,z) transition (no simulation)
+    CorrTransProbs=EvalFnOnAgentDist_AutoCorrTransProbs_InfHorz(StationaryDist, Policy, FnsToEvalAutoCorr, Params, [], n_d, n_a, n_z, d_grid, a_grid, z_grid, pi_z, simoptions);
+    autocorr_Irate=CorrTransProbs.investmentrate.AutoCorrelation;
+    autocorr_earningscapital=CorrTransProbs.earningscapitalratio.AutoCorrelation;
 
     Table9(1,otherparametrizations)=AllStats.D.Mean/AllStats.earnings.Mean;
     Table9(2,otherparametrizations)=AllStats.S.Mean/AllStats.I.Mean;
-    Table9(3,otherparametrizations)=AllStats.investmentrate.StdDev;
+    Table9(3,otherparametrizations)=AllStats.investmentrate.StdDeviation;
     Table9(4,otherparametrizations)=autocorr_Irate;
-    Table9(5,otherparametrizations)=AllStats.earningscapitalratio.StdDev;
+    Table9(5,otherparametrizations)=AllStats.earningscapitalratio.StdDeviation;
     Table9(6,otherparametrizations)=autocorr_earningscapital;
 
     % The main tax reform for Table 10
@@ -537,7 +534,7 @@ for otherparametrizations=1:7
     % Changing tau_cg means we have to recalculate firmbeta
     Params.firmbeta=1/(1+Params.r*(1-Params.tau_i)/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
     
-    [p_eqm2,~,GeneralEqmCondn2]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+    [p_eqm2,~,GeneralEqmCondn2]=HeteroAgentStationaryEqm_InfHorz(n_d, n_a, n_z, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate_forGE, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames,heteroagentoptions, simoptions_forGE, vfoptions);
     
     Params.w=p_eqm2.w;
     
@@ -565,7 +562,7 @@ save ./SavedOutput/GM2010_v3.mat
 
 % Table 9
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table9.tex', 'w');
-fprintf(FID, 'Moments for Different Parameter Values \\\\ \n');
+fprintf(FID, 'Moments for Different Parameter Values \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lccccccc} \n \\hline \n');
 fprintf(FID, ' & Data & $\\rho=0.65$ & $\\rho=0.85$ & $\\sigma=0.1$ & $\\sigma=0.3$ & $\\phi=0.5$ & $\\phi=1.5$  \\\\ \\hline \n');
 fprintf(FID, 'Aggregate dividends/earnings & - & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f & %8.3f \\\\ \n', Table9(1,2:end)); % My impression is that GM2010 report the ratio of aggregates (rather than mean of ratios)
@@ -579,7 +576,7 @@ fclose(FID);
 
 % Table 10
 FID = fopen('./SavedOutput/LatexInputs/GourioMiao2010_Table10.tex', 'w');
-fprintf(FID, 'Moments for Different Parameter Values \\\\ \n');
+fprintf(FID, 'Moments for Different Parameter Values \n');
 fprintf(FID, '\\begin{tabular*}{1.00\\textwidth}{@{\\extracolsep{\\fill}}lcccc} \n \\hline \n');
 fprintf(FID, ' & Capital & Output & Consumption & Wage  \\\\ \\hline \n');
 fprintf(FID, 'Baseline & %8.2f & %8.2f & %8.2f & %8.2f \\\\ \n', 100*Table10(1,:));

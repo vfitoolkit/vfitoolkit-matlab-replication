@@ -1,64 +1,33 @@
-function F=GourioMiao2010_ReturnFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)
-% Whether we set it up so that dividends or equity issuance is the decision
-% variable is unimportant, here I use dividends as the decision variable.
+function F=GourioMiao2010_ReturnFn(kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)
+% Decision variable: kprime only. Dividend d and new equity s are not
+% separate decisions. Given (kprime,k,z) the firm budget constraint together
+% with the constraints d>=0 and s>=0 (no share repurchases) pin them down.
+% Let A be the dividend the firm would pay if it issued no equity. If A>=0
+% the firm pays d=A and sets s=0; otherwise it pays d=0 and issues s=-A.
+% The (1-tau_d)/(1-tau_cg) tax wedge favouring retained funds together with
+% d>=0 force this choice.
+%
+% Static labor FOC implies w*l = alpha_l*y, so profit = (1-alpha_l)*y with l
+% substituted out. This holds for any w (in or out of GE) since it follows
+% from the firm's static optimization, not from labor-market clearing.
+%
+% Note: r is not needed here, it enters the firm via the discount factor.
 
-% Note: r is not needed anywhere here, it is relevant to the firm via the discount factor.
+% Output and profit (l substituted out using the static labor FOC)
+y=(z*k^alpha_k)^(1/(1-alpha_l)) * (alpha_l/w)^(alpha_l/(1-alpha_l));
+profit=(1-alpha_l)*y;
 
-F=-Inf;
-
-% We can solve a static problem to get the firm labor input
-l=(w/(alpha_l*z*(k^alpha_k)))^(1/(alpha_l-1)); % This is just w=Marg. Prod. Labor, but rearranged
-
-% Output
-y=z*(k^alpha_k)*(l^alpha_l);
-
-% Profit
-profit=y-w*l; % =(1-alpha_l)*y in the general eqm
-
-% Investment
+% Investment and capital-adjustment costs
 invest=kprime-(1-delta)*k;
+capitaladjcost=(capadjconstant/2)*(invest^2)/k;
 
-% Capital-adjustment costs
-capitaladjcost=(capadjconstant/2)*(invest^2)/k; 
-
-% Taxable corporate income
+% Taxable corporate income (-delta*k is investment expensing; phi=0 in GM2010 baseline)
 T=profit-delta*k-phi*capitaladjcost;
-% -delta*k: investment expensing
-% phi is the fraction of capitaladjcost that can be deducted from corporate taxes (=0 in GM2010 baseline)
 
-% Firms financing constraint gives the new equity issuance
-s=dividend+invest+capitaladjcost-(profit-tau_corp*T);
+% A = dividend if s=0, equivalently -(equity issuance) if d=0
+A=profit-tau_corp*T-invest-capitaladjcost;
 
-% Firms per-period objective
-if s>=0 % enforce that 'no share repurchases allowed'
-    F=((1-tau_d)/(1-tau_cg))*dividend-s;
-end
-
-% Note: dividend payments cannot be negative is enforced by the grid on dividends which has a minimum value of zero
-
-
-%% GM2010:
-% Define XXX=(z*Anorm*k^alpha)^(1/(1-nu)) *(1-nu) 
-% Define YYY=delta*tauc*k+(1-delta)*k-kprime-capitaladjcost -fc*notchangingcap + slowerbar 
-% where Anorm=1
-%       slowerbar=0, is the repurchase constraint, s<slowerbar
-%       nu=0.65, is the exponent on labor in production function (what I call alpha_l)
-%
-% divifszero = (1-tauc)*XXX*(nu/wage)^(nu/(1-nu)) + YYY;
-%    is the dividend if s>=slowerbar; it is also minus the s required if the dividend is zero.
-%
-% They then define 
-
-% Note: XXX*(nu/wage)^(nu/(1-nu)) is y*(1-nu) which is profits (assumes general eqm wage).
-% Hence divifszero is essentially my line 30, impose s=0 and then you get
-% dividend=(1-tauc)*profit+((1-delta)*k-kprime)+capitaladjcost-tau_corp(-delta*k-phi*capitaladjcost),
-% which is now like their (1-tauc)*XXX*stuff+YYY
-
-% Pretty sure they mess this up as it is only true that you can do the
-% profits=(1-nu)*y trick if wage is the optimal wage. But it is typically
-% not the optimal wage.
-% However, in general eqm it should not matter as long as they have the correct w.
-
-% They find a general eqm wage of 1.2606
+% F = ((1-tau_d)/(1-tau_cg))*d - s, with optimal (d,s) = (max(A,0), max(-A,0))
+F=((1-tau_d)/(1-tau_cg))*max(A,0) + min(A,0);
 
 end
