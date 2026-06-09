@@ -1,0 +1,141 @@
+\section{Resolving the health-transition aggregation ambiguity}\label{app:health-test}
+
+This appendix documents the test that pins down which aggregation reading the LW2015 authors used for the three exogenous health shocks. It is self-contained: it duplicates the basic setup of Section~\ref{sec:health} so a reader of just the appendix has the full picture.
+
+\subsection*{The ambiguity}
+
+LW2015 specifies that each period an agent receives up to three exogenous health shocks: a small negative shock ($\Delta h = -1$) with probability $p^l$, a large negative shock ($\Delta h = -3$) with probability $p^h$, and a positive shock ($\Delta h = +1$) with probability $p^i$. The values in LW2015 Table~4:
+\begin{itemize}
+ \item $p^l$ rises linearly in age from $0.10$ at age 25 to $0.60$ at age 80, with the override $p^l_1 = 0.60$ (constant) at $h=1$.
+ \item $p^h = 0.01$ (constant), with override $p^h_1 = 0.10$ at $h=1$.
+ \item $p^i$ falls linearly in age, from $\{0.6, 0.7, 0.8, 0.9, 1.0\}$ for $h \in \{1, 2, 3, 4, 5\}$ at age 25 to $0.50$ at age 80.
+\end{itemize}
+
+The paper does not say how these three probabilities combine into a one-step Markov transition $\pi_z(h \to h')$. At several $(h, \text{age})$ cells the three sum to more than $1$ (young $h=4$: $0.10 + 0.01 + 0.90 = 1.01$; old $h=4$: $0.60 + 0.01 + 0.50 = 1.11$; old $h=3$: $0.60 + 0.01 + 0.50 = 1.11$), so they cannot all be probabilities of mutually exclusive events. Some aggregation rule is needed, and two natural ones disagree.
+
+\subsection*{The two readings}
+
+\textbf{Reading A --- independent Bernoulli draws.} The three shocks fire \emph{independently} each period. The joint distribution has $2^3 = 8$ outcomes; the realized $\Delta h$ is the algebraic sum of the firing shock values; the new health state is the cap $h' = \max(1, \min(5, h + \Delta h))$. This requires no clipping and uses every published parameter at face value, but produces a denser transition matrix where many $h \to h'$ pairs have positive mass (e.g.\ at $h=5$, mass can land at $h' \in \{5, 4, 3, 2, 1\}$ depending on which combinations fire).
+
+\textbf{Reading B --- mutually exclusive with renormalization.} At most one of the three events fires per period; the residual $1 - p^l - p^h - p^i$ is ``stay''. When the three probabilities sum to more than $1$, they are rescaled to sum to $1$ (no ``stay'' mass remaining) and $p^i$ is forced to $0$ at $h=5$ (where the positive shock is a no-op at the upper cap anyway). This gives a sparser matrix --- at most three off-diagonal entries per row, plus a ``stay'' entry --- but discards stay-mass at exactly the ages where the paper's numbers overshoot.
+
+\subsection*{The test}
+
+LW2015 p.132 reports the model's own health distribution at real age 70:
+\begin{quote}
+\emph{``the model predicts that at age 70: 42\% of people are in very good health, 25\% in good health, 13\% in fair health, 9\% in bad health and 11\% in very bad health.''}
+\end{quote}
+Health is purely exogenous in LW2015 --- no mortality, no behavioral feedback into the Markov chain. So the unconditional health distribution at any age is just the initial distribution $P(h=5)=1$ at $j=1$ propagated through $\pi_z$ for 45 periods, independent of disutility, wages, taxes, benefits, and DI uptake. The (42, 25, 13, 9, 11) target therefore depends only on $\pi_z$.
+
+We build $\pi_z$ under each reading, propagate, and compare. The full standalone test:
+
+\begin{small}
+\begin{verbatim}
+% Standalone test discriminating Reading A vs Reading B for the
+% LW2015 health-transition Markov chain.
+
+clear
+
+agejshifter=24;
+N_j=80-agejshifter;
+p_pos_young=[0.6 0.7 0.8 0.9 1.0];
+
+%% Build pi_z_J under Reading A (independent Bernoulli draws)
+pi_z_J_A=zeros(5,5,N_j);
+for jj=1:N_j
+    age_frac=(jj-1)/(N_j-1);
+    for hh=1:5
+        if hh==1
+            p_l=0.6; p_h=0.1;
+        else
+            p_l=0.1+0.5*age_frac;
+            p_h=0.01;
+        end
+        p_i=p_pos_young(hh)-(p_pos_young(hh)-0.5)*age_frac;
+
+        for s_l=0:1
+            for s_h=0:1
+                for s_i=0:1
+                    prob=(s_l*p_l+(1-s_l)*(1-p_l)) ...
+                        *(s_h*p_h+(1-s_h)*(1-p_h)) ...
+                        *(s_i*p_i+(1-s_i)*(1-p_i));
+                    delta=-s_l-3*s_h+s_i;
+                    h_prime=max(1,min(5,hh+delta));
+                    pi_z_J_A(hh,h_prime,jj)=pi_z_J_A(hh,h_prime,jj)+prob;
+                end
+            end
+        end
+    end
+end
+
+%% Build pi_z_J under Reading B (mutually exclusive + renormalize on overshoot)
+pi_z_J_B=zeros(5,5,N_j);
+for jj=1:N_j
+    age_frac=(jj-1)/(N_j-1);
+    p_l_normal=0.1+0.5*age_frac;
+    p_h_normal=0.01;
+    for hh=1:5
+        if hh==1
+            p_neg_lo=0;
+            p_neg_hi=0;
+            p_pos=p_pos_young(1)-(p_pos_young(1)-0.5)*age_frac;
+        elseif hh==5
+            p_neg_lo=p_l_normal;
+            p_neg_hi=p_h_normal;
+            p_pos=0;
+        else
+            p_neg_lo=p_l_normal;
+            p_neg_hi=p_h_normal;
+            p_pos=p_pos_young(hh)-(p_pos_young(hh)-0.5)*age_frac;
+        end
+        total=p_neg_lo+p_neg_hi+p_pos;
+        if total>1
+            p_neg_lo=p_neg_lo/total;
+            p_neg_hi=p_neg_hi/total;
+            p_pos=p_pos/total;
+            p_stay=0;
+        else
+            p_stay=1-total;
+        end
+        pi_z_J_B(hh,max(1,hh-1),jj)=pi_z_J_B(hh,max(1,hh-1),jj)+p_neg_lo;
+        pi_z_J_B(hh,max(1,hh-3),jj)=pi_z_J_B(hh,max(1,hh-3),jj)+p_neg_hi;
+        pi_z_J_B(hh,min(5,hh+1),jj)=pi_z_J_B(hh,min(5,hh+1),jj)+p_pos;
+        pi_z_J_B(hh,hh,jj)=pi_z_J_B(hh,hh,jj)+p_stay;
+    end
+end
+
+%% Propagate initial dist P(h=5)=1 from j=1 to age 70 (j=46) under each
+h_dist_A=[0 0 0 0 1];
+h_dist_B=[0 0 0 0 1];
+for jj=1:45
+    h_dist_A=h_dist_A*pi_z_J_A(:,:,jj);
+    h_dist_B=h_dist_B*pi_z_J_B(:,:,jj);
+end
+
+%% Report -- order matches paper p.132 (very good, good, fair, bad, very bad)
+A_pct=100*[h_dist_A(5) h_dist_A(4) h_dist_A(3) h_dist_A(2) h_dist_A(1)];
+B_pct=100*[h_dist_B(5) h_dist_B(4) h_dist_B(3) h_dist_B(2) h_dist_B(1)];
+target=[42 25 13 9 11];
+
+fprintf('\n');
+fprintf('Health distribution at real age 70 (model age j=46), %%\n');
+fprintf('Order: very good | good | fair | bad | very bad\n\n');
+fprintf('  LW2015 p.132 reported model:  %5.1f  %5.1f  %5.1f  %5.1f  %5.1f\n',target);
+fprintf('  Reading A (indep draws):      %5.1f  %5.1f  %5.1f  %5.1f  %5.1f\n',A_pct);
+fprintf('  Reading B (mut excl + renorm):%5.1f  %5.1f  %5.1f  %5.1f  %5.1f\n\n',B_pct);
+
+fprintf('  L1 distance to paper:  Reading A = %.1f,  Reading B = %.1f\n', ...
+    sum(abs(A_pct-target)), sum(abs(B_pct-target)));
+fprintf('\n');
+\end{verbatim}
+\end{small}
+
+\subsection*{Results}
+
+Running the script gives an L1 distance to the paper's reported (42, 25, 13, 9, 11) of $\mathbf{5.6}$ percentage points under Reading A and $\mathbf{34.4}$ under Reading B. Reading A is six times closer to LW2015's own reported model output than Reading B. The gap is large enough that no calibration adjustment elsewhere in the model (b values, wage profile, lump-sum transfer) can plausibly compensate --- those don't affect the health Markov chain at all, since health is exogenous.
+
+\subsection*{Conclusion}
+
+Reading A is what we adopt in \verb|LuanWallenius2015.m|. It is the simplest aggregation rule consistent with LW2015's own reported numbers, matches the LW2016 sequel code's stylistic preference for independent-event products in [Compusswe/Version 1/lch1.m], and uses every Table~4 parameter at face value without renormalization. Reading B is decisively ruled out by the paper's own age-70 distribution.
+
+One caveat: this test confirms that the LW2015 authors used \emph{some} rule producing the same age-70 distribution as Reading A; a third rule could in principle exist that yields identical numerics. But Reading A is the simplest such rule, so it is what we use.
