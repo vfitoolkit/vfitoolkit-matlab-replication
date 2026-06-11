@@ -1,0 +1,180 @@
+\documentclass[11pt,fleqn]{article}
+
+\textheight=23.3cm
+\textwidth=16.5cm
+\topmargin=-15mm
+\oddsidemargin=0cm
+
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{pdflscape}
+\usepackage[sidewaysfigure]{rotating}
+\usepackage{natbib}
+\usepackage{multirow}
+\newcommand{\tb}{\hspace*{3mm}}
+\bibpunct{(}{)}{;}{a}{,}{,}
+\parskip=3mm
+\parindent=5mm
+\baselineskip=17pt
+
+\usepackage{amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\usepackage{hyperref}
+\hypersetup{
+  pdftitle={Laun \& Wallenius (2015) - A Life Cycle Model of Health and Retirement: Swedish Pension Reform},
+  pdfauthor={Robert Kirkby},
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  breaklinks=true
+}
+
+
+\begin{document}
+
+\title{Laun \& Wallenius (2015) - A Life Cycle Model of Health and Retirement: Swedish Pension Reform}
+\author{Robert Kirkby}
+\date{\today}
+\maketitle
+
+A full replication of \citet{LaunWallenius2015}, hereafter LW2015. This document describes how the model is expressed in terms of the VFI Toolkit. For the full description, motivation, and policy results see the original paper.
+
+We solve all of LW2015's main model exercises: the pre-reform Swedish economy as baseline; the regular-only pension reform in both partial and general equilibrium; the full reform (regular pension + occupational pension reform) in both partial and general equilibrium; and the per-PType welfare consumption-equivalent variation. The wage profiles use the original LINDA regression coefficients, which are not published anywhere we can locate but were kindly sent to us by Tobias Laun via email.\footnote{A related paper \citet{LaunWallenius2016} for which code is available only has two profiles instead of LW2015's four, so we could not have borrowed from there.}
+
+We do not reperform the calibration exercise as the targets are not available, and recreating them would require access to the Swedish LINDA database.
+
+
+\section{Model description}
+The model is a discrete-time, finite-horizon, life-cycle model with permanent skill heterogeneity. Agents are model period $j=0,\ldots,55$ (real-life age $25,\ldots,80$) and live with certainty to age $80$. Each period an agent of skill type $s$ chooses consumption $c$, asset holdings $k'$, indivisible labor $l\in\{0,\bar l\}$ (with $\bar l = 1/3$), and -- subject to eligibility -- whether to apply for disability insurance (DI) and/or claim the regular pension benefit (PB). The agent receives an exogenous shock to health, $h\in\{1,\ldots,5\}$ (very bad through very good).
+
+Preferences are
+\begin{equation*}
+ \sum_{j=0}^{55} \beta^{\,j} \left[ \ln c_{j,s} - b(h_{j,s})\, l_{j,s} + h_{j,s} \right],
+\end{equation*}
+with $\beta=1/(1+r)$ and disutility from work $b(h)$ decreasing in health (LW2015 Table 4). The budget constraint is
+\begin{equation*}
+ (1+\tau_c)\, c + k' = (1+r)\, k + (1-\tau_y(Y))\, Y - \tau_{ss}\, w_{j,s} l + T,
+\end{equation*}
+with $Y = w_{j,s} l + \text{DI} + \text{PB} + \text{OPB}$ total taxable income, $\tau_y(\cdot)$ the two-bracket progressive labor income tax (rates $\tau_{\ell1}, \tau_{\ell2}$), $\tau_{ss}$ the social-security payroll tax, $\tau_c$ the consumption tax, and $T$ a lump-sum transfer. Wages $w_{j,s}$ are deterministic, varying by model period $j$ and skill type $s$.
+
+Health evolves as a Markov chain with age- and health-dependent transition probabilities (LW2015 Table 4): each period a small negative shock ($h\to h-1$), a large negative shock ($h\to h-3$), or a positive shock ($h\to h+1$) may hit. When the three event probabilities sum to more than one we renormalize them to sum to one (no ``stay'' mass); otherwise the residual is ``stay''.
+
+DI claiming requires health $\le 2$ (bad/very bad); once on DI the agent stops working and remains on DI until age 65, at which point DI converts to PB. PB can be claimed from age 61. Both claim events are absorbing. Occupational pension (OPB) is collected from age 65 if the agent is still working at 65, or earlier (from age 55) if the agent has already stopped working --- with a 0.6\%-per-month actuarial reduction for early-claiming white-collar workers, and a 0.7\%-per-month bonus for delayed claiming by blue-collar workers up to age 70.
+
+\subsection*{Wage profiles}\label{sec:wage-profiles}
+LW2015 estimates four age-earnings profiles $w_{j,s}$ from the LINDA panel (1968--1997) by regressing annual earnings on age, age$^2$, and individual fixed effects. The four profiles correspond to the four PTypes: non-college / college $\times$ low / high productivity, where low/high within each education group is the fixed-effect dimension. The paper plots them in Fig.~1 but does not print the regression coefficients in the article, in the SSE working-paper version (WP 741), in any online appendix, or in any replication package we can locate. The Journal of Public Economics article has no supplementary materials section; the authors' homepages have no replication code; the working-paper directory has no appendix.
+
+We tried to borrow from the LW2016 sequel paper's replication code (RED Computer Codes 14-161 at \texttt{https://red-files-public.s3.amazonaws.com/codes/14/14-161/CodeZIP.zip}), which \emph{does} publish a regressed wage profile in \texttt{Compusswe/Version~1/w.m}. That file would have solved the problem if it had four profiles. It has only two: high school and college. The within-education fixed-effect dimension --- the part that distinguishes LW2015's NCL from NCH, and CL from CH --- was dropped in the LW2016 model, which redirects the heterogeneity into a separate disutility-of-work preference parameter. Using the LW2016 two profiles for our four PTypes (by either duplicating each across its low/high split, or fabricating a productivity premium) would either lose half the heterogeneity or require a number not in any source. We chose not to do either.
+
+The original regression coefficients were instead kindly sent to us by Tobias Laun via email. The wage profile is
+\[ w_{e,p}(\text{age}) = c_{2,e}\,\text{age}^2 + c_{1,e}\,\text{age} + c_{0,e} + f_{p,e}, \]
+in BA/year, with education $e \in \{\text{NC}, \text{C}\}$ and within-education productivity fixed effect $p \in \{\text{low}, \text{high}\}$, where
+\[ c_0 = (-1.155144,\; 3.79198), \qquad c_1 = (0.2441215,\; 0.1907433), \qquad c_2 = (-0.0022909,\; -0.0019136), \]
+\[ f = \begin{pmatrix} -1.537212 & -2.682249 \\ \phantom{-}1.093206 & \phantom{-}2.419877 \end{pmatrix} \quad \text{(rows: low, high; columns: NC, C).} \]
+In the code the fixed effect is folded into a per-type constant, so the four PTypes carry scalars \texttt{Params.w\_c0\_i} $= c_{0,e} + f_{p,e}$, \texttt{Params.w\_c1\_i} $= c_{1,e}$, and \texttt{Params.w\_c2\_i} $= c_{2,e}$.
+
+
+
+
+\section{Replication Results}
+Figures \ref{fig:LW2015_fig1} was based on data in the original paper; we here show the model version, computed from the regression coefficients sent to us by Tobias Laun via email.
+
+Figures \ref{fig:LW2015_fig3} and \ref{fig:LW2015_fig4} show the resulting model employment rate and DI incidence by 5-year age bin -- the model line of LW2015 Figures 3 and 4. The data line is not reproduced here.
+
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=140mm]{../SavedOutput/Graphs/LaunWallenius2015_Figure1.png}
+\caption{LW2015 Fig 1: life cycle earnings of Swedish males by skill type. Quadratic age-earnings profiles using the original LINDA regression coefficients, sent to us by Tobias Laun via email; see Section~\ref{sec:wage-profiles}.}
+\label{fig:LW2015_fig1}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalMaterials/LW2015_OriginalTable4.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/LaunWallenius2015_Table4.tex}
+\end{tabular}
+\end{center}
+\caption{Table 4 of LW2015 (top), replication generated from the driver's \texttt{Params} struct (bottom).}
+\label{tab:LW2015_table4}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalMaterials/LW2015_OriginalFigure3.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/LaunWallenius2015_Figure3.png}
+\end{tabular}
+\end{center}
+\caption{Figure 3 of LW2015 (top), replication (bottom): fraction employed by age bin, pre-reform calibration. Pop-weighted across PTypes; averaged within each 5-year bin. We only reproduce the model line.}
+\label{fig:LW2015_fig3}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalMaterials/LW2015_OriginalFigure4.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/LaunWallenius2015_Figure4.png}
+\end{tabular}
+\end{center}
+\caption{Figure 4 of LW2015 (top), replication (bottom): disability-insurance incidence by age bin, pre-reform calibration. Pop-weighted across PTypes; averaged within each 5-year bin. We only reproduce the model line.}
+\label{fig:LW2015_fig4}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalMaterials/LW2015_OriginalFigure5.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/LaunWallenius2015_Figure5.png}
+\end{tabular}
+\end{center}
+\caption{Figure 5 of LW2015 (top), replication (bottom): pre-reform vs full post-reform employment by age bin. Both lines under general equilibrium ($T$ solved as a price). This is the headline labor-supply result driving the +2.5-year retirement-age increase.}
+\label{fig:LW2015_fig5}
+\end{figure}
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=140mm]{../SavedOutput/Graphs/LaunWallenius2015_Figure5b.png}
+\caption{Our addition (not in LW2015): partial-equilibrium vs general-equilibrium employment under the regular-only pension reform. The two post-reform lines differ because of the GE $T$-adjustment.}
+\label{fig:LW2015_fig5b}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalMaterials/LW2015_OriginalFigure6.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/LaunWallenius2015_Figure6.png}
+\end{tabular}
+\end{center}
+\caption{Figure 6 of LW2015 (top), replication (bottom): the role of the occupational-pension reform. Three lines: pre-reform; full reform (regular pension + occupational); and regular pension reform only (occupational pension held at pre-reform formula). Both post-reform lines under GE. The full-reform line sits below the regular-only line at 65--69 and 70--74 because the new DC occupational scheme is more generous, partly offsetting the work incentive from the NDC regular pension.}
+\label{fig:LW2015_fig6}
+\end{figure}
+
+\newpage
+
+\bibliographystyle{plainnat}
+\bibliography{LaunWallenius}
+
+\appendix
+
+\input{Appendix/ModelImplementation}
+
+\input{Appendix/HealthTransitionTest}
+
+\end{document}
