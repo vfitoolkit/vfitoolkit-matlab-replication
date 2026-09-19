@@ -1,0 +1,1009 @@
+\documentclass[11pt,fleqn]{article}
+
+\textheight=23.3cm
+\textwidth=16.5cm
+\topmargin=-15mm
+\oddsidemargin=0cm
+
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{booktabs}
+\usepackage{natbib}
+\bibpunct{(}{)}{;}{a}{,}{,}
+\parskip=3mm
+\parindent=5mm
+\baselineskip=17pt
+
+\begin{document}
+
+\title{Replication of Guvenen (2007) --- Learning Your Earning: Are Labor Income Shocks Really Very Persistent? \\ \vspace{2mm} \normalsize{Using the VFI Toolkit [Most of code and text is written by Claude]}}
+\author{Robert Kirkby}
+\date{\today}
+\maketitle
+
+\section{Overview}
+
+\cite{Guvenen2007} compares two views of labor income risk in a life-cycle consumption--savings model: the RIP process (Restricted Income Profiles: very persistent shocks, common income profiles) and the HIP process (Heterogeneous Income Profiles: modestly persistent shocks, individual-specific profiles about which agents learn gradually in Bayesian fashion). The paper's headline finding is that the HIP model with slow learning about the individual income growth rate $\beta^i$ matches the rise, and the non-concave shape, of within-cohort consumption inequality over the life cycle.
+
+Guvenen's case rests on three facts about the life-cycle profile of the cross-sectional variance of log consumption. First, its \emph{rise} over the working life. Second, its \emph{shape}: non-concave (convex up to about age~55), not the concave profile a persistent-shock process would produce. Third, that \emph{college} graduates have not only steeper income profiles than high-school graduates but steeper \emph{consumption} profiles too. On the first we part company with Guvenen on the number itself: he targets a rise of about $0.2$ log points, but the modern consensus --- his own later work included --- puts it near $0.1$ (Appendix~\ref{app:data} discusses why, chiefly the equivalence scale and the longer sample).
+
+The three facts do not speak with one voice. The \emph{rise} is largely uninformative for RIP versus HIP --- both processes can be calibrated to reproduce it. The \emph{shape} and the \emph{education} fact both favour HIP over RIP: RIP delivers a concave profile and only a small education difference in consumption growth, whereas HIP delivers the non-concavity and a much larger education gap closer to the data. But \emph{learning} --- the paper's distinctive ingredient --- fares poorly across the three. Against the modern $\approx0.1$ rise, more learning makes HIP fit \emph{worse} (it pushes the rise up, away from the data); it helps only a little on the shape (learning is what bends the profile away from concavity); and it is essentially irrelevant to the education fact, which is driven by profile \emph{heterogeneity} --- known or learned --- rather than by the learning dynamics. The upshot: Guvenen is right to prefer HIP to RIP, but the evidence for \emph{learning} specifically is at best inconclusive and at worst against it mattering at all --- and \cite{GuvenenSmith2014}, estimating the model directly in a follow-up, indeed find the learning/uncertainty component to be largely irrelevant.
+
+Notice what this means. In terms of solving the models of \cite{Guvenen2007} we agree with the findings on all major points (and disagree on one minor point about the RIP slope for high-school education). The conclusion that learning is not important is because \cite{Guvenen2007} uses as a target the empirical result that the age-slope of var$(\log c)$ is $0.2$, taken from the CEX consumption data of \cite{KruegerPerri2006} following \cite{DeatonPaxson1994}, while all the evidence since (including \cite{GuvenenSmith2014}) concludes that the slope is $0.1$, and we redo the data work on the CEX data (which is what \cite{KruegerPerri2006} use) and find that the $0.2$ is very fragile: it comes out nearer $0.1$ if we use a longer time period, or if we just use a different consumption-equivalence scale. We therefore use $0.1$ to judge the model results, and based on this we find that the HIP model without learning is actually better than the HIP model with learning (on slope, learning vaguely helps non-concavity).
+
+One caveat up front. \cite{Guvenen2007} includes learning about $\alpha^i$, the intercept of the income process, but finds it to be quantitatively unimportant (footnote~4; his solved model carries five continuous state variables, one of which is the belief about $\alpha^i$). We therefore omit learning about $\alpha^i$---while keeping $\alpha^i$ itself, as a known individual type---to simplify the model solution (it removes one belief dimension; see Appendix~\ref{app:alpha}). This means we are not, strictly, performing a true replication; but in doing so we are in line with the follow-up literature, which drops the learning about $\alpha^i$ on the same grounds (\citealp[footnote~6]{GuvenenSmith2014}).
+
+This document is the baseline replication of the HIP model with learning (plus the RIP model as a check). It records the model, the recast of learning as an exogenous Markov chain, the calibration, and the results; the implementation details --- the numerical solution, the resolution of two places where the paper's printed numbers are internally inconsistent, the treatment of $\alpha^i$ as known, and the motivation for the grid sizes (which turn out to be the crux of discretizing a learning model) --- are set out in the appendices.
+
+\section{Model}
+
+Individuals enter the labor market at age 25, retire at 65, and die at 95 (40 working
+periods, 31 retirement periods, no mortality risk). Preferences are time-separable
+CRRA with risk aversion 2; there is a risk-free bond with price $P^b=0.96$
+($r=1/P^b-1\approx 4.16\%$). Log income of individual $i$ with experience $t$
+(experience is 0 at age 25) is
+\begin{equation}
+  y^i_t = \alpha^i + \beta^i t + z^i_t + \varepsilon^i_t, \qquad
+  z^i_t = \rho z^i_{t-1} + \eta^i_t, \quad z^i_0=0,
+\end{equation}
+with $(\alpha^i,\beta^i)$ jointly normal across individuals. In retirement the
+individual receives a constant pension $\bar{\Phi}\,\Phi(\tilde{Y}_T)\,\bar{Y}_T$ where
+$\tilde{Y}_T=Y_T/\bar{Y}_T$ is income in the final working year relative to its
+cross-sectional mean, $\Phi$ is the piecewise-linear replacement rule of
+\cite{StoreslettenTelmerYaron2004}, and $\bar{\Phi}=1/1.40$. Borrowing is allowed up to
+a common age-specific natural limit computed under public prior information with income
+innovations truncated at 2.5 standard deviations. The discount factor $\delta$ is
+calibrated, separately for each model variant, to an aggregate wealth--income ratio of 4.
+
+The agent knows their own fixed effect $\alpha^i$, but must \emph{learn} their individual
+growth rate $\beta^i$; they also cannot separately observe the persistent component
+$z^i_t$ and the transitory shock $\varepsilon^i_t$. They see only total income $y^i_t$
+and update beliefs about $(\beta^i, z^i_t)$ by the Kalman filter. (Treating $\alpha^i$ as
+known follows Guvenen, whose footnote~4 reports that intercept uncertainty is
+unimportant; the justification, the mechanics, and how one would instead learn about
+$\alpha^i$ are all in Appendix~\ref{app:alpha}.) The posterior covariance $P_{t|t}$, the
+gain $K_t$, and the innovation variance $F_{v,t}$ of the belief state
+$\hat{S}_{t|t-1}=(\hat\beta_{t|t-1},\hat z_{t|t-1})'$ are deterministic and common across
+agents, so they are precomputed once (\texttt{KalmanSetup.m}). The prior is
+$\hat{\beta}_{1|0}=\bar{\beta}+k^i$ with $\mathrm{var}(k)=\lambda\sigma^2_\beta$
+(fraction $\lambda$ of the growth-rate variance is known at entry), and prior variance of
+$z_1$ equal to $\sigma^2_\eta$ (since $z_0=0$).
+
+\medskip\noindent\textbf{The household's problem.} Let $j$ index age and $t=j-25$
+experience. The individual state is assets $a$, the predictive belief
+$(\hat\beta,\hat z)$, and the current income innovation $v$; the fixed effect $\alpha^i$
+indexes a type. In working life realized log income is the innovations representation
+$\log y = \alpha^i + \hat\beta\,t + \hat z + v$ (i.e.\ $y=H_t'\hat S_{t|t-1}+v$,
+$H_t'=(1,t,1)$, with $\hat\alpha=\alpha^i$ known), and the value function solves
+\begin{equation}
+V_j\big(a,\hat\beta,\hat z,v;\alpha^i\big)=\max_{a'\ge \bar{W}_j}\;
+\frac{c^{1-\gamma}}{1-\gamma}
++\delta\,\mathbb{E}\big[\,V_{j+1}(a',\hat\beta',\hat z',v';\alpha^i)\,\big|\,\hat\beta,\hat z,v\,\big],
+\qquad c=a-P^b a'+y,
+\end{equation}
+with $\gamma=2$. Conditional on $v$ the belief update is \emph{deterministic},
+$(\hat\beta',\hat z')' = F\big(\hat S_{t|t-1}+K_t v\big)$ with $F=\mathrm{diag}(1,\rho)$
+(the growth-rate belief is a martingale, $\hat z$ mean-reverts), and the next innovation
+is drawn $v'\sim N(0,F_{v,t+1})$ independently, so the expectation runs over $v'$ alone.
+In retirement ($j\ge 65$) income $y$ is replaced by the fixed pension
+$\bar\Phi\,\Phi(\tilde Y_T)\bar Y_T$ and the belief state is frozen. This is solved as a
+finite-horizon dynamic program whose exogenous state is the belief--innovation process
+$(\hat\beta,\hat z,v)$; Section~3 shows why that process is a legitimate exogenous Markov
+chain and why no panel simulation is needed.
+
+\section{Recasting learning as an exogenous Markov chain}
+
+Under the agent's subjective measure the income innovations
+$v_t = y_t - H_t'\hat{S}_{t|t-1}$, $H_t'=(1,t,1)$, are iid $N(0,F_{v,t})$, and
+\begin{equation}
+  \hat{S}_{t+1|t} = F\big(\hat{S}_{t|t-1} + K_t v_t\big), \qquad
+  y_t = H_t'\hat{S}_{t|t-1} + v_t .
+\end{equation}
+So (beliefs, innovation) form an exogenous Markov process: degenerate (deterministic)
+in the belief block, iid in the innovation block, age-dependent through $K_t$ and
+$F_{v,t}$. Realized income is a function of the state, $y_t=H_t'\hat{S}+v$.
+
+Because agents are correct Bayesians with the correct prior, the innovations are iid
+$N(0,F_{v,t})$ under the \emph{objective} measure as well (we verify this by Monte
+Carlo in \texttt{tests/test\_kalman.m}: 100{,}000 simulated agents, innovation
+variances and autocorrelations, and the cross-sectional variance identity
+$\mathrm{var}(\hat{\beta}_{t|t})=\sigma^2_\beta-P_{\beta\beta,t|t}$, all to sampling
+precision). Hence the objective population law of the (beliefs, innovation) system
+coincides with the subjective transition used inside the value function, and
+iterating the cross-sectional distribution age-by-age under the same chain
+(\texttt{StationaryDist\_FHorz\_Case1}) delivers the exact population cross-section.
+No panel simulation is needed for any per-age cross-sectional moment. (Objects
+conditioning on \emph{true} $(\alpha^i,\beta^i)$---such as the paper's footnote-24
+wealth/growth-rate correlation---would require off-grid simulation; we do not compute
+these.)
+
+\textbf{What ``learning'' does and does not add.} That the subjective and objective laws
+coincide has a useful corollary: the solved problem contains \emph{no informational
+friction}. In the innovations representation the agent knows the current state
+$(\hat\beta,\hat z,v)$---these are their own beliefs---so the household's problem is
+identical to a \emph{full-information} life-cycle problem in which income follows the
+state-space process $\log y=\alpha^i+\hat\beta_{t|t-1}\,t+\hat z_{t|t-1}+v$, with
+$\hat\beta_{t|t-1}$ a martingale (a random walk with the age-declining Kalman gain
+$K^\beta_t$) and $v$ iid. There is no hidden state and no filtering left inside the
+optimisation. Two things follow. First, the age profile of earnings inequality has
+\emph{nothing} to do with learning: $\mathrm{var}(\log y)$ is a property of the income
+process alone (HIP fans out as $\sigma^2_\beta t^2$, RIP linearly toward
+$\sigma^2_\eta/(1-\rho^2)$), which is why our Table~\ref{tab:table2} is analytic and needs
+no solved model. Second, the \emph{consumption} results can equivalently be read as the
+optimal full-information response to this particular \emph{perceived} income process,
+rather than as a behavioural learning wedge---so in that sense the HIP-versus-RIP contrast
+is a difference in effective income processes.
+
+This last point must be stated carefully, because the equivalence is easy to over-read.
+Consumption does \emph{not} distinguish ``learning'' from its own innovations
+representation: those are the same model, with identical earnings \emph{and} identical
+consumption (that is the content of the previous paragraph). What consumption distinguishes
+is the HIP transition from the RIP transition---two genuinely different chains. Each is
+estimated to fit the earnings data, and earnings data alone struggle to separate them (a
+slowly-learned fixed slope $\beta^i t$ and a persistent AR(1) shock both make earnings
+growth autocorrelated and both fan the cross-section out); yet full-information optimisation
+against the two chains yields different consumption-inequality profiles---exactly the
+contrast between Figures~\ref{fig:varlogc_rip} and~\ref{fig:varlogc_hip}, computed with the
+identical solver and differing only in $\pi_z$. The economic reason is that the two
+processes split realised earnings growth differently into a part the agent can forecast and
+a part that is genuine news, and consumption responds only to the news: under RIP the
+persistent shocks are unforecastable, whereas under HIP part of the growth is a fixed trait
+that is gradually \emph{learned} and hence increasingly forecast. So consumption identifies
+which income \emph{process} generated the data---the transition, not a learning-versus-no-%
+learning wedge---and Bayesian learning is the microfoundation that gives the HIP process its
+particular, slowly-resolving forecastable component (whose fingerprint is the gradual,
+non-concave rise in $\mathrm{var}(\log c)$ and the age-declining gain $K^\beta_t$). Full
+information on $\beta^i$, by contrast, would fan consumption out at once at age~25---a
+different process again, and the wrong shape.
+
+\section{Calibration}
+
+All parameters are taken from Table~1 of \cite{Guvenen2007} (the all-individuals rows);
+Table~\ref{tab:calib} collects the values we use. Two of the paper's printed numbers are
+internally inconsistent --- the $\alpha$--$\beta$ covariance $\sigma_{\alpha\beta}$ and a
+one-period offset in the Table~2 formula --- and we adopt corrected values. The evidence
+for the $\sigma_{\alpha\beta}$ correction, and two further reconciliations of the paper's
+Section~I.D numbers, are set out in Appendix~\ref{app:calib}.
+
+\begin{table}[htbp]
+\centering
+\caption{Calibrated parameters}
+\label{tab:calib}
+\begin{tabular}{llcc}
+\toprule
+ & & HIP & RIP \\
+\midrule
+Persistence of AR(1) shock        & $\rho$                  & $0.821$   & $0.988$ \\
+Variance of fixed effect          & $\sigma^2_\alpha$       & $0.022$   & $0.058$ \\
+Variance of growth rate           & $\sigma^2_\beta$        & $0.00038$ & --- \\
+Cov.\ of fixed effect, growth rate& $\sigma_{\alpha\beta}$  & $-0.00045$& --- \\
+Variance of persistent shock      & $\sigma^2_\eta$         & $0.029$   & $0.015$ \\
+Variance of transitory shock      & $\sigma^2_\varepsilon$  & $0.047$   & $0.061$ \\
+\midrule
+Mean fixed effect                 & $\bar\alpha$            & \multicolumn{2}{c}{$1.5$ (normalization)} \\
+Mean growth rate                  & $\bar\beta$             & \multicolumn{2}{c}{$0.009$} \\
+Known fraction of growth variance & $\lambda^*$             & \multicolumn{2}{c}{$0.62$} \\
+Risk aversion                     & $\gamma$                & \multicolumn{2}{c}{$2$} \\
+Bond price ($r=1/P^b-1\approx4.16\%$) & $P^b$               & \multicolumn{2}{c}{$0.96$} \\
+Discount factor                   & $\delta$                & \multicolumn{2}{c}{calibrated to $W/Y=4$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\emph{[Numbers are the accurate, grid-converged solution: $\delta$ calibrated to $W/Y=4$,
+giving $\delta^*\approx0.95$. This differs from the paper's reported $\delta=0.966$ by a
+discrepancy we could not fully resolve (Appendix~\ref{app:deltagrid}): at $\delta=0.966$
+our converged model gives $W/Y\approx5.7$, not $4$. The consumption-inequality rises below
+therefore sit above the paper's Figure-8 numbers by construction, and the paper's values
+are shown for reference only.]}
+
+\subsection{Income-inequality decomposition (Table 2)}
+Before the consumption results, we check the income side, which is common to both models
+and independent of $\delta$ or the value-function solution. The paper's Table~2 decomposes
+the within-cohort variance of log income into (1) the fixed-effect-plus-transitory term
+$\sigma^2_\alpha+\sigma^2_\varepsilon$, (2) the accumulated persistent (AR(1)) component,
+and (3) the profile-heterogeneity term $2\sigma_{\alpha\beta}t+\sigma^2_\beta t^2$, with
+(4) the profile-heterogeneity share. Table~\ref{tab:table2} reproduces it (this is an
+analytic object, computed from the income-process parameters alone). The reproduction is
+exact to rounding, and in particular the profile-heterogeneity share (column 4) rises from
+$0.03$ at age 30 to $0.78$ at age 65, against the paper's $0.03$ to $0.79$ --- the headline
+statistic that most of income inequality at retirement is profile heterogeneity. The only
+visible gap is column 2 at age 30 ($0.079$ vs.\ $0.082$), a one-period off-by-one in the
+paper's printed formula that is immaterial from age 35 on (see
+Appendix~\ref{app:calib}). This exercise
+also confirms the calibration choice $\sigma_{\alpha\beta}=-0.00045$: the printed
+$-0.0020$ makes column 3 negative at ages 30--35, whereas $-0.00045$ reproduces the table.
+
+\begin{table}[htbp]
+\centering
+\caption{Decomposing within-cohort income inequality (Table 2). Top: original; bottom:
+replication.}
+\label{tab:table2}
+\textbf{\footnotesize Original (Guvenen 2007, Table 2)}\\[3pt]
+\includegraphics[width=0.85\textwidth]{OriginalTablesFigures/Guvenen2007_Table2.png}\\[10pt]
+\textbf{\footnotesize Replication}\\[3pt]
+\input{../baseline/SavedOutput/table2_decomposition.tex}
+\end{table}
+
+\subsection{RIP model (plumbing check)}
+With $\delta$ recalibrated to the wealth--income target of 4 (total-income definition)
+we obtain $\delta^{RIP}=0.9503$. At the calibrated $\delta$: consumption is hump-shaped
+with $c(65)/c(25)=1.387$ (paper Figure 11: $\sim$1.43), retirement consumption declines
+at $0.503\%$/yr against an Euler-equation prediction of $0.508\%$/yr, mean assets peak at
+exactly age 65, and $\mathrm{var}(\log c)$ rises by 0.290 over the working life (paper
+Figure 7: $\sim$0.26 at the paper's $\delta$).
+
+\subsection{HIP baseline: the age-inequality profile of consumption}
+Table~\ref{tab:replication} reports the central result: the rise in within-cohort
+consumption inequality over the working life, for the HIP model at
+$\lambda\in\{0,0.4,0.62,1\}$ and for the RIP model, each calibrated to $W/Y=4$.
+
+\begin{table}[htbp]
+\centering
+\caption{Rise in var$(\log c)$ over the working life (ages 25--65), accurate solution}
+\label{tab:replication}
+\input{../baseline/SavedOutput/replication_table.tex}
+\end{table}
+
+\noindent The qualitative structure matches the paper (Figure~8): the rise falls
+monotonically in $\lambda$, as more prior knowledge of the growth rate leaves less to be
+learned and hence less consumption fanning-out. The levels sit above the paper's
+($0.32/0.21/0.14$) uniformly, by the $\delta$-difference of Appendix~\ref{app:deltagrid}.
+Figures~\ref{fig:varlogc_rip} (RIP) and~\ref{fig:varlogc_hip} (HIP) plot the profiles
+against a US-data reference: the HIP curves are convex (the nonconcavity the paper emphasises, driven by learning about
+$\beta^i$), and the model levels begin below the data at age 25 because the model contains
+no measurement error, which would add a roughly constant term to var$(\log c)$ at every age.
+
+\begin{figure}[htbp]
+\centering
+\textbf{\footnotesize Original (Guvenen 2007, Figure 7)}\\[2pt]
+\includegraphics[width=0.62\textwidth]{OriginalTablesFigures/Guvenen2007_Fig7.png}\\[8pt]
+\textbf{\footnotesize Replication}\\[2pt]
+\includegraphics[width=0.72\textwidth]{../baseline/SavedOutput/Graphs/Replication_Fig7_RIP.png}
+\caption{Consumption inequality over the life cycle, RIP model (paper's Figure~7).
+\emph{Top:} the paper's figure. \emph{Bottom:} our replication (RIP and a US-data
+reference), accurate solution, $W/Y=4$. The rise is larger than the paper's because of
+the $\delta$ difference (Appendix~\ref{app:deltagrid}); the age-25 level is lower because
+we add no measurement error. We do not reproduce the ``Baseline RIP Model
+(\cite{StoreslettenTelmerYaron2004})'' line from the paper's Figure~7.\protect\footnotemark}
+\label{fig:varlogc_rip}
+\end{figure}
+\footnotetext{That line reports an alternative RIP calibration from
+\cite{StoreslettenTelmerYaron2004} rather than an output of Guvenen's own model, so it is
+outside the scope of this replication.}
+
+\begin{figure}[htbp]
+\centering
+\textbf{\footnotesize Original (Guvenen 2007, Figure 8)}\\[2pt]
+\includegraphics[width=0.62\textwidth]{OriginalTablesFigures/Guvenen2007_Fig8.png}\\[8pt]
+\textbf{\footnotesize Replication}\\[2pt]
+\includegraphics[width=0.72\textwidth]{../baseline/SavedOutput/Graphs/Replication_Fig8_HIP.png}
+\caption{Consumption inequality over the life cycle, HIP model (paper's Figure~8).
+\emph{Top:} the paper's figure. \emph{Bottom:} our replication (HIP by $\lambda$ and a
+US-data reference), accurate solution, $W/Y=4$. As in Figure~\ref{fig:varlogc_rip} the
+rises sit above the paper's because of the $\delta$ difference
+(Appendix~\ref{app:deltagrid}) and the age-25 levels are lower (no measurement error);
+the ordering in $\lambda$ matches the paper.}
+\label{fig:varlogc_hip}
+\end{figure}
+
+\subsection{Co-movement of consumption and income (Section III.C)}
+The general Carroll--Summers fact --- that consumption growth parallels income growth over
+the life cycle --- holds in the baseline: over ages 25--55 mean consumption grows about
+48\% in the HIP model and 37\% in RIP, tracking (below, through smoothing) mean income
+growth of 58\% and 53\% respectively.
+
+The paper's \emph{discriminating} test of this fact is its Figure~11: whether consumption
+growth differs \emph{by education} the way income growth does. We solve the college and
+high-school calibrations (Table~1, rows 3--6) for both HIP and RIP, each recalibrated to
+$W/Y=4$; the resulting life-cycle consumption profiles are plotted in
+Figure~\ref{fig:fig11} and the growth rates collected in Table~\ref{tab:fig11}.
+(The group $\sigma_{\alpha\beta}$ values carry the same rescaling correction as the
+all-sample value of Appendix~\ref{app:calib}; this is second order for the growth statistic, which is
+driven by mean growth $\bar\beta_i$, the profile-heterogeneity variance $\sigma^2_\beta$,
+and $\lambda$.)
+
+\begin{table}[htbp]
+\centering
+\caption{Total consumption growth by education, ages 25--55 (accurate solution, $W/Y=4$)}
+\label{tab:fig11}
+\begin{tabular}{llccc}
+\toprule
+Model & Group & cons.\ growth 25--55 & $\delta^*$ & \\
+\midrule
+HIP & college      & $59.8\%$ & $0.954$ & \\
+HIP & high school  & $24.1\%$ & $0.950$ & \\
+RIP & college      & $28.8\%$ & $0.957$ & \\
+RIP & high school  & $16.5\%$ & $0.952$ & \\
+\midrule
+\multicolumn{2}{l}{college$-$HS gap: HIP} & $35.8$pp & \multicolumn{2}{l}{(paper $53\%-29\%=24$pp)} \\
+\multicolumn{2}{l}{college$-$HS gap: RIP} & $12.2$pp & \multicolumn{2}{l}{(paper $43.4\%-42.7\%=0.7$pp)} \\
+\multicolumn{2}{l}{US data, literature: college $+74\%$, HS $+36\%$} & \multicolumn{2}{l}{gap $38$pp} \\
+\multicolumn{2}{l}{US data, our recompute$^{\dagger}$: college $+26\%$, HS $+8\%$} & \multicolumn{2}{l}{gap $18$pp} \\
+\bottomrule
+\end{tabular}\\[3pt]
+{\footnotesize $^{\dagger}$Our own recompute of consumption growth by education from the CEX
+panel, using the same Deaton--Paxson machinery as Appendix~\ref{app:data}
+(per-adult-equivalent, cohort-adjusted, real). Reported only as a rough sensitivity: unlike
+the variance profile, the \emph{mean}-profile levels are fragile here (age--period--cohort
+identification, and family-size composition), and the gap is scale-sensitive --- on
+household-total consumption it is $+51\%$/$-4\%$, gap $54$pp. The qualitative fact
+(college steeper than HS) is robust; the magnitude is not.}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\textbf{\footnotesize Original (Guvenen 2007, Figure 11)}\\[2pt]
+\includegraphics[width=0.85\textwidth]{OriginalTablesFigures/Guvenen2007_Fig11.png}\\[8pt]
+\textbf{\footnotesize Replication}\\[2pt]
+\includegraphics[width=0.9\textwidth]{../baseline/SavedOutput/Graphs/Replication_Fig11_education.png}
+\caption{Average life-cycle consumption profile by education, normalised to one at age 25;
+HIP model (left) vs.\ RIP model (right). \emph{Top:} the paper's Figure~11. \emph{Bottom:}
+our replication, accurate solution, each group recalibrated to $W/Y=4$. The HIP education
+fan-out replicates; the paper's near-flat RIP spread does not (see text).}
+\label{fig:fig11}
+\end{figure}
+
+The \emph{qualitative} result of the paper replicates cleanly and is the substantive
+point: under HIP, consumption growth differs sharply by education --- college grows far
+more than high school --- because college graduates face both a steeper mean income profile
+($\bar\beta=0.012$ vs.\ $0.007$) and much greater profile heterogeneity
+($\sigma^2_\beta=0.00049$ vs.\ $0.00020$), the latter generating a stronger
+precautionary-plus-learning motive and hence a steeper consumption path. Our HIP gap of
+$35.8$ percentage points exceeds the paper's $24$, in the same direction as the data
+($74\%$ vs.\ $36\%$, a $38$pp gap).
+
+Where we depart from the paper is on the RIP side. Guvenen reports that RIP delivers
+\emph{nearly identical} consumption growth across education ($43.4\%$ vs.\ $42.7\%$, a
+$0.7$pp gap) --- the basis for his argument that a RIP process cannot explain the
+education difference in consumption growth without counterfactual differences in the shock
+processes. Our accurate-solution RIP instead produces a non-trivial $12.2$pp gap (college
+$28.8\%$ vs.\ high school $16.5\%$): with the weaker precautionary saving implied by our
+calibrated $\delta\approx0.95$ (Appendix~\ref{app:deltagrid}), borrowing constraints bind
+harder and the steeper college income profile passes through into steeper consumption. The
+paper's overall conclusion survives --- the HIP education gap ($35.8$pp) is far larger than
+the RIP one ($12.2$pp) and much closer to the data --- but the specific claim that RIP
+generates \emph{no} education difference does not survive an accurate solution: RIP
+generates a modest one too, via constrained pass-through of the income profile. This
+difference is partly the $\delta$ gap and partly two modelling choices of ours (the
+known-$\alpha$ reduction, and recalibrating $\delta$ separately for each education group).
+
+\appendix
+
+\section{Implementation details}
+
+\subsection{Calibration: reconciling the paper's printed parameters}
+\label{app:calib}
+
+\textbf{The $\sigma_{\alpha\beta}$ discrepancy.} Table 1 prints
+$\sigma_{\alpha\beta}=-0.0020$ (s.e.\ 0.0032). This value cannot have generated the
+paper's own quantitative results: with it, the profile-heterogeneity contribution to
+income inequality (Table 2, col.~3) is \emph{negative} at ages 30--35, learning about
+$\beta$ jumps at the first observation (through the $\alpha$--$\beta$ covariance)
+rather than following the gradual hump of Figure 4, and the ``26 percent resolved by
+35'' and ``learning slowest near $\rho=0.85$'' statements both fail. A free fit of
+Table 2 col.~3 returns $\sigma^2_\beta=0.000377$ (Table 1's value) and
+$\sigma_{\alpha\beta}=-0.00044$; with $\sigma_{\alpha\beta}=-0.00045$ we reproduce
+Table 2 (max share diff 0.006), Figure 4's $\beta$-precision hump (peak gain 0.0696
+at age 47 vs.\ the paper's $\sim$0.07 at $\sim$47), Figure 3's level, the resolution
+fraction (0.254 vs.\ ``26 percent''), and the $\rho$-nonmonotonicity peak (exactly
+0.85). We therefore use $\sigma_{\alpha\beta}=-0.00045$ as the baseline and keep
+$-0.0020$ as a sensitivity.
+
+Two further reconciliations: experience is 0 at age 25 (pinned down by Table 2
+col.~3 and the Figure 5 anchor $0.20\to0.054$ after one observation, which our
+recursion hits at 0.0551); and the paper's quoted $MSE^{idio}_{65|45}\approx0.045$
+is not reproducible under equation (6)'s definition (we obtain
+$0.136=0.089+\sigma^2_\varepsilon$); every other number in the paper's Section I.D
+matches, so we record this and move on.
+
+\subsection{Numerical solution}
+
+Everything is solved with the VFI Toolkit's finite-horizon Case 1 machinery
+(\texttt{ValueFnIter\_Case1\_FHorz}, \texttt{StationaryDist\_FHorz\_Case1},
+\texttt{LifeCycleProfiles\_FHorz\_Case1}) using age-dependent exogenous states
+(\texttt{z\_grid\_J}, \texttt{pi\_z\_J}). Two implementation devices are shared by
+the RIP and HIP codes:
+
+\emph{Freeze-in-retirement.} From the last working period onward every exogenous
+transition is the identity matrix. The states at the last working age are thereby
+carried through retirement, so the pension $\Phi(\tilde{Y}_T)$ can be evaluated
+inside the return function without adding a ``last income'' state.
+
+\emph{Age-specific borrowing limit via the return function.} The asset grid is
+age-independent and extends down to $\min_j \bar{W}_j$; the age-specific natural
+limit $\bar{W}_j$ enters the return function as an age-dependent parameter
+($-\infty$ when violated). Deep-borrowing states at older ages are then infeasible
+($V=-\infty$) but carry zero distribution mass.
+
+The RIP model's exogenous state is $(\alpha, z, \varepsilon)$: $\alpha$ an identity-%
+transition fixed effect, $z$ a life-cycle AR(1) from $z_0=0$ discretized by the KFTT
+method (\cite{Kirkby2025}), $\varepsilon$ iid; all grids truncated at 2.5 standard
+deviations following the paper. The HIP model's exogenous state is the belief chain
+described next.
+
+\subsection{Grid sizes and their motivation}
+\label{sec:grids}
+
+\textbf{Assets.} 375 points on $[\min_j \bar{W}_j,\, 100\bar{Y}_T]$
+($\approx[-4.0,\,907]$): a 97-point even segment covering the borrowing region
+(where the age-specific constraints bind) and a 279-point cubically-spaced positive
+segment concentrating points at low asset levels where policy curvature is highest
+(the shared node at $0$ is de-duplicated, giving 375). The value function is solved with
+the toolkit's grid-interpolation layer (GI; \texttt{gridinterplayer=1},
+\texttt{ngridinterp=10}) so that $a'$ is chosen \emph{between} nodes and a moderate $n_a$
+suffices; the same GI setting is applied in the distribution and life-cycle-profile
+steps. The top was raised to $100\bar{Y}_T$ (from $60\bar{Y}_T$) because at the
+calibrated $\delta$ a small amount of mass otherwise remained in the top grid points.
+
+\textbf{RIP exogenous states} $[n_\alpha,n_z,n_\varepsilon]=[7,15,5]$. These are
+unremarkable: $\alpha$ and $\varepsilon$ use moment-matched Tanaka--Toda quadrature
+(exact mean and variance at any grid size), and the KFTT life-cycle AR(1)
+discretization is likewise moment-matched age by age. Our checks show the chain
+reproduces the analytic $\mathrm{var}(z_j)$ and $\mathrm{var}(\log y_j)$ profiles to
+$4\times10^{-6}$ relative error, and the solved distribution reproduces the analytic
+income-inequality profile to 4 decimal places. Grid size is simply not a binding
+concern here.
+
+\textbf{HIP belief states: why grid size is the crux.} The belief components
+$\hat{\alpha}_{t|t-1}$ and $\hat{\beta}_{t|t-1}$ are \emph{martingales}: posterior
+means under Bayesian updating, moving by $K_t v_t$ each period. Placing a martingale
+on a grid is qualitatively harder than placing a mean-reverting AR(1) on one. The
+transition, conditional on the innovation $v$ (which is itself a state variable), is
+\emph{deterministic}; its off-grid destination must be assigned to neighbouring grid
+points by a two-point mean-preserving lottery, and any mean-preserving assignment of
+a point mass adds conditional variance of order
+$\delta(h-\delta)\le(h/2)^2$, where $h$ is the grid spacing and $\delta$ the offset
+of the destination from a node. Crucially, for per-period belief updates that are
+\emph{small relative to the spacing} ($|K_tv|\ll h$, exactly the slow-learning case
+the paper emphasizes), the added variance $\approx |K_t v|\,h$ is \emph{first order}
+in the spacing while the true update variance $(K_tv)^2$ is second order; and because
+a martingale never mean-reverts, this spurious diffusion \emph{accumulates linearly
+with age}. (The persistent-belief component $\hat{z}$ is mean-reverting with
+$\rho=0.821$, so its lottery noise decays geometrically and is harmless at moderate
+grid sizes.) The distortion hits both halves of the computation: the distribution
+iteration overstates the cross-sectional dispersion of beliefs (hence of consumption
+--- the paper's target statistic), and in the value function the agent perceives
+spuriously large belief risk, corrupting the precautionary-savings channel that is
+the paper's central mechanism.
+
+We measured this directly by iterating the chain's age-marginals and comparing with
+the exact Kalman theory ($\mathrm{var}(\hat{\beta}_{t|t-1})
+=\sigma^2_\beta-P_{\beta\beta,t|t-1}$, etc.), before any GPU time was spent.
+At the brief's original 4-dimensional design
+$(\hat{\alpha},\hat{\beta},\hat{z},v)=[5,7,7,5]$, the age-64 belief variances are
+inflated by $+122\%$ of $\sigma^2_\beta$ and $+68\%$ of $\sigma^2_\alpha$
+(tolerance: 3\%). Refining $\hat\beta$ helps at the expected first-order rate:
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+$n_{\hat\beta}$ & 7 & 15 & 31 & 41 & 61 \\
+\midrule
+error in $\mathrm{var}(\hat\beta)$ at age 64, $\lambda=0.62$ &
+$+122\%$ & $+46\%$ & $+10\%$ & $+5\%$ & $+1.6\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent so $\hat\beta$ requires $\sim$60 points --- and $\hat\alpha$, a second
+martingale, would require its own $\sim$60, putting the product grid at
+$N_z\sim10^6$: infeasible for the transition array
+($N_z^2 \times 70\times 8$ bytes) and the solve alike.
+
+\textbf{Resolution.} We remove the second martingale dimension by treating $\alpha^i$ as
+\emph{known}, leaving a single slow-learning belief dimension $\hat\beta$ (at $\sim$60
+points) plus the cheap mean-reverting $\hat z$ and the innovation $v$. The reduction, its
+justification (the paper's own footnote~4), and how one would instead retain
+$\hat\alpha$-learning are set out in Appendix~\ref{app:alpha}.
+
+\textbf{Chosen HIP grid} $[n_{\hat\beta},n_{\hat z},n_v]=[61,13,5]$, belief grids
+age-dependent (widths track the theoretical cross-sectional dispersion
+$\sqrt{\sigma^2_{\cdot}-P_{\cdot,t|t-1}}$, which grows martingale-like with age),
+spanning $\pm3$ of that dispersion; $v$ grids are Tanaka--Toda on $N(0,F_{v,t})$
+per age, truncated at 2.5 sd like all income shocks. Measured chain accuracy at this
+size: $\mathrm{var}(\hat\beta)$ path within 1.6\%, aggregate $\mathrm{var}(\log y)$
+within 2.3\%, martingale means and transition row sums at machine precision.
+The remaining sizes were set by measurement too: $n_{\hat z}=13$ (at 9 the
+$\mathrm{var}(\log y)$ error is 4.8\%, at 13 it is 2.3\%, at 15 it is 1.6\%) and
+$n_v=5$ ($n_v=7$ is measurably identical, because Tanaka--Toda matches the variance
+of $v$ exactly at any size; $v$ only needs enough points for the update quadrature).
+Memory is the binding constraint on further refinement: the transition array is
+$N_z^2\times(N_j-1)\times 8$ bytes $=8.8$GB at $N_z=61\cdot13\cdot5=3965$, against
+20GB total on the RTX 4000 Ada used for the runs ($[61,15,5]$ would be 11.7GB and is
+the natural refinement run). The value-function step uses the toolkit's
+divide-and-conquer option, since the one-shot return-matrix would add another
+$\sim$8GB.
+
+Appendix~\ref{app:grids} contrasts this discrete-chain grid strategy with the adaptive
+joint grid Guvenen used in his original Fortran solution (recovered from the replication
+package); Appendix~\ref{app:alpha} explains how that same joint-grid idea is the natural
+route to restoring $\hat\alpha$-learning as a full four-belief-state fidelity check.
+
+
+\subsection{Learning about the intercept $\alpha^i$}
+\label{app:alpha}
+
+Our baseline treats the fixed effect $\alpha^i$ as \emph{known} to the agent, so learning
+is only about the growth rate $\beta^i$ (and, jointly, the persistent component $z$).
+This is the one substantive deviation of our baseline from Guvenen's model.
+
+\textbf{Why it seems unimportant.} The paper reports that intercept uncertainty ``turns
+out not to play an important role in the model'' (footnote~4) and that it resolves within
+the first few years (pp.~695--696, Figures~4--5): $\alpha$-learning is fast because
+$\alpha$ enters income with a constant loading while $\beta$'s loading $t$ grows, so the
+data pin down the level quickly but the slope only slowly. We drop $\hat\alpha$-learning
+following Guvenen's own judgement that it is second order --- but where he keeps all three
+belief states and simply finds $\alpha$-learning quantitatively small, we go further and
+remove it, for the numerical reason below.
+
+\textbf{Why we must remove it, not merely downweight it.} As Appendix~\ref{sec:grids}
+shows, a belief martingale on a rectangular grid needs $\sim$60 points to control the
+first-order lottery diffusion. Two martingales ($\hat\alpha$ and $\hat\beta$) at that
+resolution put the product grid at $N_z\sim10^6$ --- infeasible for both the transition
+array and the solve. Collapsing $\hat\alpha$ to a known type removes one martingale
+dimension outright.
+
+\textbf{The known-$\alpha$ reduction.} We represent $\alpha^i$ as a 5-point Tanaka--Toda
+type (exact variance), solved as five separate problems. Knowing $\alpha$ reveals the
+fraction $R^2=\sigma_{\alpha\beta}^2/(\sigma^2_\alpha\sigma^2_\beta)\approx2.4\%$ of
+$\beta$-variance, so each type has growth-rate mean
+$\bar\beta_i=\bar\beta+(\sigma_{\alpha\beta}/\sigma^2_\alpha)(\alpha_i-\bar\alpha)$
+(which preserves $\mathrm{cov}(\alpha,\beta)$ exactly on the discrete types) and the
+filter runs on the conditional variance
+$\sigma^2_{\beta|\alpha}=\sigma^2_\beta(1-R^2)$; the paper's $\lambda$ then applies to the
+conditional variance. Because the filter does not depend on the \emph{value} of $\alpha$,
+the belief chain is type-invariant: it is built once per $\lambda$, and the types differ
+only by an income-scale parameter and a parallel shift of the $\hat\beta$ grid.
+Cross-sectional moments are aggregated across types by the law of total variance; with
+this construction the aggregate age profile of $\mathrm{var}(\log y)$ reproduces the
+paper's Table 2 decomposition, including the $2\sigma_{\alpha\beta}t$ term, up to the
+measured chain error.
+
+\textbf{How one would restore full $\hat\alpha$-learning.} The natural way to remove the
+reduction, staying within the toolkit, is to adopt Guvenen's idea
+(Appendix~\ref{app:grids}) in discrete-chain form: the toolkit accepts an exogenous state
+as a \emph{joint grid} of shape $[\,\mathrm{prod}(n_z),\,\ell_z\,]$ --- an explicit list
+of state tuples --- rather than a tensor product, so a manifold-adapted point cloud is a
+legal input. The design would be: (i) propagate the four-component predictive-belief
+system $(\hat\alpha,\hat\beta,\hat z,v)$ forward under the Kalman recursion to trace the
+reachable tube age by age (analytically here, since the cross-sectional covariance is
+$\Sigma_{\text{pop},t}-P_{t|t-1}$ and needs no simulation); (ii) place nodes on that tube
+at a density set by the martingale increment \emph{along each belief direction} rather
+than along the axes; and (iii) assign the deterministic belief update to neighbouring
+nodes by barycentric weights over a triangulation, tensored with the innovation
+distribution as before. Because $\hat\alpha$ and $\hat\beta$ posterior errors are strongly
+correlated early in life (learning confounds intercept and slope, the paper's Figure~4
+story), the reachable tube is far thinner than its bounding box: a rectangular product at
+the resolution each martingale needs would be
+$\sim\!60\times60\times13\times5\approx2.3\times10^5$ nodes, almost all empty, whereas a
+cloud covering only the populated tube at the same directional resolution is plausibly
+$2\text{--}3\times10^4$ nodes --- a transition array of a few GB with the
+matrix-multiplication expectation step, hence feasible on the same 20GB GPU.
+
+We did not pursue this for the baseline: the linear-resolution requirement on $\hat\beta$
+(the $\sim$60 points that dominate the cost) is a property of the martingale, not of the
+grid \emph{shape}, so a joint grid does not relax it; and in our reduced
+three-dimensional state the correlation it would exploit is modest (the measured
+$\mathrm{corr}(\hat\beta,\hat z)$ peaks at $+0.37$ near age~44 and is below $0.27$ by
+age~64). The payoff is specifically for the \emph{four}-state problem, where two
+correlated martingale dimensions make the empty-corner waste severe --- there a joint
+grid is the credible route to a full-fidelity check on the known-$\alpha$ deviation, and
+is left as an extension.
+
+\section{Grids: our discrete chain vs.\ Guvenen's original solver}
+\label{app:grids}
+
+The published paper says almost nothing about the numerical solution beyond the
+statement that the interdependence of the belief states ``makes the solution of the
+value function on a rectangular grid impractical'' and that ``we develop an algorithm
+to tackle these issues'' (p.~699), with details deferred to a computational appendix
+that is no longer online. The AER replication package (openICPSR project 116272)
+does, however, contain the original Fortran~95 source, and reading it settles what
+that algorithm was. This appendix records it and compares it with the discrete-chain
+approach used here.
+
+\subsection{What Guvenen actually did}
+\label{app:guvenen}
+
+His solution is a hybrid of Monte Carlo and an \emph{adaptive joint grid}, which
+is worth stating precisely because it is exactly the ``dodge'' that a rectangular
+product grid cannot achieve.
+
+\begin{enumerate}
+\item \textbf{Belief state.} He carries the full three-component Kalman state
+$\hat{S}=(\hat\alpha,\hat\beta,\hat z)$ --- all three learned, no reduction --- with
+$F=\mathrm{diag}(1,1,\rho)$ and $Q=\mathrm{diag}(0,0,\sigma^2_\eta)$. In his prior
+covariance the fraction of $\beta$-uncertainty known at entry is a parameter
+\texttt{FPU} (prior $\beta$-variance $=(1-\texttt{FPU})\sigma^2_\beta$); the shipped
+baseline uses $\texttt{FPU}=0.65$, the code's counterpart of the paper's
+$\lambda^*=0.62$.
+
+\item \textbf{Monte Carlo to discover the reachable set.} He simulates
+$N=1000$ drawn $(\alpha,\beta)$ types $\times$ $M=100$ income paths and propagates
+the Kalman recursion forward, producing a cloud of $100{,}000$ posterior-mean points
+$\hat{S}_t$ at each age.
+
+\item \textbf{Adaptive joint grid.} At each age he lays a rectangular bounding box
+over the cloud --- $16\times16\times12=3072$ cells in $(\hat\alpha,\hat\beta,\hat z)$
+spanning the simulated $[\min,\max]$ --- bins the $100{,}000$ points, and
+\emph{keeps only the occupied cells}, one node per occupied cell (cell centre plus a
+small jitter). The count of kept nodes, \texttt{qnumage}$(t)$, is capped at $1200$:
+so at most $1200$ of the $3072$ box cells survive and the unreachable $\sim$60\% is
+discarded. The surviving set \texttt{Qgrid} is a genuine per-age point cloud on the
+reachable belief manifold, not a tensor product.
+
+\item \textbf{Value function by projection.} The value function is solved on
+$(\text{wealth }12)\times(\text{current income }8)\times(\text{belief }\le1200)$, with
+the continuation value approximated by an ordinary-least-squares polynomial regression
+in $(w,y)$ with $162$ basis terms (a Krusell--Smith-style projection, but over the
+belief state), so it can be evaluated at arbitrary belief nodes. The bond choice is
+optimized by golden-section/Brent search.
+
+\item \textbf{Statistics by Monte Carlo again.} The reported moments come from
+simulating $100{,}000$ agents through the decision rules and taking cross-sectional
+averages. (The RIP model instead uses a Tauchen--Hussey Markov chain for the
+persistent shock and a separate MATLAB simulator.)
+\end{enumerate}
+
+An incidental confirmation from this source: the shipped baseline sets the
+$\alpha$--$\beta$ correlation to $-0.25$, giving $\mathrm{cov}(\alpha,\beta)\approx
+-0.00034$ --- close to the $-0.00045$ we inferred from Table~2 and far from Table~1's
+printed $-0.0020$, independent support for the calibration choice discussed in
+Appendix~\ref{app:calib}.
+
+\subsection{Why we did something different, and what it costs}
+
+Our route replaces both Monte Carlo passes and the regression closure with exact
+objects, at the price of one belief dimension:
+
+\begin{itemize}
+\item \emph{No simulation for statistics.} Because correct-prior Bayesian innovations
+are objectively i.i.d., the population cross-section at every age is obtained by
+iterating the agent distribution under the same transition used to solve the value
+function (Section~3). Guvenen's cross-sectional moments carry Monte~Carlo error from
+$100{,}000$ draws; ours are exact given the discretization.
+
+\item \emph{A genuine Markov chain, not a regression.} The continuation value is
+formed by an honest expectation over a discrete transition matrix, not an OLS fit, so
+there is no projection error and no basis-choice degree of freedom.
+
+\item \emph{The cost: $\hat\alpha$-learning.} A discrete chain on a \emph{rectangular}
+belief grid cannot afford two martingale dimensions at $\sim$60 points each
+(Section~\ref{sec:grids}); we bought tractability by making $\alpha$ a known type
+rather than by adapting the grid to the reachable manifold. Guvenen keeps all three
+beliefs precisely because his joint grid spends nodes only where the cloud lives.
+\end{itemize}
+
+In short, his adaptive joint grid and our discrete chain are two answers to the same
+obstacle --- the belief cross-section occupies a thin, correlated, age-drifting region
+that a full rectangular product grid would sample almost entirely in its empty corners.
+He adapts the grid to that region; we collapse the worst dimension and keep the rest
+rectangular and exact.
+
+\subsection{An unresolved discrepancy: $\delta=0.966$ vs.\ $W/Y=4$}
+\label{app:deltagrid}
+
+Table~3 of Guvenen (2007) reports a discount factor $\delta^{HIP}=0.966$, stated to be
+the value that makes the model reproduce a wealth-to-income ratio of $4$. We find these two
+facts are mutually inconsistent once the value function is solved on a converged grid, and
+--- after some investigation --- we cannot fully attribute the gap, though we suspect the
+original paper's solution method.
+
+Recall that $\delta$ is not a primitive but is recalibrated, in every experiment, to the
+target $W/Y=4$ (Section~2). Running our model at the paper's stated $\delta=0.966$
+reproduces its Figure~8 consumption-inequality rises closely (rises of $0.30/0.23/0.17$
+for $\lambda=0/0.62/1$ against the paper's $\sim\!0.32/0.21/0.14$; the baseline
+$\lambda=0.62$ lands at $0.23$ against the US-data target of $0.21$), which identifies
+$\delta=0.966$ as the value actually used to generate that figure. But at $\delta=0.966$
+our converged solution delivers $W/Y\approx5.7$ (total-income definition), not $4$.
+Conversely, calibrating $\delta$ to $W/Y=4$ on our grid yields $\delta^*\approx0.95$, about
+$0.016$ below the paper's figure, with correspondingly larger inequality rises. This is
+why every inequality rise we report sits above the paper's figures: not a modelling error,
+but the consequence of solving accurately at a $\delta$ that is genuinely lower than $0.966$
+for this target.
+
+\textbf{It is not a coarse-grid artifact.} A natural first hypothesis is that the paper's
+twelve-point wealth grid under-measures accumulated wealth (an under-resolved saving policy
+leaves agents holding too little), so that $\delta=0.966$ happened to deliver a
+\emph{measured} $W/Y=4$ while the true value is higher. A resolution sweep at
+$\delta=0.966$ rules this out once interpolation is used. With the grid-interpolation layer
+(GI) on --- as in all our reported results --- $W/Y$ is essentially independent of the
+number of wealth-grid points:
+
+\begin{center}
+\begin{tabular}{lcccccc}
+\toprule
+wealth-grid points $n_a$ & 12 & 25 & 50 & 100 & 200 & 301 \\
+\midrule
+$W/Y$, GI on              & 5.55 & 5.75 & 5.72 & 5.70 & 5.68 & 5.68 \\
+$W/Y$, plain grid (no interp) & 1.50 & 3.20 & 4.72 & 5.49 & 5.56 & 5.66 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Without interpolation, $W/Y$ climbs from $1.5$ to $5.7$ as the grid is refined ---
+the coarse-grid under-measurement is real, but it is a property of \emph{uninterpolated}
+discretisation. Guvenen does not solve on a bare twelve-point grid: he closes it with a
+global polynomial regression, i.e.\ an interpolation. An interpolated twelve-point solution
+(our GI row, or his polynomial) recovers $W/Y\approx5.6$, essentially the converged value ---
+so his solution should have measured $W/Y\approx5.6$ too, not $4$. Grid coarseness alone
+therefore does not explain the discrepancy.
+
+\textbf{Three candidate explanations, none confirmed.} At $\delta=0.966$ our converged
+model holds more wealth than the paper reports ($W/Y\approx5.7$ total, $\approx7.4$ on a
+labour-income denominator, both above the $4.14\text{--}5.26$ range of Budr\'ia Rodr\'iguez
+et al.\ (2002) that motivates the target). The gap could be:
+\begin{enumerate}
+\item a different $W/Y$ \emph{definition} in the original (which income concept enters the
+denominator is not stated, and it changes the ratio materially);
+\item a \emph{structural} difference we have not matched exactly (e.g.\ the pension level or
+the retirement horizon, either of which shifts retirement wealth accumulation); or
+\item a \emph{solution-method} effect: Guvenen's global polynomial closure, unlike our
+local (piecewise) interpolation, can systematically mis-fit the value function near the
+borrowing-constraint kink, and a smooth global fit that shaves the kink would under-measure
+precautionary wealth even at high effective resolution.
+\end{enumerate}
+We are unsure which dominates, but we suspect the third: a polynomial closure is the one
+ingredient of the original pipeline we cannot reproduce or test within the toolkit, and it
+is exactly the kind of approximation that biases a kinked, buffer-stock policy. We report
+the accurate ($\delta^*\approx0.95$, $W/Y=4$, GI-converged) solution throughout and flag
+the discrepancy rather than resolve it.
+
+\section{Data: the empirical consumption-inequality line}
+\label{app:data}
+
+The ``US Data'' line in Guvenen's Figures 7 and 8 is not his own construction. He takes
+the CEX consumption data from \cite{KruegerPerri2006} and, following
+\cite{DeatonPaxson1994}, plots the age profile of the cross-sectional variance of log
+\emph{household} nondurable consumption, cohort-adjusted, reporting a rise of ``about 21
+log points'' over the working life. His replication package contains only the model code
+(no consumption data), so we reconstruct the line from the raw CEX
+(\texttt{Guvenen2007\_DataWork.m}, run as \texttt{doPart(1)}).
+
+\subsection{Construction}
+We use the CEX Interview (FMLI) files, 1980--2003 (BLS releases no 1982/83 microdata),
+pooling all households aged 25--65 who are complete income reporters (the Krueger--Perri
+sample) with the Krueger--Perri nondurable-consumption definition (reusing the
+\cite{Kaplan2012} CEX panel builder in this repo). For each $(\text{age},\text{year})$
+cell we form the sampling-weighted variance of log consumption, run the Deaton--Paxson
+age--cohort decomposition (WLS of the cell variance on a full set of age and cohort
+dummies, read off cohort-averaged --- the same construction used for earnings in
+\texttt{HVY2006\_DataWork.m}), and attach 95\% bands by a within-year block bootstrap over
+households (200 replications). The endpoints are noisy (the age-25 cell is small and sits
+high; the age-65 cell dips), so we summarise the rise by the fitted linear slope over the
+40 years rather than the $25\!\to\!65$ endpoint difference.
+
+\subsection{The equivalence scale is decisive --- for this particular object}
+How one adjusts consumption for household size drives the age profile. Guvenen says he uses
+\emph{household} nondurables following \cite{DeatonPaxson1994}; \cite{KruegerPerri2006},
+whose CEX data he uses, instead divide by the number of adult equivalents using the US
+Census scale of Dalaker--Naifeh (1998). We compute all three (Figure~\ref{fig:datascale}):
+household-total, the Census adult-equivalent scale (approximated here by the size ratios of
+the official poverty thresholds), and the OECD-modified scale we first tried. The result is
+sharp: household-total gives a rise of $\approx0.22$ (linear fit $0.24$; trough-to-peak
+$0.22$), reproducing Guvenen's stated $\sim\!0.21$, whereas \emph{both} equivalised
+measures collapse the rise to $\approx0.10$ --- the Census scale (Krueger--Perri's actual
+choice) gives $0.10$ and the OECD scale $0.11$, near-identical slopes (they differ only by a
+small vertical level shift). So it is not the \emph{choice} of equivalence scale that
+matters but whether one equivalises \emph{at all}:
+household size is hump-shaped over the life cycle, and dividing by any scale that tracks it
+removes most of the age gradient regardless of the scale's exact steepness.
+
+Two remarks reconcile this with the source. First, \cite{KruegerPerri2006} report (their
+footnote~19) that using per-household consumption or ``different equivalence scales'' has
+``little effect on the results.'' Both halves of that statement are consistent with what we
+find --- different equivalence scales barely differ here (Census $0.10$ vs OECD $0.11$) ---
+once one notes that their object is the \emph{time trend} of inequality (whether consumption
+inequality rose alongside income inequality over 1980--2003), which an equivalence scale, or
+even the household/per-equivalent switch, barely moves because the cross-sectional
+distribution of household size is roughly stable from year to year. The object \emph{here}
+is the \emph{life-cycle age profile}, and that slope \emph{is} moved massively by the
+household/per-equivalent switch, precisely because household size varies systematically
+\emph{with age}. So the scaling decision is nearly irrelevant for the aspect of consumption
+inequality Krueger--Perri study, and decisive for the aspect this replication needs. Second,
+because Krueger--Perri's own measure is equivalised (Census scale), Guvenen's $\sim\!0.21$
+must come from the \emph{household} nondurable measure of \cite{DeatonPaxson1994} rather than
+from KP's equivalised series --- consistent with his stated ``household nondurables
+$\ldots$ following Deaton--Paxson.'' We take that household measure as the baseline for the
+data line in Figures~\ref{fig:varlogc_rip}--\ref{fig:varlogc_hip}, and report the equivalised
+profiles only as the sensitivity below.
+
+A striking external check comes from Guvenen's own follow-up. \cite{GuvenenSmith2014}, who
+adjust their consumption data for demographics by regressing out family size and other
+covariates (in effect equivalising), report that the life-cycle rise in the cross-sectional
+variance of log consumption in the U.S.\ data is only ``about 10 log points'' (their
+Figure~5), which they explicitly call small relative to \cite{DeatonPaxson1994} and
+attribute to using CE data over a longer sample; their imputed-PSID profile rises by only
+$\approx5$ log points. This is essentially our equivalised number ($\approx0.10$), and it
+coincides with the modern consensus that the life-cycle consumption-inequality rise is
+modest (\citealp{HeathcotePerriViolante2010}; \citealp{Kaplan2012}; \citealp{AguiarHurst2013}).
+So our $0.10$ is not an artefact of the OECD/Census adjustment: it is what the same author
+reports once consumption is demographically adjusted, and it is instead Guvenen's original
+$\sim\!0.21$ --- the household measure over the shorter Deaton--Paxson sample --- that looks
+large by current standards.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\textwidth]{../baseline/SavedOutput/Graphs/Guvenen2007_DataLine_scales.png}
+\caption{CEX consumption-inequality profile, 1980--2003, under three equivalence scales
+(Deaton--Paxson cohort-adjusted, 95\% bootstrap bands). Household-total nondurables (blue)
+rises $\approx0.22$ and reproduces Guvenen's ``US Data'' line; the Census adult-equivalent
+scale of Krueger--Perri (green) and OECD per-equivalent (red) both rise only $\approx0.10$
+(near-identical slopes, differing only by a small level shift) --- it is equivalising
+\emph{at all}, not the choice of scale, that flattens the profile.}
+\label{fig:datascale}
+\end{figure}
+
+\subsection{Why this matters for the HIP-vs-RIP verdict}
+The scale choice is not innocuous, because the whole point of the exercise is to compare
+model rises against this data rise. Our accurate-solution ($\delta^*\approx0.95$,
+$W/Y=4$) model rises in var$(\log c)$ over ages 25--65 are:
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+ & HIP $\lambda{=}0$ & HIP $\lambda{=}0.4$ & HIP $\lambda{=}0.62$ & HIP $\lambda{=}1$ & RIP \\
+\midrule
+rise in var$(\log c)$ & $0.375$ & $0.329$ & $0.304$ & $0.236$ & $0.290$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Against the \emph{household} data rise ($\approx0.22$) the models bracket the
+data and the paper's mechanism is visible: more learning (lower $\lambda$) produces more
+fanning, and a high-$\lambda$ HIP sits right at the data. Against the equivalised rise
+($\approx0.10$, on either the Census or the OECD scale), the data falls \emph{below every
+model}: the paper's baseline
+learning-HIP ($\lambda=0.62$, rise $0.304$) overshoots it by $0.20$, whereas RIP (rise
+$0.290$) overshoots by only $0.19$ --- so on this statistic the paper's preferred
+slow-learning HIP fits the equivalised data \emph{no better than RIP}; more tellingly, the
+fit \emph{improves as learning is dialed down} (the $\lambda=1$ no-learning HIP is closest
+of all), the reverse of the paper's mechanism. We read this less as a verdict ranking RIP
+above HIP than as evidence that the data want little of the learning-driven fanning (see the
+Related-literature note below). (Two honest caveats. First, this is partly entangled
+with the $\delta$ gap of Appendix~\ref{app:deltagrid}: at our accurate $\delta^*\approx0.95$
+every model already overshoots, so even under the household scale the very best-fitting
+single model is the near-no-learning HIP at $\lambda=1$, not the $\lambda=0.62$ baseline.
+Second, the reversal is marginal.) The lesson stands regardless: a conclusion this central
+should not turn on an unstated adult-equivalent convention. We therefore adopt
+household-total consumption --- Guvenen's own choice --- as the baseline for the data line
+in Figures~\ref{fig:varlogc_rip} and~\ref{fig:varlogc_hip}, and record the per-equivalent
+profile only as this cautionary sensitivity.
+
+To put the ranking at a $0.10$ target in one place: RIP (rise $0.290$) overshoots by $0.19$
+and the paper's baseline HIP ($\lambda=0.62$, $0.304$) by $0.20$, while the closest model of
+all is the no-learning HIP ($\lambda=1$, $0.236$, overshoot $0.14$). The direction is the
+point: as learning \emph{increases} (lower $\lambda$) the HIP rise grows,
+$0.30\to0.33\to0.38$ at $\lambda:0.62\to0.4\to0$, moving \emph{away} from $0.10$. So the
+learning channel does not help against the modern target --- the fit improves as learning is
+dialed toward the no-learning limit, where HIP and RIP roughly coincide, and the
+slow-learning baseline fits no better than RIP. (This is the rise statistic alone; the
+paper's fuller case for HIP also rests on the non-concave \emph{shape} and the education
+cross-section of Figure~\ref{fig:fig11}.)
+
+\textbf{Related literature.} The reading that a modest consumption-inequality rise leaves
+little room for the learning/uncertainty channel is the mainstream one, though the
+literature frames it as the \emph{amount} of income risk that is predictable rather than as
+a RIP-versus-HIP contest. \cite{GuvenenSmith2014}, estimating the learning directly, find
+that households perceive less than one-fifth of the age-25--55 rise in income dispersion (5
+of 32 log points) as genuine uncertainty, the rest as predictable --- that is, a small
+learning component. \cite{PrimicerivanRens2009} argue that the flatness of consumption
+inequality implies most of the rise in permanent income dispersion is predictable to
+households (known heterogeneity) even where it looks like risk to the econometrician.
+\cite{KaplanViolante2010} find the empirical insurance coefficient for permanent shocks is
+high and, unlike the model's, shows no age slope, again limiting the role of accumulating
+uninsurable (or slowly-learned) risk. All three point the same way as the exercise above: to
+match the modern $\approx0.10$ rise the model needs little of the learning-driven
+consumption fanning --- so the data prefer a \emph{high}-$\lambda$ (little-learning) HIP,
+which is close to the RIP limit, rather than the slow-learning baseline.
+
+\subsection{The second fact: the non-concave shape}
+\label{app:shape}
+Guvenen's \emph{second} empirical fact (his Section~III.B) is the \emph{shape}: the US
+age-inequality profile is \emph{non-concave} --- convex, or at least not flattening --- up
+to about age~55, whereas a persistent-shock (RIP) process gives a \emph{concave} profile
+(inequality rises fast early, then flattens as the permanent-shock variance saturates), and
+the learning-about-$\beta^i$ channel of HIP instead produces the non-concave acceleration.
+Unlike the rise, this shape is a within-profile curvature, and it is barely affected by the
+equivalence scale. Fitting a quadratic to var$(\log c)$ over ages 25--55 (sign of the $t^2$
+coefficient; decade increments for intuition):
+
+\begin{center}
+\begin{tabular}{lccl}
+\toprule
+ & $t^2$ coeff & incr.\ 25--35 / 35--45 / 45--55 & shape \\
+\midrule
+Data, household      & $+0.00014$ & $+0.02$ / $+0.09$ / $+0.07$ & non-concave \\
+Data, per-equivalent & $+0.00010$ & $-0.02$ / $+0.04$ / $+0.04$ & non-concave \\
+RIP model            & $-0.00012$ & $+0.11$ / $+0.08$ / $+0.07$ & concave \\
+HIP $\lambda=0$      & $+0.00002$ & $+0.10$ / $+0.13$ / $+0.10$ & non-concave \\
+HIP $\lambda=0.4$    & $\approx 0$ & $+0.09$ / $+0.10$ / $+0.09$ & $\sim$non-concave \\
+HIP $\lambda=0.62$   & $-0.00001$ & $+0.09$ / $+0.08$ / $+0.08$ & $\sim$linear \\
+HIP $\lambda=1$      & $-0.00006$ & $+0.08$ / $+0.06$ / $+0.05$ & concave \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Three points. First, \textbf{the non-concave shape survives the modern data}:
+both our household and per-equivalent profiles are convex ($t^2>0$, accelerating in
+mid-life), so --- in contrast to the rise magnitude --- this fact is robust to the scale
+choice. Second, \textbf{RIP is concave and HIP is not}: RIP front-loads (largest increment
+in the first decade, then flattens), while HIP is convex once there is enough learning, so
+the qualitative distinction Guvenen draws holds. Third, and most striking, \textbf{here
+learning \emph{helps}}: the HIP profile grows more convex as learning increases (lower
+$\lambda$) and collapses to a concave, RIP-like shape in the no-learning limit
+($\lambda=1$). The non-concavity \emph{is} the learning fingerprint --- slow resolution of
+$\hat\beta$ makes consumption fan out increasingly with age.
+
+This is the mirror image of the rise result. The modern $\approx0.10$ rise wants
+\emph{little} learning ($\lambda\to1$, near RIP), but the non-concave shape wants
+\emph{more} learning (low $\lambda$). At Guvenen's $0.21$ rise a single
+$\lambda\approx0.62$ could satisfy both facts at once; at the modern rise the two no longer
+line up behind one $\lambda$. (The concavity numbers are printed by
+\texttt{MakeReplicationTable.m}.)
+
+\begin{thebibliography}{}
+
+\bibitem[Aguiar and Hurst(2013)]{AguiarHurst2013}
+Aguiar, M. and E. Hurst (2013): ``Deconstructing Life Cycle Expenditure,''
+\emph{Journal of Political Economy}, 121(3), 437--492.
+
+\bibitem[Budr\'ia Rodr\'iguez et al.(2002)]{Budria2002}
+Budr\'ia Rodr\'iguez, S., J. D\'iaz-Gim\'enez, V. Quadrini and J.-V. R\'ios-Rull
+(2002): ``Updated Facts on the U.S. Distributions of Earnings, Income, and Wealth,''
+\emph{Federal Reserve Bank of Minneapolis Quarterly Review}, 26(3), 2--34.
+
+\bibitem[Deaton and Paxson(1994)]{DeatonPaxson1994}
+Deaton, A. and C. Paxson (1994): ``Intertemporal Choice and Inequality,''
+\emph{Journal of Political Economy}, 102(3), 437--467.
+
+\bibitem[Guvenen(2005)]{Guvenen2005}
+Guvenen, F. (2005): ``An Empirical Investigation of Labor Income Processes,''
+working paper.
+
+\bibitem[Guvenen(2007)]{Guvenen2007}
+Guvenen, F. (2007): ``Learning Your Earning: Are Labor Income Shocks Really Very
+Persistent?'' \emph{American Economic Review}, 97(3), 687--712.
+
+\bibitem[Guvenen and Smith(2014)]{GuvenenSmith2014}
+Guvenen, F. and A. A. Smith, Jr. (2014): ``Inferring Labor Income Risk and Partial
+Insurance From Economic Choices,'' \emph{Econometrica}, 82(6), 2085--2129.
+
+\bibitem[Heathcote et al.(2010)]{HeathcotePerriViolante2010}
+Heathcote, J., F. Perri and G. L. Violante (2010): ``Unequal We Stand: An Empirical
+Analysis of Economic Inequality in the United States, 1967--2006,'' \emph{Review of
+Economic Dynamics}, 13(1), 15--51.
+
+\bibitem[Kaplan and Violante(2010)]{KaplanViolante2010}
+Kaplan, G. and G. L. Violante (2010): ``How Much Consumption Insurance Beyond
+Self-Insurance?'' \emph{American Economic Journal: Macroeconomics}, 2(4), 53--87.
+
+\bibitem[Kaplan(2012)]{Kaplan2012}
+Kaplan, G. (2012): ``Inequality and the Life Cycle,'' \emph{Quantitative Economics},
+3(3), 471--525.
+
+\bibitem[Krueger and Perri(2006)]{KruegerPerri2006}
+Krueger, D. and F. Perri (2006): ``Does Income Inequality Lead to Consumption Inequality?
+Evidence and Theory,'' \emph{Review of Economic Studies}, 73(1), 163--193.
+
+\bibitem[Primiceri and van Rens(2009)]{PrimicerivanRens2009}
+Primiceri, G. E. and T. van Rens (2009): ``Heterogeneous Life-Cycle Profiles, Income Risk
+and Consumption Inequality,'' \emph{Journal of Monetary Economics}, 56(1), 20--39.
+
+\bibitem[Kirkby(2025)]{Kirkby2025}
+Kirkby, R. (2025): ``Discretizing Earnings Dynamics: Implications of
+Gaussian-Mixture Shocks for Life-Cycle Models,'' working paper.
+
+\bibitem[Storesletten et al.(2004)]{StoreslettenTelmerYaron2004}
+Storesletten, K., C. Telmer and A. Yaron (2004): ``Consumption and Risk Sharing Over
+the Life Cycle,'' \emph{Journal of Monetary Economics}, 51(3), 609--633.
+
+\end{thebibliography}
+
+\end{document}
