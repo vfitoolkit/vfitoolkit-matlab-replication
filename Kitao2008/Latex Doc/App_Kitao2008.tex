@@ -1,0 +1,486 @@
+\documentclass[11pt,fleqn]{article}
+% \documentclass[smallextended]{svjour3}
+
+\textheight=23.3cm 
+\textwidth=16.5cm 
+\topmargin=-15mm 
+\oddsidemargin=0cm 
+
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{ulem}
+\usepackage{graphicx}
+%This package is dated and it is giving me problems
+%\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{pdflscape}
+\usepackage[sidewaysfigure]{rotating}
+\usepackage{natbib}
+%\usepackage{amsthm}
+%\usepackage{setspace}
+\usepackage{multirow}
+\newcommand{\tb}{\hspace*{3mm}}
+\bibpunct{(}{)}{;}{a}{,}{,}
+\parskip=3mm 
+\parindent=5mm 
+\baselineskip=17pt
+
+\usepackage{amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\renewcommand{\qedsymbol}{\textit{Q.E.D.}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\usepackage{hyperref}
+\hypersetup{
+  pdftitle={Kitao (2008) - Entrepreneurship, Taxation and Capital Investment},    % title
+  pdfauthor={Robert Kirkby},     % author
+  %hyperfootnotes=false,
+  %hyperindex=true,
+  %hyperfigures=true,  
+  colorlinks=true,                % makes links a coloured word, rather than putting coloured boxes around them
+  linkcolor=black,                % makes internal links black
+  citecolor=black,                % makes citations black
+  urlcolor=blue,                 % color of external links
+  breaklinks=true                 % allow links to be brocken across multiple lines      
+}
+
+
+\begin{document}
+
+
+%===============================
+\newcommand{\rob}[1]{{\noindent\color{blue}\bf #1}}
+\newcommand{\robc}[1]{{\noindent\color{blue}\bf R: #1}}
+%===============================
+
+\title{Kitao (2008) - Entrepreneurship, Taxation and Capital Investment}
+\author{Robert Kirkby} 
+\date{\today}
+\maketitle
+Brief description of replication of \cite*{Kitao2008}. I make very few notational changes. This is not intended as a full description of the model, so much as making it clear how the model is expressed in terms of the VFI Toolkit; for a full description of the model you should consult the original paper. Overall takeaway is everything replicates (small quantitative differences, but nothing of any substance).
+
+The model is a general equilbrium incomplete markets infinite-horizon model. The infinite-horizon value function problem has two endogenous states (assets and entrepreneurship), and two exogenous states (labor productivity and entrepreneurial productivity). Agents decide each period whether to become an entrepreneur or a worker. Agents this period are an entrepeneur or a worker, based on what they decided last period. This choice will be based on both their labor and entrepreneurial productivity shocks, $\eta$ and $\theta$, as well as their savings.
+
+Workers exogenously supply labor and make a consumption-savings decision. Entrepreneurs choose how much output to produce and the labor and capital used in production, as well as making a consumption-savings decision. Note that the entrepreneurs production decision is a static problem, and can be solved analytically, hence we will not include it as a decision variable when writing out the value function problem below (technically it is one, but we can derive a closed form solution to it, so we can just use these closed-form equations inside the ReturnFn and hence we do not include it as one from the perspective of setting up the decision and state variables of the problem).
+
+Let $e=0$ denote worker and $e=1$ denote entrepreneur.
+
+The household value function problem is given by,
+\begin{align*}
+ V(a,e,\eta,\theta)  = & \max_{a',e'} \frac{c^{1-\sigma}}{1-\sigma} + \beta E [V(a',e',\eta',\theta')|\eta,\theta] \\
+ \text{\textit{subject to}} & \\
+ \text{Worker (e=0):} &  \\
+                      & I=w \eta+r a \\
+                      & (1+\tau_c)c+a'=w \eta+(1+r) a-TaxI(I) \\
+                      & a'\geq 0     \\
+ \text{Entrepreneur (e=1):} &  \\
+                      & I=y-\delta k-\bar{r} (k-a)-w \, max(n-\eta,0) \\
+                      & (1+\tau_c)c+a'=I+a-TaxI(I) \\
+                      & y=\theta k^{\upsilon_1} n^{\upsilon_2} \\
+                      & \bar{r}=\begin{cases}
+                                   \text{if k$>$a,} & \bar{r}=r+\phi \\
+                                   \text{if k$\leq$ a,} & \bar{r}=r \\
+                                \end{cases} \\
+                      & a'\geq 0, k\leq (1+d)a                  
+\end{align*}
+where $TaxI(I)$ is a tax function on income $I$.
+
+I half cheat in writing out the household problem above by not including $y$, $k$ and $n$ as decision variables. The entrepreneur's production problem is static and has analytical solutions as described now and so they can removed from the value function problem, but here I just leave them in the problem above.
+The analytical solution to the entrepeneurial production decision follows. The optimal output ($y$), capital demand ($k$) and labor demand ($n$) can be derived as functions of the rental rate of capital $r$, the wage $w$, the capital depreciation rate $\delta$, the collateral constraint parameter $d$, and the production function parameters $\theta$, $\upsilon_1$, $\upsilon_2$. You can find the full derivations at:
+\href{http://discourse.vfitoolkit.com/t/on-solving-models-with-entrepreneurs/296}{discourse.vfitoolkit.com/t/on-solving-models-with-entrepreneurs/296}
+Note however that this model contains two complications relative to the textbook decreasing-returns-to-scale problem.
+
+First, if $k>a$ then the interest rate on borrowing is $r+\phi$, otherwise it is $r$. Write $\tilde{r}$ for the relevant one.
+
+Second, the entrepreneur uses their own labor endowment $\eta$ in their own project at zero cost, and only buys labor above $\eta$ at the wage $w$; the wage bill is $w \cdot max(n-\eta,0)$. So the marginal cost of labor is zero for $n<\eta$ and $w$ for $n>\eta$. This means the optimal $n$ is never below $\eta$ (except when it is optimal to produce nothing at all, which here means $\theta=0$ or $a=0$), and it means that the first-order condition for $k$ is different depending on whether or not the $n=\eta$ kink binds. Writing $\varsigma=1-\upsilon_1-\upsilon_2$, the unconstrained solution is
+\begin{align*}
+ k^{*} = & \begin{cases}
+   \left(\frac{\upsilon_1}{\tilde{r}+\delta}\right)^{\frac{1-\upsilon_2}{\varsigma}} \left(\frac{\upsilon_2}{w}\right)^{\frac{\upsilon_2}{\varsigma}} \theta^{\frac{1}{\varsigma}}, & \text{if this implies } n>\eta \text{ (interior, both FOCs hold)} \\
+   \left(\frac{\upsilon_1 \theta \eta^{\upsilon_2}}{\tilde{r}+\delta}\right)^{\frac{1}{1-\upsilon_1}}, & \text{otherwise (}n=\eta\text{, so labor is fixed and its marginal cost is zero)}
+  \end{cases} \\
+ n^{*} = & \, max\left\{ \eta, \left(\frac{\upsilon_2 \theta (k^{*})^{\upsilon_1}}{w}\right)^{\frac{1}{1-\upsilon_2}} \right\}, \qquad y^{*}=\theta (k^{*})^{\upsilon_1} (n^{*})^{\upsilon_2}
+\end{align*}
+The two complications interact, and are handled as follows: first evaluate $k^{*}$ at $\tilde{r}=r+\phi$ and impose the collateral constraint, $k=min\{k^{*},(1+d)a\}$; if the resulting $k$ is below $a$ then the entrepreneur is not in fact a borrower, so re-evaluate $k^{*}$ at $\tilde{r}=r$ and set $k=min\{k^{*},a\}$. This is implemented in \texttt{Kitao2008\_StaticEntrepreneurProblem.m}, which is the single place in the codes where the entrepreneur's production decision is solved; every other function that needs $k$, $n$ or $y$ calls it.
+
+Note that because of the own-labor endowment the entrepreneur's production decision depends on $\eta$ as well as on $\theta$ and $a$ (unlike what one might guess from Figure 3 of Kitao (2008), which does not report a value of $\eta$).
+
+When solving the two "no entrepeneur" models, you are essentially just solving the Aiyagari model (the difference between the two is how you set $\eta$). Three points about them are worth recording.
+
+First, on government spending. Kitao (2008), Section 3.2, sets $G$ "exogenously given as a fixed fraction of GDP", at 18\%, and Section 3.3 says that the worker economies "maintain the values of baseline parameters at the benchmark levels ... and the tax parameters to satisfy the government budget constraint". It is therefore the \emph{ratio} $G/Y$, and not the level of $G$, that these economies inherit from the benchmark. This matters a lot, because they lose the entire non-corporate sector and their GDP is roughly 17--25\% below the benchmark: holding the level of $G$ fixed would give them a government worth 21--24\% of their own GDP instead of 18\%, and drive $\tau_I$ up to 12.4\% and 4.2\% respectively where Kitao (2008), Table 7, reports 3.03\% for both. Note that for the $\tau_k$ policy experiments it is then the \emph{level} of $G$ that is held fixed, at each economy's own initial steady state value, as Section 5 of Kitao (2008) requires.
+
+Second, on the labor productivity process in "no entrepreneurs 2". The grid is normalized so that the unconditional mean of $\eta$ is unity, which is the normalization Kitao (2008), Section 3.1, states for the benchmark and which "no entrepreneurs 1" therefore inherits. This is not innocuous even though scaling $\eta$ leaves $r$ and $w$ untouched (it simply scales $A$, $Y$, $C$ and $G$), because the income tax function is unit-dependent through $a_2$; if the three economies are not in the same units then they do not face the same tax schedule. The normalization has to be applied inside the exogenous shock function rather than once at the outset, because $e_4$ is being calibrated to hit the Gini of wealth and so the mean of $\eta$ moves with it.
+
+Third, on the asset grid for "no entrepreneurs 2". The Castañeda, Díaz-Giménez \& Ríos-Rull (2003) process has a top labor productivity state of around 300 times the mean, much higher than the other models. This economy is therefore given its own asset grid, which keeps the standard grid below $20 K_{ss}$ (so the three economies remain directly comparable over the range where essentially the whole population lives) and appends a geometrically spaced upper segment out to 20{,}000. The upper tail here is fat, so the results are sensitive to where that segment stops; Figure 14 in the saved output, and the mass-at-the-top-gridpoint numbers printed alongside it, are the check.
+
+Some of the model output in Kitao (2008) is reported in thousands of dollars, which requires a constant by which to multiply model units. I could not find this constant reported in the paper, so I emailed Sagiri Kitao to ask if she still had it anywhere. She replied that, digging through her old codes, "It appears that I rescaled the model unit using the average labor income in 2002, \$42,618." That is the value used throughout this replication (\texttt{wealthscalingfactor} in the codes).
+
+The main exercises in Kitao (2008) are all based on solving an initial stationary eqm with $TaxI$ being the standard US tax system in which the tax base is (labor+capital) income. Most of the alternative tax systems considered are abouth changing $TaxI$ to instead tax labor income and capital income separately, with $\tau_k$ being the tax rate on capital income, and solving for the final stationary eqm and the transition path. There are also some alternative tax systems considered about changing $TaxI$ to consider business income separately from personal income, with $\tau_{E1}$ being the tax rate on business income, and solving for final stationary eqm and the transition path. In the codes $taxincome=1,2,3$ changes the tax base and covers these three different versions of how $TaxI$ is set (the difference is just in the definition of taxable income, rather than the parameters and functional form of the tax function).
+
+One point about the calibration is worth spelling out, because it is easy to compute the wrong object. Kitao (2008), Section 3.2, states that the parameter $a_2$ (\texttt{tau\_a2} in the codes) "is pinned down in equilibrium so that the share of the government expenditures raised by the non-linear part of the function equals 65\%". The row of her Table 2 that reports this is labelled "income tax/total tax revenue", which suggests the whole income tax, but the text is explicit that the target is the non-linear $a_0 \left( I - (I^{-a_1}+a_2)^{-1/a_1} \right)$ part alone, excluding the proportional $\tau_I I$ part. The replication therefore reports the non-linear part as a share of total tax revenue against the 65\% target (\texttt{Kitao2008\_IncomeTaxFn\_NonLinearPartOnly.m}), and reports the whole income tax as a share of total tax revenue as a memo line (\texttt{Kitao2008\_IncomeTaxFn.m}). Note also that in equilibrium total tax revenue equals $G$, so "share of government expenditures" and "share of total tax revenue" are the same thing. Since $a_2$ is taken as given here at the value reported in Kitao's Table 1, rather than being recalibrated, the replication is not free to hit 65\% exactly; and note that $a_2$ is unit-dependent (Kitao notes that if income is scaled by $\lambda$ then $a_2$ must be rescaled to $a_2 \lambda^{-a_1}$), so this comparison is also an implicit check that the replication's model units line up with hers.
+
+For more details on the model see \cite*{Kitao2008}.  The rest of this doc was largely written by Claude with light human editing.
+
+\section{The average leverage ratio in Table 5}
+Kitao (2008) does not say how the ``avg. lev. ratio (\%)'' column of her Table 5 is constructed. This replication originally read it as borrowing relative to the entrepreneur's own assets, $(k-a)/a$. That reading cannot be right, and the model itself says so.
+
+An entrepreneur who is at the collateral constraint has $k=(1+d)a$, so under $(k-a)/a$ their leverage is exactly $d=0.5$, whatever their assets are. In the benchmark the unconstrained investment level of a $\theta_4$ entrepreneur is around $225$ model units, which needs $a \geq 225/(1+d) \approx 150$ before the constraint stops binding, whereas the average $\theta_4$ entrepreneur holds around $20$. So essentially every $\theta_4$ entrepreneur is constrained, the column is pinned at $49.7\%$, and widening the asset grid does not move it (it went $50.0 \rightarrow 49.8 \rightarrow 49.7\%$ as the top of the grid was raised from \$4.7m to \$8.2m to \$9.4m). Kitao (2008) reports $32.6\%$.
+
+Under the alternative reading, borrowing relative to the investment, $(k-a)/k$, that same constrained entrepreneur gives $0.5a/1.5a=1/3$. A group in which a fraction $p$ is constrained and the rest do not borrow therefore averages $0.5p$ under the old definition and $p/3$ under the new one, so the whole column can be mapped across:
+\begin{center}
+\begin{tabular}{lccc}
+\hline
+ & $(k-a)/a$ & $\rightarrow (k-a)/k$ & Kitao (2008) \\ \hline
+$\theta_2$ &  3.0\% &  2.0\% &  2.4\% \\
+$\theta_3$ & 22.4\% & 14.9\% & 15.2\% \\
+$\theta_4$ & 49.7\% & 33.1\% & 32.6\% \\
+all        & 32.4\% & 21.6\% & 21.1\% \\ \hline
+\end{tabular}
+\end{center}
+All four rows line up, and the $\theta_4$ row is close to decisive: $49.7\%$ sits just below the $50\%$ that a fully constrained group must give under $(k-a)/a$, while Kitao's $32.6\%$ sits just below the $33.3\%$ that the same fully constrained group must give under $(k-a)/k$. The replication therefore uses $(k-a)/k$ (see \texttt{Kitao2008\_leverageFn.m}). Note that the borrowing that enters the aggregate resource constraint is computed separately, as $max\{k-a,0\}$ directly, so that it does not depend on which of these two definitions is used.
+
+\section{Comments on Replication results}
+All results are produced by running \texttt{Kitao2008.m}.
+
+The numerical setup differs from Kitao (2008) in one respect worth stating up front. Kitao (2008) uses pure discretization on 3000 asset gridpoints; this replication uses 1200 gridpoints together with a 25-point grid interpolation layer, so the choice of $a'$ is substantially finer than in the original, while the state space on which the distribution is stored is coarser. All 24 transition paths are solved with Anderson acceleration, and all 24 converged (8 to 15 iterations each, with no Anderson step rejected by the safeguard).
+
+\subsection*{Stationary General Equilibrium}
+The initial stationary equilibrium, the two no-entrepreneur economies, and all 82 final stationary equilibria (41 values of $\tau_k$ and 41 values of $\tau_{E1}$) replicate Kitao (2008) closely.
+
+Table 2 hits every calibration target that Kitao (2008) hits: $K/Y$ of 2.632 against her 2.650, $G/Y$ of 18.07\% against 18.00\%, 12.07\% entrepreneurs against 11.93\%, an overall exit rate of 20.57\% against 21.30\%, and a ratio of median assets of 8.45 against 8.02. The largest gaps are the share of capital used by entrepreneurs (37.8\% against her 35.9\%, target 35\%) and the share of assets owned by them (36.2\% against 37.1\%, target 40\%).
+
+Table 3 reproduces the wealth distribution: a benchmark Gini of 0.802 against Kitao's 0.801, and top shares of 19.5/51.4/69.5/85.1\% against 19.6/50/69/85\%. The top 1\% share is the one statistic the benchmark model misses in both the original and the replication (the data are 34.7\%). The two no-entrepreneur economies also come out as in the original: a Gini of 0.420 when the labor income process is left as in the benchmark, and 0.802 with a top 1\% share of 35.9\% when the process is recalibrated to the benchmark Gini (Kitao reports 35.4\%). Note that reproducing that second economy requires a much wider asset grid than the benchmark does.
+
+Table 4 is close: the replication puts 50/41/38/35\% of entrepreneurs in the top 1/5/10/20\% of the wealth distribution against Kitao's 47/40/37/33\%.
+
+Table 5 is essentially exact once the entrepreneur's static problem is solved correctly. Population shares by ability are 2.30/3.73/6.04\% against Kitao's 2.36/3.79/5.78\%, and average leverage ratios are 2.2/15.2/33.2\% against 2.4/15.2/32.6\%. Average investment runs a little high throughout --- 141/547/1226 (thousands of dollars) against 136/524/1173 --- and the same 4--6\% overshoot appears in every investment number in Table 8. Average assets by ability are flatter in the replication (669/744/832) than in the original (598/710/917).
+
+Table 8 is the closest of the tables. Entrepreneur population shares are 2.3/3.7/6.0/12.1\% in the benchmark against Kitao's 2.4/3.8/5.8/11.9\%, 2.6/4.0/6.1/12.7\% at $\tau_{E1}=10\%$ against 2.6/4.0/5.9/12.5\%, and 0.9/2.3/5.4/8.7\% at $\tau_{E1}=40\%$ against 0.9/2.4/5.1/8.4\%. The non-monotonicity of $\theta_3$ investment in the tax rate (547 $\rightarrow$ 578 $\rightarrow$ 596) reproduces Kitao's (524 $\rightarrow$ 554 $\rightarrow$ 574).
+
+Table 7 matches on all six columns to within a percent or two, and the fractions with a positive CEV match well (15.8/46.1/17.2 and 80.0/37.9/67.4 against Kitao's 16.3/46.4/15.8 and 79.3/38.1/64.0). The initial $\tau_I$ differs in the two no-entrepreneur economies (3.16/5.15/1.92\% here against 3.16/3.03/3.03\% in the original): the benchmark is exact, and the difference in the other two is because each no-entrepreneur economy is recalibrated here to hit the same $G/Y$.
+
+Tables 6 and 9 reproduce the pattern of who gains. For $\tau_{E1}=10\%$ (Table 9(a)) the aggregate is 10.7\% of households with a welfare gain against Kitao's 10.9\%, and the $>\$2$m row is identical to the decimal (0.6, with 46.6\% of entrepreneurs in that band gaining). For $\tau_{E1}=40\%$ the top two wealth bands again match almost exactly, but the replication puts more gainers one wealth band lower --- 0.7\% in \$250--500k and 3.0\% in \$500k--1m where Kitao has 0.0\% and 2.0\% --- so the aggregate is 9.2\% against her 7.5\%.
+
+Figures 1 and 2 are exact replications. Figure 3 is now also an exact replication: $\theta_4$ leaves the maximum-leverage line at about \$6.35m of assets and flattens at an investment of about \$9.55m (Kitao \$9.45m), $\theta_3$ flattens at about \$1.43m, and $\theta_2$ is flat at about \$130k throughout.
+
+Figure 4 replicates in all six panels. Panels (a) to (d) and (f) were already close; panel (e) required two corrections to the tax code, both of which are worth recording because each is easy to get wrong.
+
+The first is the base of the flat capital income tax. Section 5.1 of Kitao (2008) taxes "the return from riskless saving", and for an entrepreneur that is only the part of the assets not invested in the business: "If only part of his assets are invested, i.e., $k \leq a$, the remaining $(a-k)$ earns a riskless return which is added to the tax base of the entrepreneur as capital income." So the base is $r \cdot max\{a-k,0\}$, not $r a$. Note that Section 5.2 uses a different base for the other experiment, defining $I_{E2}=ra$, "the capital income earned on assets $a$", so the two experiments genuinely do not share a definition.
+
+The second is that the entrepreneur chooses $k$ after tax, not before. Equation (7) of Kitao (2008) has the tax liability $T(I)$ inside the maximisation. Whether that matters depends on the tax system, and it matters in only one of the three: under $taxincome=1$ the objective is monotone in total income so the argmax is unchanged, and under $taxincome=3$ the entrepreneur's other income $I_{E2}=ra$ does not depend on $k$ so the argmax is again unchanged. Under $taxincome=2$ it does change, because $k$ shifts income between $I_K$ at the flat rate $\tau_k$ and $\tilde{I}$ at the progressive schedule, and those carry different marginal rates. For $k<a$ the $r$ terms cancel out of $\tilde{I}$ and the first-order condition reduces to $f_k = \delta + r_{eff}$ with $r_{eff}=r(1-\tau_k)/(1-mtr)$, so the entrepreneur simply discounts at an effective cost of capital rather than at $r$. This is the margin Kitao (2008) describes: a low capital income tax makes saving attractive relative to entrepreneurial investment, because business profit is taxed at the higher $\tau_I$ to make up the lost revenue.
+
+With both in place, entrepreneurial capital, output and labor all rise with $\tau_k$ as in the original. Normalised to the benchmark, entrepreneurial capital runs from 0.964 at $\tau_k=0$ to 1.024 at $\tau_k=40\%$ against Kitao's 0.968 to 1.028; output from 0.968 to 1.022 against 0.975 to 1.022; labor from 0.955 to 1.035 against 0.958 to 1.028. The wealth Gini runs from 0.786 to 0.823 against 0.782 to 0.822, and $\tau_I$ from 4.66\% to 1.90\% against 4.75\% to 1.85\%.
+
+The benchmark is untouched by either correction, as it must be: it uses $taxincome=1$, and Tables 2, 3, 4 and 5 are unchanged to every digit reported. The same is true of the $\tau_{E1}$ experiments, which use $taxincome=3$.
+
+Table 7's benchmark columns are close to exact: the interest rate 0.919 and 1.077 against Kitao's 0.919 and 1.076, the wage 1.016 and 0.986 against 1.016 and 0.986, aggregate capital 1.052 and 0.958 against 1.051 and 0.958, and the fraction with a positive CEV 16.6\% and 79.2\% against 16.3\% and 79.3\%.
+
+Note that Kitao (2008) normalizes many of the panels of Figures 4, 5, 8 and 9 to one at the benchmark. Most panels here are left in model units instead, so that the levels are visible; the axis ranges are therefore not comparable with the original.
+
+\subsection*{Transition paths}
+Both price and quantity paths in Figures 5 and 9 converge to the final stationary equilibria computed independently. In Figure 5 the wage converges to 1.4236 and 1.3657 and the interest rate to 2.69\% and 3.36\%, which are the $\tau_k=0$ and $\tau_k=40\%$ stationary equilibrium values to the digits plotted, and aggregate assets converge from the benchmark 6.061 to 6.52 and 5.70 against stationary equilibrium values of 6.523 and 5.704. Figure 9 likewise converges to 6.84 and 5.47 against 6.842 and 5.464. The savings rate panels reproduce the shape in Kitao (2008): the $\tau_k=0$ path jumps on impact and settles back, the $\tau_k=40\%$ path falls on impact and then recovers.
+
+This was not true of earlier runs of this replication, and the reason is worth recording because it is a trap that any user of the toolkit can fall into. \texttt{AgentDistOnTransPath\_InfHorz} takes twelve arguments, ending \texttt{..., T, Parameters, transpathoptions, simoptions}. All four call sites in \texttt{Kitao2008.m} passed ten, so \texttt{simoptions} was received as \texttt{Parameters} and \texttt{simoptions} was absent. The command then takes its own default branch, which sets \texttt{simoptions.gridinterplayer=0}, and the entire agent distribution along every transition path was iterated with no interpolation layer: mass that should have been split between the coarse gridpoints $j$ and $j+1$ was placed entirely on $j$. Aggregate assets therefore drifted steadily downwards, ending 8--13\% below the stationary equilibria the paths were converging to, while the price paths were unaffected because the transition path solver uses its own internal distribution rather than this command.
+
+The diagnostic that isolated this is a null reform: hold the price path at the initial stationary equilibrium, so that nothing changes and the initial distribution must be exactly invariant. Before the fix, aggregate assets fell from 6.061116 to 5.356888 over $T=120$, with 935 of the 1200 asset gridpoints carrying a deviation after a single step. After the fix, no gridpoint carries a deviation above $10^{-6}$ after a single step, and aggregate assets at $T$ are 6.060567. The remaining $0.009\%$ is not a residual bug: the initial distribution is itself only converged to the iteration tolerance, so it is an approximate rather than an exact fixed point, and 119 further applications of the correct operator relax it slightly. The largest remaining deviation sits at the first asset gridpoint, which is where an approximate fixed point would be expected to differ most.
+
+Figure 5's entrepreneurial panels also reproduce the original once the two corrections described under Figure 4 are in place. Entrepreneurial capital falls on impact along the $\tau_k=0$ path, from 2.29 to about 2.19, and then partially recovers to 2.21, while along the $\tau_k=40\%$ path it jumps to about 2.38 and settles at 2.35. Entrepreneurial output behaves the same way. Both are the shapes in Kitao (2008), and both are the transition-path counterpart of the steady state result in Figure 4(e). Aggregate capital converges to 6.38 and 5.81, which are the $\tau_k=0$ and $\tau_k=40\%$ stationary equilibrium values.
+
+\subsection*{Welfare}
+The consumption-equivalent variation profiles in Figures 6 and 10 replicate in shape and in sign. For $\tau_k=0$ the CEV rises in assets, crossing zero at around \$250k for workers and somewhat higher for entrepreneurs; for $\tau_k=40\%$ it falls in assets, crossing zero at around \$200k. Both patterns, and their ordering across $\eta$ and across $\theta$, are as in the original. The replication plots these over the full asset grid rather than Kitao's \$1m and \$3m, so the axis ranges are not comparable and the replication's curves run to larger magnitudes simply because they extend much further to the right. At the very top of the asset grid the CEV curves flatten out because there is essentially no mass there.
+
+The transition-path welfare results replicate almost exactly. In Figure 7 the transition CEV runs from $-0.79\%$ at $\tau_k=0$ to $+0.38\%$ at $\tau_k=40\%$, crossing zero at about $\tau_k=22\%$, against Kitao's $-0.75\%$ to $+0.41\%$ crossing at about 23\%. In Figure 11 the transition CEV starts at $-2.70\%$ at $\tau_{E1}=0$, which is Kitao's value to two decimal places, and is hump-shaped with a peak of $-0.57\%$ against her $-0.68\%$; the peak sits at $\tau_{E1}\approx 30\%$ rather than her 25\%, and the right-hand endpoint is $-0.97\%$ against her $-1.73\%$. The paper's central result --- that the transition is welfare-reducing at every tax rate considered, so that accounting for it reverses the conclusion one would draw from comparing stationary equilibria --- comes out of the replication unchanged.
+
+The stationary equilibrium welfare comparisons do not replicate as well. The right panel of Figure 11 has the right shape and the right zero crossing (at $\tau_{E1}\approx 12\%$ against Kitao's 14\%) and the right endpoint ($-2.65\%$ against $-2.75\%$), but at $\tau_{E1}=0$ it gives $-0.13\%$ where Kitao has $+0.75\%$, and it has a small hump over $\tau_{E1}\in[0,10\%]$ where the original declines monotonically. The right panel of Figure 7 is worse: it is compressed into the range $-0.09\%$ to $-0.25\%$ where Kitao spans $+0.88\%$ to $-1.12\%$, and within that range it is visibly jagged. The jaggedness is solver noise --- differences of this size are of the same order as the general equilibrium tolerance --- so the second panel of Figure 7 should be read as saying that the ex ante stationary equilibrium welfare effect of $\tau_k$ is close to zero throughout, and not as a comparative static. Note that Kitao's own Figures 6 and 7 are not easy to reconcile with one another under a mass-weighted reading of ex ante welfare: her Figure 6(b) has the poor gaining and the rich losing under $\tau_k=40\%$, and most of the mass is poor, yet her Figure 7 reports an ex ante loss of $1.12\%$ at that tax rate.
+
+\subsection*{Remaining numerical issues}
+The asset grid is still slightly too short. The run reports a mass of $1.4\times10^{-4}$ in the top ten gridpoints in the benchmark, $1.8\times10^{-4}$ at worst across the $\tau_k$ experiments, and $5.4\times10^{-4}$ at worst across the $\tau_{E1}$ experiments (at $\tau_{E1}=0$, where the top of the grid is \$9.4m). These are fat-tail masses rather than a binding truncation, but they are what sets the warnings that the run prints.
+
+Five of the 41 $\tau_{E1}$ experiments finish with a largest general equilibrium residual between $1\times10^{-3}$ and $5\times10^{-3}$ rather than the $10^{-5}$ tolerance; the rest finish between $10^{-5}$ and $10^{-4}$. Figure 8 is smooth across all 41 points, including at those five, so the loose residuals do not appear to matter for anything reported.
+
+Finally, two consistency checks that the run performs: the aggregate resource constraint $Y-C-\delta A-G-\phi B$ closes to $5.3\times10^{-6}$, which is $2.3\times10^{-6}$ of output, and the decomposition of the income tax into its non-linear part and its proportional part closes to machine precision.
+
+
+
+% These two are referred to in the text and in the table notes rather than cited inline
+% (the Cagetti and De Nardi note is written by Kitao2008.m, not by this document), so nocite
+% them to get them into the bibliography.
+\nocite{CastanedaDiazGimenezRiosRull2003,CagettiDeNardi2006}
+\bibliographystyle{plainnat}
+\bibliography{App_Kitao2008_refs}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Kitao2008_Fig1.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Kitao2008_Fig1.png}
+\end{tabular}
+\end{center}
+\caption{Figure 1 of Kitao (2008)}
+\label{fig:kitao2008_figure1}
+\end{figure}
+ 
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig2.png}  \\
+\includegraphics[width=100mm]{../SavedOutput/Graphs/Kitao2008_Fig2.png}
+\end{tabular}
+\end{center}
+\caption{Figure 2 of Kitao (2008)}
+\label{fig:kitao2008_figure2}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig3.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig3.png}
+\end{tabular}
+\end{center}
+\caption{Figure 3 of Kitao (2008)}
+\label{fig:kitao2008_figure3}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig4.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig4.png}
+\end{tabular}
+\end{center}
+\caption{Figure 4 of Kitao (2008)}
+\label{fig:kitao2008_figure4}
+\begin{minipage}[t]{1.00\textwidth}{\baselineskip=.5\baselineskip \vspace{.3cm} \footnotesize{
+Note: Panels (a), (d) and (e) are actually all showing normalized things to get 1 in the benchmark (they are not the actual values of these), in the replication I show the actual values, except panel (e) as there are not enough y-axes so I normalize these. Note that while the benchmark has $\tau_k=0$ these tax experiments also separate labor income from capital income taxation, while the benchmark has income taxation (of all income), hence why the crossing of benchmark is not at $\tau_k=0$.}}\end{minipage}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig5.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig5.png}
+\end{tabular}
+\end{center}
+\caption{Figure 5 of Kitao (2008)}
+\label{fig:kitao2008_figure5}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig6.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig6.png}
+\end{tabular}
+\end{center}
+\caption{Figure 6 of Kitao (2008)}
+\label{fig:kitao2008_figure6}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig7.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig7.png}
+\end{tabular}
+\end{center}
+\caption{Figure 7 of Kitao (2008)}
+\label{fig:kitao2008_figure7}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig8.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig8.png}
+\end{tabular}
+\end{center}
+\caption{Figure 8 of Kitao (2008)}
+\label{fig:kitao2008_figure8}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig9.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig9.png}
+\end{tabular}
+\end{center}
+\caption{Figure 9 of Kitao (2008)}
+\label{fig:kitao2008_figure9}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=100mm]{./OriginalTablesFigures/Kitao2008_Fig10.png}  \\
+\includegraphics[width=100mm]{./OriginalTablesFigures/Kitao2008_Fig10B.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig10.png}
+\end{tabular}
+\end{center}
+\caption{Figure 10 of Kitao (2008)}
+\label{fig:kitao2008_figure10}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Fig11.png}  \\
+\includegraphics[width=90mm]{../SavedOutput/Graphs/Kitao2008_Fig11.png}
+\end{tabular}
+\end{center}
+\caption{Figure 11 of Kitao (2008)}
+\label{fig:kitao2008_figure11}
+\end{figure}
+  
+
+% \begin{figure}[htp]
+% \begin{center}
+% \begin{tabular}{c}
+% \includegraphics[width=80mm]{./OriginalTablesFigures/Kitao2008_Table1.png}  \\
+% \input{../SavedOutput/LatexInputs/Kitao2008_Table1.tex}
+% \end{tabular}
+% \end{center}
+% \caption{Table 1 of Kitao (2008)}
+% \label{fig:kitao2008_table1}
+% \end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table2.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table2.tex}
+\end{tabular}
+\end{center}
+\caption{Table 2 of Kitao (2008)}
+\label{fig:kitao2008_table2}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table3.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table3.tex}
+\end{tabular}
+\end{center}
+\caption{Table 3 of Kitao (2008)}
+\label{fig:kitao2008_table3}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table4.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table4.tex}
+\end{tabular}
+\end{center}
+\caption{Table 4 of Kitao (2008)}
+\label{fig:kitao2008_table4}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table5.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table5.tex}
+\end{tabular}
+\end{center}
+\caption{Table 5 of Kitao (2008)}
+\label{fig:kitao2008_table5}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table6.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table6.tex}
+\end{tabular}
+\end{center}
+\caption{Table 6 of Kitao (2008)}
+\label{fig:kitao2008_table6}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table7.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table7.tex}
+\end{tabular}
+\end{center}
+\caption{Table 7 of Kitao (2008)}
+\label{fig:kitao2008_table7}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table8.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table8.tex}
+\end{tabular}
+\end{center}
+\caption{Table 8 of Kitao (2008)}
+\label{fig:kitao2008_table8}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Kitao2008_Table9.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Kitao2008_Table9.tex}
+\end{tabular}
+\end{center}
+\caption{Table 9 of Kitao (2008)}
+\label{fig:kitao2008_table9}
+\end{figure}
+
+
+\end{document}
