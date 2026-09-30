@@ -1,0 +1,605 @@
+\documentclass[11pt,fleqn]{article}
+% \documentclass[smallextended]{svjour3}
+
+\textheight=23.3cm 
+\textwidth=16.5cm 
+\topmargin=-15mm 
+\oddsidemargin=0cm 
+
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{ulem}
+\usepackage{graphicx}
+\usepackage{color} 
+%This package is dated and it is giving me problems
+%\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{pdflscape}
+\usepackage[sidewaysfigure]{rotating}
+\usepackage{natbib}
+%\usepackage{amsthm}
+%\usepackage{setspace}
+\usepackage{multirow}
+\newcommand{\tb}{\hspace*{3mm}}
+\bibpunct{(}{)}{;}{a}{,}{,}
+\parskip=3mm 
+\parindent=5mm 
+\baselineskip=17pt
+
+\usepackage{amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\renewcommand{\qedsymbol}{\textit{Q.E.D.}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\usepackage{hyperref}
+\hypersetup{
+  pdftitle={Bruggemann (2021) - Higher Taxes at the Top: The Role of Entrepreneurs},    % title
+  pdfauthor={Alessandro Di Nola and Robert Kirkby},     % author
+  %hyperfootnotes=false,
+  %hyperindex=true,
+  %hyperfigures=true,  
+  colorlinks=true,                % makes links a coloured word, rather than putting coloured boxes around them
+  linkcolor=black,                % makes internal links black
+  citecolor=black,                % makes citations black
+  urlcolor=blue,                 % color of external links
+  breaklinks=true                 % allow links to be broken across multiple lines      
+}
+
+
+\begin{document}
+
+
+%===============================
+\newcommand{\rob}[1]{{\noindent\color{blue}\bf #1}}
+\newcommand{\robc}[1]{{\noindent\color{blue}\bf R: #1}}
+%===============================
+
+\title{Bruggemann (2021) - Higher Taxes at the Top: The Role of Entrepreneurs}
+\author{Alessandro Di Nola and Robert Kirkby}
+\date{\today}
+\maketitle
+
+
+\section{Model description}
+This is a brief description of the replication of \cite*{Bruggemann2021}, hereafter B2021. We make very few notational changes. It is not intended to be a full description of the model; rather, the aim is to make clear how the model is expressed in terms of the VFI Toolkit. For a full description of the model, see the original paper. The overall takeaway is that everything replicates.
+
+The model is a general equilibrium incomplete-markets infinite-horizon model. The value function problem has two decision variables (labor supply and entrepreneurship), one endogenous state (assets), and three exogenous states (age, labor productivity, and entrepreneurial productivity).\footnote{You do not actually need to include entrepreneurship as a decision variable, and doing so here slows the code down. But without it you are constantly checking whether the agent chooses worker or entrepreneur, making the code messier and more prone to typographical errors. Since the model solves fine either way, it is much easier to treat worker-entrepreneur status as a binary-valued decision variable.} Agents decide each period whether to be entrepreneurs or workers.
+
+Households can be young or old, and age stochastically. While young they can be workers or entrepreneurs; when old they are retirees. Agents have labor productivity (per unit of time worked), $\eta$, and entrepreneurial productivity, $\theta$.\footnote{Because $\eta$ and $\theta$ are only needed for the young, we store age, labor productivity, and entrepreneurial productivity on a single exogenous-state grid whose rows enumerate the relevant combinations of these variables. Section \ref{sec:z_grid_transition} explains this construction in detail.}
+
+When young, households decide whether to be workers or entrepreneurs. Workers choose labor supply and savings. Entrepreneurs choose savings, while their capital demand, hired labor, and output are determined by a static production problem conditional on the household state and prices.\footnote{Entrepreneurs are forced to supply a certain amount of their own labor, and get disutility from this.} Because this static problem has an analytical solution, capital and hired labor do not appear explicitly as value function decision variables below.
+
+Let $e=0$ denote worker and $e=1$ denote entrepreneur. Let $age=1$ denote young and $age=2$ denote old.
+
+The construction of the exogenous-state grid and transition matrix is described in Section \ref{sec:z_grid_transition}, and the entrepreneur's static problem is described in Section \ref{sec:entre_static}.
+
+The household value function problem is given by
+\begin{align*}
+\;V(a,age,\eta,\theta)=\max_{a',l,e} \left\{\frac{c^{1-\sigma_1}}{1-\sigma_1}
+ - \xi \frac{l^{1+\sigma_2}}{1+\sigma_2}
+ + \beta E\!\left[V(a',age',\eta',\theta') \mid age,\eta,\theta\right]\right\}
+\end{align*}
+subject to
+\begin{align*}
+\textit{Young $(age=1)$:} \; & \text{choose $e=0$ (worker) or $e=1$ (entrepreneur), }  \\
+                             & \text{whichever gives higher utility,} \\
+ \textit{Worker $(e=0)$:} \; & I = w l \eta + r a \\
+                             & (1+\tau_c)c + a' = I + a - TaxI(I) \\
+                             & a' \geq 0  \\
+ \textit{Entrepreneur $(e=1)$:} \; & I = y - \delta k - r(k-a) - w n \\
+                                   & (1+\tau_c)c + a' = I + a - TaxI(I) \\
+                                   & y = \theta \left(k^{\gamma} (\bar{l}+n)^{1-\gamma}\right)^{v} \\
+                                   & k \leq \lambda a \\
+                                   & l = \bar{l} \\
+								   & a' \geq 0, \quad n \geq 0 \\
+  \textit{Old $(age=2)$:} \; & I = pension + r a \\
+                             & (1+\tau_c)c + a' = I + a - TaxI(I) \\
+                             & a' \geq 0,\quad l = 0
+\end{align*}
+where $TaxI(I)$ is a tax function on income $I$.
+
+Note that workers can choose labor supply $l$, while entrepreneurs must supply $\bar{l}$. Entrepreneurs' $\eta$ is not relevant for the labor they supply to their own businesses, but they still receive the disutility from supplying $l=\bar{l}$.\footnote{By giving entrepreneurs the disutility of labor supply, and by calibrating $\bar{l}$ to equal the average $l$ of workers, B2021 makes endogenous labor largely irrelevant for the decision to be a worker or entrepreneur. This still does not explain why entrepreneur $\eta$ is irrelevant to the entrepreneur's own labor supply, which appears to be imposed exogenously. In \citet{Kitao2008}, by contrast, entrepreneur $\eta$ enters the entrepreneur's own labor supply, although that model has exogenous labor supply.}
+The interpretation is that entrepreneurs always supply own labor $\bar{l}$, while hired labor $n$ is chosen subject to $n \geq 0$. Section \ref{sec:entre_static} clarifies how this restriction enters the static entrepreneur problem.
+
+The above household problem is deliberately compressed because it omits $y$, $k$, and $n$ from the list of choices to be made. Since the entrepreneur's production problem is static and has an analytical solution, these variables are solved for directly, done in the codes as $B2021\_EntrepreneurStaticProblem()$, rather than being included as additional value function choices. They are nevertheless shown above in the equations (just not as decisions/choices) to make the entrepreneur's budget constraint and feasibility restrictions explicit.
+
+The analytical solution to the entrepreneurial production decision follows. The optimal output ($y$), capital demand ($k$), and labor demand ($n$) can be written as functions of the rental rate of capital $r$, the wage $w$, the capital depreciation rate $\delta$, the collateral constraint parameter $\lambda$, and the production function parameters $\theta$, $\gamma$, and $v$. See Section \ref{sec:entre_static} for a full derivation and the discussion at
+\href{http://discourse.vfitoolkit.com/t/on-solving-models-with-entrepreneurs/296}{discourse.vfitoolkit.com/t/on-solving-models-with-entrepreneurs/296}
+
+The main exercises in Bruggemann (2021) are to solve for the initial stationary equilibrium under the existing US tax system. We then vary the statutory top marginal tax rate, $\tau_{i,r6,stat}$, and for each value solve for the final stationary equilibrium and the transition path. The statutory rate runs from 35\% (the benchmark) to 100\% in steps of five percentage points. Since the effective rate is $\tau_{i,adj}$ times the statutory one with $\tau_{i,adj}=0.669$, this covers effective top marginal rates from 23.4\% to 66.9\%, essentially the same range as the 23.5\% to 70\% of the original's Figure 1. For the alternative economies of Figure 6 the statutory rate is extended to 120\%, i.e. effective rates up to 80.3\%, so that those welfare curves have an interior peak on the same axis the original uses. For the rate that maximizes welfare we create more detailed model outputs.
+
+For the stationary general equilibrium, aggregate assets finance entrepreneurial capital and corporate capital, and worker effective labor is split between entrepreneurial hired labor and corporate labor. Thus the code constructs $K_{corp}=A-K_{\text{noncorp}}$ and $N_{corp}=L-N_{\bar{l}}-N_{\text{noncorp}}$, where $N_{\bar{l}}$ is the entrepreneurs' own labor. The own-labor term has to be subtracted because $L$ is the total supply of efficiency units of labor, including the $\bar{l}$ that each entrepreneur supplies to their own business, and that labor is neither hired on the market nor available to the corporate sector; it is already an input inside $Y_{\text{noncorp}}$. The original does the same thing, building corporate labor as \texttt{totlcorp=toteffl-hiredlabe} (\texttt{benchmark.f90}). The equations for capital market clearance, labor market clearance, and government budget are thus respectively,
+\begin{align*}
+ & r = \left[\alpha Z\left(\frac{K_{corp}}{N_{corp}}\right)^{\alpha-1}-\delta\right] \\
+ & w = (1-\alpha)Z\left(\frac{K_{corp}}{N_{corp}}\right)^{\alpha} \\
+ & G+\text{PensionSpending}+\text{Lumpsum} = \text{IncomeTaxRevenue}+\text{ConsumptionTaxRevenue}
+\end{align*}
+The corresponding general-equilibrium variables are the interest rate $r$, the wage $w$, and the linear income tax rate $\tau_s$, where $\tau_s$ adjusts to balance the government budget.\footnote{Because the corporate Cobb-Douglas technology has constant returns to scale, stationary equilibrium does not require treating $r$ and $w$ separately: given $r$, the capital-labor ratio $K_{corp}/N_{corp}$ follows from the marginal product of capital, and then $w$ follows from the marginal product of labor.} The same general-equilibrium command can also be used for calibration targets, here calibrating $G$, $pension$ and $\bar{y}$ through a government-spending share, a pension replacement rate, and an average-income condition. Hence the initial solve uses six conditions in total: three market-clearing or budget-balance conditions that must hold in any competitive equilibrium, plus three calibration conditions, solved jointly for $\{r,w,\tau_s,G,pension,\bar{y}\}$. Note that $G$ and $pension$ are calibrated as \textit{ratios} (to output and to average income respectively), which is what the original does: its \texttt{benchmark.f90} sets government spending as \texttt{gfrac*gdp} with \texttt{gfrac=0.146} and the retirement benefit as \texttt{replrate*totinc} with \texttt{replrate=0.4}. Having calibrated those three, a second solve holds them fixed and finds $\{r,w,\tau_s\}$ alone, so that the reported benchmark is a competitive equilibrium in the ordinary sense. In the counterfactual equilibria $\tau_s$ is instead held at its benchmark value and a lump-sum transfer absorbs the extra revenue, so the general-equilibrium variables there are $\{r,w,lumpsum\}$.
+
+Notational changes: B2021 called worker productivity $\epsilon$ which we denote here as $\eta$.
+
+For more details on the model see \cite*{Bruggemann2021}. The rest of this doc was largely written by Claude with light human editing.
+
+
+\subsection{Grid and transition matrix for exogenous state \texorpdfstring{$z$}{z}\label{sec:z_grid_transition}}
+
+The exogenous state is
+\begin{equation*}
+	z=[age,\eta,\theta],
+\end{equation*}%
+where $age\in \{1,2\}$, with $age=1$ denoting ``young'' and $age=2$ denoting ``retired'', $\eta \in \left\{
+\overline{\eta }_{1},\ldots ,\overline{\eta }_{n_{\eta
+}}\right\}$ is labor productivity, and $\theta \in \left\{
+\overline{\theta }_{1},\ldots ,\overline{\theta }_{n_{\theta }}\right\}$ is entrepreneurial productivity. If we used a standard cross-product grid it would be wasteful, as there is no point tracking $\eta$ and $\theta$ for the old. We therefore use a joint grid, which we now describe. In the code, $z$ (denoted as $z\_grid$) is an array of size $[n_{\eta }\times n_{\theta }+1,3]$. The first $n_{\eta }\times n_{\theta}$ rows correspond to young agents, with $\eta$ varying fastest, and the last row corresponds to the old state. Since retired agents do not use $(\eta,\theta)$, the code stores the old state as $(2,0,0)$. Thus the total number of states is
+\begin{equation*}
+	N_{z}\equiv n_{\eta }\times n_{\theta }+1.
+\end{equation*}%
+
+Assuming for simplicity that $n_{\theta }=2$, the array $z\_grid$ is
+\begin{equation*}
+	z\_grid=%
+	\begin{bmatrix}
+		1 & \overline{\eta }_{1} & \overline{\theta }_{1} \\ 
+		1 & \overline{\eta }_{2} & \overline{\theta }_{1} \\ 
+		\vdots  & \vdots  & \vdots  \\ 
+		1 & \overline{\eta }_{n_{\eta }} & \overline{\theta }_{1} \\ 
+		1 & \overline{\eta }_{1} & \overline{\theta }_{2} \\ 
+		1 & \overline{\eta }_{2} & \overline{\theta }_{2} \\ 
+		\vdots  & \vdots  & \vdots  \\ 
+		1 & \overline{\eta }_{n_{\eta }} & \overline{\theta }_{2} \\ 
+		2 & 0 & 0%
+	\end{bmatrix}%
+\end{equation*}%
+For arbitrary $n_{\theta }$,
+\begin{equation*}
+	\underbrace{z\_grid}_{[n_{\eta}\times n_{\theta}+1,3]}=%
+	\begin{bmatrix}
+		\mathbf{1}_{N_y} & \mathbf{1}_{n_{\theta }}\otimes \eta  & \theta \otimes \mathbf{1}_{n_{\eta }}
+		\\ 
+		2 & 0 & 0%
+	\end{bmatrix}%
+\end{equation*}%
+where $\mathbf{1}_{m}$ denotes an $m\times 1$ vector of ones and $N_y \equiv n_{\eta} \times n_{\theta}$ is the number of young states. The values $(\eta,\theta)$ in the last row are placeholders only.
+
+The joint transition matrix for $z$ is built from the separate Markov chains for labor and entrepreneurial productivity, defined as $\pi_{\eta }(\eta ,\eta ^{\prime })$ and $\pi_{\theta}(\theta ,\theta ^{\prime })$, together with the Markov chain for $age$. Using the notation in the MATLAB code,
+\begin{equation*}
+	\begin{bmatrix}
+		t\backslash t+1 & age^{\prime }=1\text{ (young)} & age^{\prime }=2\text{
+			(retired)} \\ 
+		age=1\text{ (young)} & \pi_y & 1-\pi_y \\ 
+		age=2\text{ (retired)} & 1-\pi_o & \pi_o%
+	\end{bmatrix}%
+\end{equation*}%
+where $1-\pi_y$ is the probability that a young agent becomes retired and $1-\pi_o$ is the probability that an old agent dies and is replaced by a young agent.
+
+The $\eta$ grid is chosen by taking the first five values of the labor-productivity process and their transition matrix from \citep{CagettiDeNardi2009}, and then adding a sixth ``superstar'' state. Thus
+\begin{equation*}
+	\mathtt{eta\_grid}
+	=
+	\begin{bmatrix}
+		0.2468 & 0.4473 & 0.7654 & 1.3097 & 2.3742 & 26
+	\end{bmatrix}^{T},
+\end{equation*}%
+and $\pi_{\eta}$ is the corresponding $6\times 6$ transition matrix constructed in the code from the Cagetti--De Nardi matrix plus the additional superstar transition probabilities.
+
+The entrepreneurial-ability grid is also hard-coded, using the values reported in B2021 (Table 2):
+\begin{equation*}
+	\mathtt{theta\_grid}
+	=
+	\begin{bmatrix}
+		0 & 0.682 & 1.750 & 2.818
+	\end{bmatrix}^{T},
+\end{equation*}%
+with $\pi_{\theta}$ given by the $4\times 4$ matrix in the MATLAB code.
+
+Now that we have $\pi _{\eta }(\eta ,\eta^{\prime })$, $\pi _{\theta }(\theta ,\theta ^{\prime })$, and the unconditional distributions of $\eta$ and $\theta$, denoted by $\pi_{\eta }^{\ast }$ and $\pi _{\theta }^{\ast }$, we can build the transition matrix for $z=[age,\eta,\theta]$. First, combine $\pi _{\eta }(\eta ,\eta ^{\prime })$ and $\pi _{\theta }(\theta ,\theta ^{\prime })$ with a Kronecker product. Since $\eta$ varies fastest, the order is
+\begin{equation*}
+	\Pi _{young}(\left( \eta ,\theta \right) ,\left( \eta ^{\prime
+	},\theta ^{\prime }\right) )= \pi _{\theta }(\theta ,\theta
+	^{\prime }) \otimes \pi _{\eta }(\eta ,\eta ^{\prime }).
+\end{equation*}%
+Then, letting $N_{y}\equiv n_{\eta} \times n_{\theta}$ denote the number of young states, the joint transition matrix is
+\begin{equation*}
+	\pi _{z}(z,z^{\prime })=%
+	\begin{bmatrix}
+		\pi_y \Pi _{young} & (1-\pi_y)\mathbf{1}_{N_{y}} \\ 
+		(1-\pi_o)\Pi _{newborn} & \pi_o%
+	\end{bmatrix}%
+\end{equation*}%
+where the $1\times N_{y}$ row vector $\Pi _{newborn}$ is
+\begin{equation*}
+	\Pi _{newborn}=\pi _{\theta }^{\ast }(\theta ^{\prime }) \otimes \pi
+	_{\eta }^{\ast }\left( \eta ^{\prime }\right) .
+\end{equation*}%
+Newborn young agents draw $(\eta,\theta)$ independently from their stationary distributions, and old agents either remain old or are replaced by such newborn agents.
+
+\subsection{Decision variables}
+There are two decision variables, labor supply $l$ and worker/entrepreneur $e$. Because only workers choose labor supply we can again use a joint-grid on decision variables (all the labor choices with $e=0$, and then just a fixed labor supply with $e=1$). This reduces the number of grid points from $2n\_{}l$ to $n\_{}l+1$.
+
+\subsection{Entrepreneurs static problem \label{sec:entre_static}}
+
+This part is implemented in the MATLAB function $B2021\_EntrepreneurStaticProblem$. Entrepreneurs solve the following static maximization problem:
+
+
+\begin{equation*}
+	\pi \left( a,\theta \right) =\max_{k,n}\left\{ \theta \left( k^{\gamma
+	}\left( \bar{l}+n\right) ^{1-\gamma }\right) ^{v}-\left( r+\delta \right)
+	k-wn\right\} 
+\end{equation*}%
+s.t.%
+\begin{eqnarray*}
+	k &\leq &\lambda a, \\
+	n &\geq &0,
+\end{eqnarray*}%
+where $\bar{l}$ is a fixed parameter. For convenience, define total labor input by $\bar{n}=\bar{l}+n$, so the constraint $n\geq 0$ is equivalent to $\bar{n}\geq \bar{l}$. We distinguish two cases according to whether the nonnegativity constraint on hired labor binds.
+
+\begin{enumerate}
+	\item Assume first that the hired-labor constraint does not bind, so $n>0$ (equivalently, $\bar{n}>\bar{l}$). Then the unconstrained optimal capital is%
+	\begin{equation*}
+		k^{unc}=\left( \theta v\right) ^{\frac{1}{1-v}}\left( \frac{\gamma }{%
+			r+\delta }\right) ^{1+\frac{\gamma v}{1-v}}\left( \frac{1-\gamma }{w}\right)
+		^{\frac{v\left( 1-\gamma \right) }{1-v}}
+	\end{equation*}%
+	Taking the collateral constraint into account gives%
+	\begin{equation*}
+		k^{\ast }=\min \left\{ k^{unc},\lambda a\right\} .
+	\end{equation*}%
+	The optimal $\bar{n}=\bar{l}+n$ is given by%
+	\begin{equation*}
+		\bar{n}\left( k^{\ast }\right) =\left( \frac{\theta \left( 1-\gamma \right) v}{w}\right) ^{%
+			\frac{1}{1-\left( 1-\gamma \right) v}}\left( k^{\ast }\right) ^{\frac{\gamma v}{1-\left( 1-\gamma
+				\right) v}}.
+	\end{equation*}%
+	Finally, we must check whether $\bar{n}>\bar{l}$ (equivalently, $n>0$). If this is the case, then the solution is%
+	\begin{eqnarray*}
+		k\left( a,\theta \right) &=&k^{\ast }, \\
+		n\left( a,\theta \right) &=&\bar{n}-\bar{l}.
+	\end{eqnarray*}%
+	Compute $\pi \left( a,\theta \right)$ by replacing $k$ and $n$ with their optimal values in%
+	\begin{equation*}
+		\pi \left( a,\theta \right) =\theta \left( k^{\gamma }\left( \bar{l}+n\right)
+		^{1-\gamma }\right) ^{v}-\left( r+\delta \right) k-wn.
+	\end{equation*}%
+	If instead it turns out that $\bar{n}\leq \bar{l}$, then the candidate interior solution violates the constraint $n\geq 0$, so we go to the second
+	case.
+	
+	\item Suppose now that the hired-labor constraint binds. Then $n=0$ and $\bar{n}=\bar{l}$, so the problem becomes%
+	\begin{equation*}
+		\pi \left( a,\theta \right) =\max_{k\leq \lambda a}\left\{ \theta \left( k^{\gamma
+		}\left(\bar{l}\right) ^{1-\gamma }\right) ^{v}-\left( r+\delta \right)
+		k\right\}
+	\end{equation*}%
+	The unconstrained level of capital is%
+	\begin{equation*}
+		k^{unc}=\left( \theta v\right) ^{\frac{1}{1-\gamma v}}\left( \frac{\gamma }{%
+			r+\delta }\right) ^{\frac{1}{1-\gamma v}}\left(\bar{l}\right) ^{\frac{v\left(
+				1-\gamma \right) }{1-\gamma v}}.
+	\end{equation*}%
+	Taking the collateral constraint into account gives%
+	\begin{equation*}
+		k^{\ast }=\min \left\{ k^{unc},\lambda a\right\} .
+	\end{equation*}%
+	The solution is then%
+	\begin{eqnarray*}
+		k\left( a,\theta \right) &=&k^{\ast }, \\
+		n\left( a,\theta \right) &=&0.
+	\end{eqnarray*}%
+	Compute $\pi \left( a,\theta \right)$ by replacing $k$ and $n$ with their optimal values in 
+	\begin{equation*}
+		\pi \left( a,\theta \right) =\theta \left( k^{\gamma }\left( \bar{l}+n\right)
+		^{1-\gamma }\right) ^{v}-\left( r+\delta \right) k-wn.
+	\end{equation*}
+\end{enumerate}
+
+In \citet{Bruggemann2021}, the same problem is solved by taking taxes explicitly into
+account:%
+\begin{equation*}
+	\max_{k,n}y^{e}-T(y^{e})
+\end{equation*}%
+s.t.%
+\begin{eqnarray*}
+	k &\leq &\lambda a, \\
+	n &\geq &0, \\
+	y^{e} &=& \theta \left( k^{\gamma }\left( \bar{l}+n\right) ^{1-\gamma }\right)
+	^{v}-\left( r+\delta \right) k-wn+ra.
+\end{eqnarray*}%
+where $y^{e}$ denotes entrepreneurial taxable income and $T(\cdot )$ is
+the income tax function. She computes optimal labor demand as a function of capital as follows:%
+\begin{equation*}
+	\bar{n}(k)=\left( \frac{\theta \left( 1-\gamma \right) v}{w}\right) ^{%
+		\frac{1}{1-\left( 1-\gamma \right) v}}k^{\frac{\gamma v}{1-\left( 1-\gamma
+			\right) v}},
+\end{equation*}%
+so that%
+\begin{equation*}
+	n=\max \left\{ \bar{n}-\bar{l},0\right\} .
+\end{equation*}%
+She then optimizes with respect to capital $k$ using grid search. In particular, $n$, $y^{e}$, and $y^{e}-T(y^{e})$ are computed for each grid value of $k$, and she picks the maximum of the array $y^{e}-T(y^{e})$.
+
+\section{Comments on Replication results}
+The replication is successful. Both the initial stationary general equilibrium and the core policy result come out close to the original.
+
+The central number in B2021 is the welfare-maximizing effective top marginal tax rate (TMTR). She reports 60 percent when welfare is evaluated over the whole transition path, and 57 percent when only the two steady states are compared. Our replication gives 60.2 percent and 56.9 percent respectively. The statutory rates behind these are 90 and 85 percent; the gap between statutory and effective rates is the adjustment factor $\tau_{i,adj}=0.669$ that B2021 uses to reconcile statutory tax law with effective rates actually paid, and it is important to keep track of which of the two any given number refers to. The peak CEV is 8.7 percent on the transition criterion and 5.4 percent on the steady-state criterion. The appendix Laffer curves agree as well: revenue is maximized at an effective 63.6 percent in the steady state against her 62 percent, and at 60.2 percent in the first period of the transition against her 60 percent.
+
+Figure \ref{fig:B2021_figure1} is the core result. The replication reproduces the shape of the original: welfare gains rise steeply at first, flatten out between roughly 54 and 64 percent, and turn down thereafter, so the maximum is interior on both criteria. On the transition criterion the CEV is within 0.15 percentage points of its peak everywhere between 56.9 and 63.6 percent, which is why the exact location of the maximum is not sharply identified by a grid of five-percentage-point steps in the statutory rate; the same caveat applies to the original. Figure \ref{fig:B2021_figure1alt} shows the same two curves against the statutory rather than the effective tax rate. Figure \ref{fig:B2021_figureA1} does the same for the Laffer curve of the original's appendix.
+
+Tables \ref{fig:B2021_table3} to \ref{fig:B2021_table6} concern the initial stationary general equilibrium, and the replication is close throughout. One point is worth stressing when reading them: the ``Target'' column is data, and the original misses several of those targets itself, so the honest comparison for a replication is against the ``Model'' column of the original paper rather than against the target. On that comparison the entrepreneurs' share of total income (0.22 against her 0.22, both against a target of 0.17) and the entrepreneurs' income Gini (0.62 against her 0.62, target 0.65) are exact, and the whole of Table \ref{fig:B2021_table6} reproduces her model column, which likewise sits some distance from the SCF data. The capital-output ratio is 2.67 against her 2.65, the top 1 percent income share, the wealth Gini, the fraction of entrepreneurs, the entry rate and the share of entrepreneurs among the top 1 percent of income all match, and the share of entrepreneurs who hire matches to three decimals. The exit rate is 0.24 against her 0.22; hers is computed exactly from the occupation state, whereas ours has to be estimated from a simulated panel, so some difference is expected.
+
+Two rows do not match, and in both cases we know why.
+
+The first is the average federal income tax rate in Table \ref{fig:B2021_table3}, and with it the average tax rates for top percentiles in Table \ref{fig:B2021_table5}, which come out roughly four percentage points above the original. This is a deliberate difference of definition: we count the revenue from the linear income tax $\tau_s$ as federal income tax, since it is a federal tax levied on income, whereas the original does not. Her \texttt{benchmark.f90} computes the average tax rate as \texttt{DOT\_PRODUCT(dist,inctax)/totinc} and her \texttt{table5.do} sums \texttt{inctax*dist}, and in both cases \texttt{inctax} is the bracketed income tax alone; the $\tau_s$ revenue sits in a separate vector that neither statistic touches.
+
+The second is the ratio of median net worth of entrepreneurs to that of everyone else, which we get as 5.7 against her 7.7 (the target is 7.26, so both fall short, but hers by much less). The cause is a genuine difference between the two implementations, and the note to Table \ref{fig:B2021_table3} sets it out. In this replication occupation is a decision, so our entrepreneurs are the young households who choose to be entrepreneurs this period. In the original occupation is part of the state, and the group she takes the median over is the mass sitting in the young-entrepreneur block of the state space, i.e. the households who chose to be entrepreneurs \textit{last} period. Her group therefore leaves out this period's entrants and keeps this period's exiters, while ours does the opposite. Entrants are around a fifth of the entrepreneur mass and are drawn from the worker asset distribution, so excluding them raises the median considerably. Matching her number would require putting occupation back into the state.
+
+Tables \ref{fig:B2021_table7} to \ref{fig:B2021_table10} and Figures \ref{fig:B2021_figure3} to \ref{fig:B2021_figure5} are based on the transition to the welfare-maximizing TMTR, which for us is an effective 60.2 percent against her 60 percent, so the two experiments are almost the same experiment and the tables can be compared directly. Table \ref{fig:B2021_table7} replicates well in general equilibrium: output, capital, labor, the interest rate and the wage all come within a few tenths of a percentage point of the original. The weakest entry is tax revenue, which rises by 17.0 percent against her 19.6 percent in general equilibrium and 13.4 against 15.5 in partial equilibrium; this is presumably related to the treatment of $\tau_s$ noted above. Table \ref{fig:B2021_table8} reproduces every one of its eight entries to within 0.8 percentage points, with each of them erring in the direction the slightly larger tax increase would imply. Table \ref{fig:B2021_table9} reproduces to within 0.2 percentage points in every cell.
+
+Table \ref{fig:B2021_table9} needs one remark about the labor columns. They are shares of \textit{market} labor, so entrepreneurs' own inelastically supplied $\bar{l}$ hours are excluded from the denominator, exactly as in the construction of corporate labor described in the model section. Dividing by total hours instead gives 56.9 and 43.1 against her 60.5 and 39.5, whereas dividing by market labor gives 60.7 and 39.3, so this is clearly the convention the original uses.
+
+Figure \ref{fig:B2021_figure3} reports welfare results for ``workers'' and ``entrepreneurs''. The economy also includes a third group omitted from the figures, namely the old. In the replication we decided to include the old to give a fuller picture, but we had to omit them from the second panel because the welfare gains of the old in the ``Top 3\%'' were so large that they ruin the graph, being more than 100 times as large as any gains for the worker and entrepreneur groups.
+
+Figure \ref{fig:B2021_figure6} shows the welfare-maximizing TMTR in the ``no-entrepreneur'' models, and Figure \ref{fig:B2021_figure7}, which is not in the original, shows the corresponding Laffer curves, so that Figure \ref{fig:B2021_figure7} can be compared with Figure \ref{fig:B2021_figureA1} just as Figure \ref{fig:B2021_figure6} can be compared with Figure \ref{fig:B2021_figure1}. The qualitative result of the original is reproduced: removing entrepreneurs raises the welfare gains from taxing the top substantially, from a peak CEV of 5.4 percent to 7.9 percent on the steady-state criterion, and restricting the highest entrepreneurial ability lowers them to 2.3 percent. The one place where we do not reproduce the original is the \textit{location} of the no-entrepreneur peak: she finds the welfare-maximizing effective rate rising to approximately 67 percent once entrepreneurs are removed, whereas ours stays at 60.2 percent, the same rate as the benchmark economy. We extended the tax grid to an effective 80.3 percent precisely so that this could not be an artifact of the peak sitting at the edge of the plotted range, and it is not. So we reproduce her conclusion that entrepreneurs dampen the welfare gains from higher top taxes, but not her further conclusion that their presence pushes the optimal rate itself down.
+
+\section{Numerical implementation}
+B2021 uses pure discretization, inherited from the \citet{CagettiDeNardi2009} codes she builds on, to solve the value function problem. Her Fortran codes put 300 points on endogenous labor supply, which limits how many can be spent on assets, and she ends up with 480 points on assets (\texttt{benchmark.f90} lines 1102--4). Our replication uses 300 points on labor supply purely to match her, and 501 points on assets, plus a grid interpolation layer that interpolates next-period assets at 50 equally spaced points between every two consecutive asset grid points. Realistically, for a model like this, 100 points on labor supply would be enough for almost everything, and 300 is mostly wasting compute and memory that would be better spent on assets.
+
+The transition paths are solved with Anderson acceleration. Two details of the original's statistics are worth recording because they are easy to get wrong when comparing against it, and both were only found by reading her code rather than the paper. First, most of the statistics in Tables \ref{fig:B2021_table3}, \ref{fig:B2021_table5} and \ref{fig:B2021_table6} and in Figures \ref{fig:B2021_figure4} and \ref{fig:B2021_figure5} are not computed in the Fortran at all: it writes Stata data files and the definitions live in \texttt{Stata/Dofiles}. Only the capital-output ratio, average hours, the median net worth ratio, the fraction of entrepreneurs, the entrepreneurs' income and asset shares, the entry and exit rates, the fraction hiring and the average tax rate come out of the Fortran itself. Second, her do-files classify a household as an entrepreneur by \texttt{kstar>0}, which puts the retirees in with the workers; we follow that classification, which is why the workers' income Gini here is taken over young workers and retirees together rather than over young workers alone.
+
+\bibliographystyle{plainnat}
+\bibliography{App_Bruggemann2021_refs}
+
+\clearpage
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Bruggemann2021_Figure1.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig1.png}
+\end{tabular}
+\end{center}
+\caption{Figure 1 of Bruggemann (2021)}
+\label{fig:B2021_figure1}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig1alt.png}  \\
+\end{tabular}
+\end{center}
+\caption{Figure 1 of Bruggemann (2021) redrawn against the \textit{statutory} top marginal tax rate rather than the effective one. The two curves are the same as in Figure \ref{fig:B2021_figure1}; only the x-axis differs, by the factor $\tau_{i,adj}=0.669$.}
+\label{fig:B2021_figure1alt}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Bruggemann2021_Figure2.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig2.png}
+\end{tabular}
+\end{center}
+\caption{Figure 2 of Bruggemann (2021)}
+\label{fig:B2021_figure2}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Bruggemann2021_Figure3.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig3.png}
+\end{tabular}
+\end{center}
+\caption{Figure 3 of Bruggemann (2021)}
+\label{fig:B2021_figure3}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Bruggemann2021_Figure4.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig4A.png}
+\end{tabular}
+\end{center}
+\caption{Figure 4 of Bruggemann (2021): part 1/2. The original has a bar where our replication has a gap, and the reason is a
+detail of how the original groups households. Brüggemann's do-file (\texttt{Stata/Dofiles/figure4\_5.do}) cuts the income
+distribution into deciles, but the line creating the third group is commented out and the fourth group is widened to cover the
+cumulative distribution from 0.6 to 0.8, so that one bar spans the 20th to the 40th percentile while every other bar spans a
+single decile. That bar is then labelled ``20-40\%''. In other words the original reports nine groups, not ten, and the group
+covering the 30th to 40th percentile does not exist separately in her figure. She merges the bins only there, which suggests she
+found the entrepreneur cell in that range too thinly populated to average over; in our replication the corresponding cell is
+empty outright. We have deliberately not copied the merge. Doing so would put a number where we have none, but the number would
+cover two deciles while the axis says one, so what is plotted would not be what the label claims. We would rather show the gap.}
+\label{fig:B2021_figure4}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig4B.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig4C.png}
+\end{tabular}
+\end{center}
+\caption{Figure 4 of Bruggemann (2021): part 2/2}
+\end{figure}
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Bruggemann2021_Figure5.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig5.png}
+\end{tabular}
+\end{center}
+\caption{Figure 5 of Bruggemann (2021)}
+\label{fig:B2021_figure5}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Bruggemann2021_Figure6.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig6.png}
+\end{tabular}
+\end{center}
+\caption{Figure 6 of Bruggemann (2021). The x-axis is extended to an effective top marginal rate of 80.3 percent, further than the original, so that the peaks of the alternative economies are interior rather than at the edge of the plotted range.}
+\label{fig:B2021_figure6}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/Bruggemann2021_FigureA1.png}  \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_FigA1alt.png}
+\end{tabular}
+\end{center}
+\caption{Figure A1 of Bruggemann (2021), the Laffer curve. Revenue is maximized at an effective top marginal rate of 63.6 percent in the steady state and 60.2 percent in the first period of the transition, against 62 and 60 percent in the original.}
+\label{fig:B2021_figureA1}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{../SavedOutput/Graphs/Bruggemann2021_Fig7.png}
+\end{tabular}
+\end{center}
+\caption{Not a figure from Bruggemann (2021). It shows the Laffer curves for the no-entrepreneur models, so it is to Figure \ref{fig:B2021_figure6} what Figure \ref{fig:B2021_figureA1} is to Figure \ref{fig:B2021_figure1}.}
+\label{fig:B2021_figure7}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table3.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table3.tex}
+\end{tabular}
+\end{center}
+\caption{Table 3 of Bruggemann (2021)}
+\label{fig:B2021_table3}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table4.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table4.tex}
+\end{tabular}
+\end{center}
+\caption{Table 4 of Bruggemann (2021)}
+\label{fig:B2021_table4}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table5.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table5.tex}
+\end{tabular}
+\end{center}
+\caption{Table 5 of Bruggemann (2021)}
+\label{fig:B2021_table5}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table6.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table6.tex}
+\end{tabular}
+\end{center}
+\caption{Table 6 of Bruggemann (2021)}
+\label{fig:B2021_table6}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table7.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table7.tex}
+\end{tabular}
+\end{center}
+\caption{Table 7 of Bruggemann (2021)}
+\label{fig:B2021_table7}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table8.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table8.tex}
+\end{tabular}
+\end{center}
+\caption{Table 8 of Bruggemann (2021)}
+\label{fig:B2021_table8}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table9.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table9.tex}
+\end{tabular}
+\end{center}
+\caption{Table 9 of Bruggemann (2021)}
+\label{fig:B2021_table9}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/Bruggemann2021_Table10.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/Bruggemann2021_Table10.tex}
+\end{tabular}
+\end{center}
+\caption{Table 10 of Bruggemann (2021)}
+\label{fig:B2021_table10}
+\end{figure}
+
+
+
+\end{document}
