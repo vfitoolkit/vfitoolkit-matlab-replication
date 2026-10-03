@@ -1,0 +1,436 @@
+\documentclass[11pt,fleqn]{article}
+% \documentclass[smallextended]{svjour3}
+
+\textheight=23.3cm
+\textwidth=16.5cm
+\topmargin=-15mm
+\oddsidemargin=0cm
+
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{ulem}
+\usepackage{graphicx}
+%This package is dated and it is giving me problems
+%\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{pdflscape}
+\usepackage[sidewaysfigure]{rotating}
+\usepackage{natbib}
+%\usepackage{amsthm}
+%\usepackage{setspace}
+\usepackage{multirow}
+\newcommand{\tb}{\hspace*{3mm}}
+\bibpunct{(}{)}{;}{a}{,}{,}
+\parskip=3mm
+\parindent=5mm
+\baselineskip=17pt
+
+\usepackage{amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\renewcommand{\qedsymbol}{\textit{Q.E.D.}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\usepackage{hyperref}
+\hypersetup{
+  pdftitle={Huggett \& Ventura (2000) - Understanding why high income households save more than low income households},
+  pdfauthor={Robert Kirkby},
+  %hyperfootnotes=false,
+  %hyperindex=true,
+  %hyperfigures=true,
+  colorlinks=true,                % makes links a coloured word, rather than putting coloured boxes around them
+  linkcolor=black,                % makes internal links black
+  citecolor=black,                % makes citations black
+  urlcolor=blue,                  % color of external links
+  breaklinks=true                 % allow links to be broken across multiple lines
+}
+
+
+\begin{document}
+
+
+%===============================
+\newcommand{\rob}[1]{{\noindent\color{blue}\bf #1}}
+\newcommand{\robc}[1]{{\noindent\color{blue}\bf R: #1}}
+%===============================
+
+\title{Huggett \& Ventura (2000) - Understanding why high income households save more than low income households}
+\author{Robert Kirkby}
+\date{\today}
+\maketitle
+
+Brief description of a replication of \cite*{HuggettVentura2000}, hereafter HV2000. This is not intended as a full description of the model; rather, the goal is to show how the model is expressed in terms of the VFI Toolkit. For a full description see the original paper.
+
+I replicate all Tables and Figures of HV2000, except Figure 1 which is just repeats data numbers from earlier papers. The takeaway is that everything replicates and there are just minor quantitative differences (mostly around savings rates during retirement). There are four main models, all of which have the an endogenous state for assets, and a second endogenous state that tracks lifetime earnings (to which pensions are then indexed). The difference between the four models is whether the exogenous shocks are an i.i.d., a markov, or both, which in the replication changes what kind of 'experienceasset' is used in VFI Toolkit to implement the lifetime earnings state.
+
+The purpose of the paper is to understand why high income households save more. They find that much of the reason comes from the age-composition (the high income households are middle aged and therefore have much higher savings rates), and from the existence of earnings-indexed pensions. The existence of idiosyncratic earnings shocks matters, but the exact form of those shocks (markov, i.i.d., both) is of little importance. All of this very clearly remains in the replication which find all Tables and Figures very close to the original.
+
+Section~\ref{sec:model} sets out the model, Section~\ref{sec:earnings} the four earnings processes and Section~\ref{sec:ge} the equilibrium conditions. Section~\ref{sec:results} discusses the results and the input-data choices behind the differences from HV2000. Everything specific to the VFI Toolkit implementation --- the state-space encoding, the discretization, the equilibrium solver, and the numerical caveats --- is gathered in Appendix~\ref{sec:computational}.
+
+Most of the rest of this doc was written by Claude.
+
+\section{Model description}\label{sec:model}
+
+The model is a general-equilibrium OLG economy. Agents live for at most $N=81$ periods (ages $20$ to $100$), facing age-conditional survival probabilities $s_j$, and retire at model period $J_r=46$ (real-life age $65$). Population grows at rate $n$. There is a representative firm with Cobb-Douglas production $Y=A K^\alpha (L A_t)^{1-\alpha}$, where the labor-augmenting technology level $A_t$ grows at rate $g$; capital depreciates at rate $\delta$. All quantities are written in growth-adjusted units, dividing by $A_t$, so prices and aggregates are stationary in equilibrium.
+
+The household state consists of asset holdings, $a$, average past indexed earnings, $\bar{e}$, an idiosyncratic productivity shock, $z$ (and, in Model 4 only, an iid temporary shock $e$). For Models 1--3 the household value function problem is
+\begin{align*}
+ V_j(a,\bar{e},z) = & \max_{a'} u(c) + \beta (1+g)^{1-\sigma} s_{j+1} E\!\left[V_{j+1}(a',\bar{e}',z') \mid z\right] \\
+ \text{subject to } & \\
+ & c + (1+g) a' = a(1+r(1-\tau)) + (1-\tau-\theta) z\, \bar{y}_j\, w \mathbbm{1}_{j<J_r} + T + \hat{b}(\bar{e},j) \\
+ & \bar{e}' =
+   \begin{cases}
+     \left(\bar{e}(j-1) + \min\{ z\, \bar{y}_j\, w,\; \bar{e}_{\max}\} \right) / j & \text{if } j<J_r \\
+     \bar{e}/(1+g) & \text{if } j \ge J_r
+   \end{cases} \\
+ & \hat{b}(\bar{e},j) =
+   \begin{cases}
+     0 & \text{if } j<J_r \\
+     b + b(\bar{e}) / (1+g)^{j-R} & \text{if } j \ge J_r
+   \end{cases} \\
+ & a' \ge \underline{a}
+\end{align*}
+where $u(c)=c^{1-\sigma}/(1-\sigma)$ is CRRA, $\bar{y}_j$ is the deterministic age-earnings profile, $w$ is the wage per efficiency unit of labor, $r$ is the net-of-depreciation return on assets, $\tau$ is the income tax, $\theta$ is the social-security payroll tax, $T$ is a lump-sum transfer of accidental bequests, and $\hat{b}(\bar{e},j)$ is the social-security benefit paid to retirees. Model 4 adds an iid shock $e$ to the state and replaces $z\, \bar{y}_j\, w$ by $z\, e\, \bar{y}_j\, w$ wherever it appears in the budget constraint and the law of motion for $\bar{e}$.
+
+The lower limit on assets, $\underline{a}$, takes the two values HV2000 report throughout: $\underline{a}=0$, so that borrowing is ruled out, and $\underline{a}=-w$, so that a household may borrow up to one period's wage per efficiency unit. Every model is solved separately at each, and both appear as separate columns in Tables 4--5 and 7--9. Note that with $\underline{a}=-w$ a household at the borrowing corner can have negative total income, so for Models 2--4 in that column of the replicated Table~4 (Figure~\ref{fig:HV2000_table4}) the income Gini and Lorenz shares are computed over a variable that is not everywhere positive and are not the standard Lorenz-based measure. We report them because the affected mass is small and each sits a little under $0.01$ above its $\underline{a}=0$ counterpart --- Gini $0.4227$ against $0.4155$ for Model 2, and $0.0093$ apart in Models 3 and 4 --- but they carry that caveat.
+
+The social-security benefit has a common medical/hospital component, $b$, plus a concave-in-$\bar{e}$ earnings-related component $b(\bar{e})$. We follow HV2000 Section 4.3 in applying the U.S.\ 1990--1994 formula with bend points at $0.20\, w\, \bar{y}$ and $1.24\, w\, \bar{y}$ and marginal replacement rates $0.90$, $0.32$, $0.15$, where $\bar{y}$ is the population-weighted mean of $\bar{y}_j$ over the working-age population. The AIME-input cap is $\bar{e}_{\max}=2.47\, w\, \bar{y}$. The common benefit is calibrated to $b = 0.1242\, Y$.
+
+
+\section{Earnings processes (the four models)}\label{sec:earnings}
+
+The four models share everything above and differ only in the stochastic structure of the labor-endowment shock $z$ (HV2000 Table~3 and footnote 14).
+
+\begin{itemize}
+ \item \textbf{Model 1.} Deterministic earnings: $z\equiv 1$.
+ \item \textbf{Model 2.} Permanent shift in $\log z$ at birth, drawn from $\mathcal{N}(0,\sigma_{y_1}^2)$ with $\sigma_{y_1}^2 = 0.45$. There is no subsequent movement in $z$.
+ \item \textbf{Model 3.} Persistent AR(1) on $\log z$ with regression-to-mean coefficient $\gamma=0.985$, innovation variance $\sigma_{\varepsilon_1}^2=0.02$, and birth draw $\log z_1 \sim \mathcal{N}(0, 0.24)$.
+ \item \textbf{Model 4.} Model 3 plus an iid temporary shock $e$ with $\log e \sim \mathcal{N}(0, \sigma_{\varepsilon_2}^2)$, $\sigma_{\varepsilon_2}^2 = 0.01$ in the baseline. The replicated Table~6 (Figure~\ref{fig:HV2000_table6}) varies $\sigma_{\varepsilon_2}^2$ over $\{0.01, 0.04, 0.09\}$.
+\end{itemize}
+
+In both AR(1) models $z=\exp(\log z)$ has an age-varying cross-sectional mean, because the AR(1) dynamics give $\log z$ an age-varying variance and Jensen's inequality then makes $E[z_j]$ drift with age. We renormalize so that $E[z_j]=1$ at every age, which keeps mean earnings per worker equal to $w\, \bar{y}$ exactly and so spares $\bar{y}$ from having to be an equilibrium object. The grids and the renormalization are described in Appendix~\ref{sec:computational}.
+
+
+\section{General equilibrium}\label{sec:ge}
+
+A steady-state equilibrium consists of optimal household decision rules, prices $r$, $w$, tax rates $\tau$, $\theta$, the transfer $T$, the common benefit $b$, and a stationary distribution over $(a,\bar{e},z[,e],j)$ such that:
+
+\begin{enumerate}
+ \item \textbf{Capital market}: $r = \alpha A K^{\alpha-1} L^{1-\alpha} - \delta$. HV2000 eqm condition 2 (firm FOC on capital).
+ \item \textbf{Labor market}: $w = (1-\alpha) A K^{\alpha} L^{-\alpha}$. HV2000 eqm condition 2 (firm FOC on labor).
+ \item \textbf{Income tax}: $\tau = 0.195 / (1 - \delta\, K/Y)$. HV2000 Section 4.1, derived from eqm condition 5 (government budget) given $G/Y = 0.195$ (average 1959--1993).
+ \item \textbf{Bequest balance}: $T(1+n) = \text{AccBeq}$, where $\text{AccBeq} = \sum_j \mu_j (1-s_j) \int a'(x,j) (1 + r(1-\tau))\,d\psi_j$. HV2000 eqm condition 7.
+ \item \textbf{SS balance}: $\theta\, w\, L = \text{SSBenefits}$, the pay-as-you-go social-security budget. HV2000 eqm condition 6.
+ \item \textbf{Common benefit}: $b = 0.1242\, Y$. HV2000 Section 4.3: the average over $1990$--$1994$ of hospital ($7.72\%$) plus medical ($4.70\%$) social-security payments per retiree, as a share of U.S.\ GDP per person over $20$.
+\end{enumerate}
+
+Note that conditions 1--2 use $K$ and $L$ taken from the stationary distribution and $Y$ is the Cobb-Douglas intermediate quantity $A K^\alpha L^{1-\alpha}$.
+
+
+\section{Results}\label{sec:results}
+
+We omit HV2000 Figure 1 (cross-section saving rates at multiples of mean income from Kuznets 1953 and Projector 1968, both cited in the original HV2000 paper). Figure 1 contains only US data with no model output, and the same numbers already appear as the ``US data'' row in our Tables 5--9.
+
+Numerical values will not match HV2000 to the last decimal, because we use the same underlying sources but at a slightly coarser resolution:
+
+\begin{itemize}
+\item \textbf{Survival $s_j$.} HV2000 cite ``the actual survival probabilities for men in 1990 as reported in Social Security Administration (1992)'' -- the SSA period life table for US males, 1990, which gives a death probability at every single-year age. We use the same publication (Bell, Wade \& Goss 1992, Actuarial Study 107) but from its \emph{Table 7}, which reports death probabilities only at anchor ages $0, 30, 60, 65, 70, 100$ for each decade 1900--2080; we then linearly interpolate to all ages 0--100 and take the 1990 row. So our $s_j$ is a piecewise-linear interpolation between six age anchors, whereas HV2000's interpolation approach is unknown.
+
+\item \textbf{Age-earnings profile $\bar y_j$.} HV2000 compute $\bar y_j$ as ``median earnings of men in cross-section data in 1990 [Social Security Bulletin 1995, Table 4.B6] multiplied by labor-force participation rates in 1990 for each age group [Fullerton 1992]'' (footnote 13). We use the same two ingredients (SSA Table 4.B6 for medians, Fullerton (1992) MLR Table 1 for LFP rates). The only divergence is that Fullerton publishes LFP at the age aggregates $25$--$34$, $35$--$44$, $45$--$54$, $60$--$64$ and $70$+, so for any SSA subbin inside one of these aggregates we assign the aggregate LFP; the SSA $60$--$61$ vs $62$--$64$ and $70$--$71$ vs $72$+ splits are not published by Fullerton, so those two pairs are approximated. HV2000 may have accessed a finer age breakdown; the paper does not say.
+\end{itemize}
+
+The qualitative patterns and aggregate ranges match, and most of the level differences in Table~4 and in the Table~5 saving rates likely trace back to the two data-input choices above. Taking Table~4 column by column, our $K/Y$ sits within $0.11$ of HV2000's, $S/Y$ within $0.003$, $r$ within $0.4$ percentage points and the income Gini within $0.03$. The two remaining columns are looser, and in opposite directions across the models. Our transfer-wealth share runs up to $7.8$ percentage points \emph{above} HV2000's in Models 1 and 2 but comes within $3$ points in Models 3 and 4; the top-income-share columns are the reverse, matching to within $0.4$ points in Models 1 and 2 while falling up to $2.1$ points \emph{below} the paper in Models 3 and 4, with the gap widening as the share widens (the top $20\%$ share is the worst cell). Both patterns point at the earnings process rather than at the asset side: Models 3 and 4 are the two AR(1) specifications, where our Tauchen discretization and the per-age renormalization of Section~\ref{sec:earnings} do the most work.
+
+The $S/Y$ column needs one definitional remark, because the obvious construction is wrong. Aggregating agent-level saving, $(1+g)a' - a$, over the whole stationary distribution counts the assets of the agents who die in that period, and those become bequests rather than next-period capital; doing so returns about $0.134$--$0.139$, half as large again as HV2000's $0.086$--$0.094$. The quantity HV2000 report is net national saving, which in a stationary growth-adjusted equilibrium must satisfy $S = (n+g+ng)K$. We therefore subtract the growth-adjusted assets of the deceased,
+\begin{equation*}
+ S/Y = \Big[\textstyle\sum_j \mu_j \int \big((1+g)a' - a\big)\,d\psi_j \;-\; (1+g)\,\text{AccBeq}\big/\big(1+r(1-\tau)\big)\Big] \Big/ Y,
+\end{equation*}
+where dividing $\text{AccBeq}$ by $1+r(1-\tau)$ undoes the return factor in its definition to recover the undiscounted assets of the dead. This reproduces $(n+g+ng)K/Y$ to every printed digit in all eight rows, and brings the column to $0.086$--$0.092$ against HV2000's $0.086$--$0.094$. Note that the agent-level measure is the correct one for the saving rates of Tables~5--9, which follow HV2000 Section~5.1 in dividing a group's total saving by its total income: an agent does save that much before dying. The netting applies only to the Table~4 aggregate. A separate, numerical source of error --- the asset grid ceiling --- bound for a small fraction of households in Tables 6--9 on an earlier, narrower grid; the grid has since been widened and the residual is now negligible, as documented in Appendix~\ref{sec:computational} and footnoted on each affected table.
+
+The ``Transfer wealth (\%)'' column of HV2000 Table 4 is the Kotlikoff--Summers (1981) decomposition: the accumulated value, at the after-tax interest rate, of the lump-sum bequest transfer $T$ received by each agent over their lifetime, aggregated across the cohort distribution, divided by aggregate wealth. Because every agent receives the same $T$ each period in this model, the per-agent figure has a closed form $TW_j = T \sum_{k=0}^{j-1} \hat R^{k}$ with $\hat R = (1 + r(1-\tau)) / (1+g)$. The aggregate is the $\mu_j$-weighted sum and the percentage divides by aggregate capital $K$.
+
+\subsection*{Saving rates of the retired in Figures 3--5}
+
+In panel (a) of Figures~\ref{fig:HV2000_fig3}--\ref{fig:HV2000_fig5} our ``Lowest 10\%'' series diverges from HV2000's after about age 70: theirs turns back toward zero by the late eighties, ours keeps falling and becomes ragged. The disagreement is confined to the retired, and to the lowest income group; the working-age portion of all three series, and the other two income groups at all ages, track the original closely.
+
+Pensions are included in income. We compute income as in HV2000 Section 5.1 --- labor earnings, plus capital income $ra$, plus \emph{all} transfers received, which for a retiree means the lump-sum bequest transfer $T$ plus the social-security benefit $\hat b(\bar e,j)$ --- and the saving rate of a group as that group's mean saving divided by its mean income, the same ratio-of-means convention HV2000 describe for Tables 5--9. So the difference is not that we have omitted the pension from the denominator.
+
+Two features of our construction are candidates, and we cannot tell from the paper which convention HV2000 used. First, we define the three income groups by \emph{population-wide} income percentiles, pooling all ages, and then ask which agents at each age fall in each group. Retirees have no earnings, so by the late eighties almost the whole surviving cohort sits below the population-wide tenth percentile and the ``Lowest 10\%'' cell at those ages is really ``the poorest of the old'', a group whose income is close to $T + b$ alone. Defining the groups age-conditionally instead --- the lowest tenth \emph{within} each age --- would give a differently populated cell at exactly these ages, and is arguably the more natural reading, since panel (b) of the same figure plots age-conditional income quantiles. Second, a ratio of means with a denominator this small is badly behaved: a group with almost no income but non-trivial dissaving produces a large negative ratio, and small shifts in cell membership from age to age then produce the raggedness. HV2000 do not state which grouping they use, nor whether they treat the denominator specially for the retired, so we record the divergence rather than tune our construction to match the picture.
+
+HV2000 Figure 6 (alternative bequest treatments in \emph{Model 2 only}) is replicated in Figure~\ref{fig:HV2000_fig6}. ``Equal Transfers'' is the baseline Model 2, in which a single population-wide lump-sum $T$ is paid to everyone. ``Different Transfers'' instead routes accidental bequests by permanent ability type: newborns of type $i$ inherit the per-capita bequests left by deceased type-$i$ agents, so $T$ becomes a vector $T_i$ and the bequest-balance condition must hold type by type. As in HV2000, the two are close, with ``Different Transfers'' slightly the lower of the two at high income multiples: how bequests are routed across ability types is not what generates the saving-rate gradient. That --- the main point of the exhibit --- replicates, as do the levels, both panels rising from roughly zero (panel a) or $-10\%$ (panel b) at the $0.25$ multiple to about $30\%$ at the top. Two differences remain. HV2000's profiles peak at the $7$ multiple and turn down at $10$ (about $32$ to $27$ in panel a, $33$ to $28.5$ in panel b), whereas ours rise monotonically, $29.8$ then $31.0$; this is the same absence of a top-end downturn visible in our Table~5. And at the $0.25$ multiple HV2000 separate the two series clearly, with ``Different Transfers'' well below ``Equal Transfers'' ($-3.5$ against $+0.3$ in panel a, $-16.5$ against $-7.5$ in panel b), while ours are nearly level there and it is the middle multiples where the two visibly separate.
+
+
+
+\subsection*{Tables 8 and 9: the lowest income multiple}
+
+Tables~\ref{fig:HV2000_table8} and~\ref{fig:HV2000_table9} impose an equal saving \emph{rate} within each age group --- agent $i$'s counterfactual saving is $\bar{s}(j)\,y_i$, where $\bar{s}(j)$ is age group $j$'s total saving over its total income --- so each bin's entry is an income-weighted average of the age-group saving rates of the agents in that bin. Note that it is the rate and not the saving level that is equalised; equalising the level instead makes the bin ratio decay like the reciprocal of the income multiple and inverts the profile the tables exist to show.
+
+The replication is close for every multiple at or above $0.75$: Table~9 typically within $0.5$--$1.5$ percentage points, Table~8 within about $1$ point through the middle of the distribution and $2$--$3$ points below HV2000 at the top. The $0.25$ multiple is the loosest cell throughout --- Table~8 Model~3 at $\underline{a}=0$ is $10.5$ in HV2000 against $6.2$ here, and Table~9 Model~3 at $\underline{a}=0$ is $-35.6$ against $-52.2$. That band is the thinnest of the ten and is populated mainly by retirees and the youngest workers, so it is the most sensitive both to where the $\pm 10\%$ edges fall relative to the income distribution and to how little mass lands inside them; it is also, being a ratio with a small denominator, the cell where a given absolute discrepancy translates into the largest percentage-point gap. The qualitative message is unaffected and replicates: imposing equal saving rates within age groups still yields a profile rising with income, but a markedly flatter one than the data, which reach $39.2\%$ at the $10$ multiple where the model reaches roughly $21$--$23\%$.
+
+\section{Replication Results}\label{sec:replication}
+
+This section collects every replicated table and figure. In each exhibit the original from HV2000 is shown on top and our replication below.
+
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table2.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table2.tex}
+\end{tabular}
+\end{center}
+\caption{Table 2 of Huggett \& Ventura (2000): model parameters. Top: original from paper. Bottom: replicated.}
+\label{fig:HV2000_table2}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table3.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table3.tex}
+\end{tabular}
+\end{center}
+\caption{Table 3 of Huggett \& Ventura (2000): labor endowment process. Top: original from paper. Bottom: replicated.}
+\label{fig:HV2000_table3}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table4.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table4.tex}
+\end{tabular}
+\end{center}
+\caption{Table 4 of Huggett \& Ventura (2000): descriptive statistics. Top: original from paper. Bottom: replicated. The transfer-wealth column is the Kotlikoff--Summers (1981) decomposition described in Section~\ref{sec:results}; the caveat on the $\underline{a}=-w$ Gini and Lorenz entries is in the table note.}
+\label{fig:HV2000_table4}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table5.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table5.tex}
+\end{tabular}
+\end{center}
+\caption{Table 5 of Huggett \& Ventura (2000): saving rates at multiples of mean income, by model and borrowing limit. Top: original from paper. Bottom: replicated; US data row from HV2000 column US$^a$.}
+\label{fig:HV2000_table5}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table6.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table6.tex}
+\end{tabular}
+\end{center}
+\caption{Table 6 of Huggett \& Ventura (2000): Model 4 sensitivity to $\sigma^2_{\varepsilon_2}$, at $\underline{a}=0$. Top: original from paper. Bottom: replicated. Left block: all agents. Right block: restricted to the middle $e$ grid point.}
+\label{fig:HV2000_table6}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table7.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table7.tex}
+\end{tabular}
+\end{center}
+\caption{Table 7 of Huggett \& Ventura (2000): saving rates with social security eliminated. Top: original from paper. Bottom: replicated; Models 2--4 only (Model 1 omitted in the paper).}
+\label{fig:HV2000_table7}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Figure2.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/HV2000_Figure2.png}
+\end{tabular}
+\end{center}
+\caption{HV2000 Fig 2: age-earnings profile $\bar{y}_j$ (ratio to overall mean). Top: original from paper. Bottom: replicated, built from 1990 male median earnings (SSA Annual Statistical Supplement, Table 4.B6) times 1990 male LFP rates from Fullerton (1992) ``Evaluation of labor force projections to 1990,'' MLR Aug 1992, Table 1 (\url{https://www.bls.gov/opub/mlr/1992/08/art1full.pdf}) -- the same article HV2000 cite. Fullerton publishes 25--34, 35--44, 45--54, 60--64, and 70+ as aggregates; SSA subbins within each aggregate take Fullerton's aggregate value. The SSA 60--61 vs 62--64 split (early-SS-retirement effect) and 70--71 vs 72+ split are not published by Fullerton and are approximated; see Section~\ref{sec:results}.}
+\label{fig:HV2000_fig2}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/HV2000_Figure3.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/HV2000_Figure3.png}
+\end{tabular}
+\end{center}
+\caption{HV2000 Fig 3 (Model 2, $\underline{a}=0$): (a) saving rates by age × income group; (b) age-income distribution. Top: original from paper. Bottom: replicated.}
+\label{fig:HV2000_fig3}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/HV2000_Figure4.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/HV2000_Figure4.png}
+\end{tabular}
+\end{center}
+\caption{HV2000 Fig 4 (Model 4, $\underline{a}=0$): (a) saving rates by age × income group; (b) age-income distribution. Top: original from paper. Bottom: replicated.}
+\label{fig:HV2000_fig4}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/HV2000_Figure5.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/HV2000_Figure5.png}
+\end{tabular}
+\end{center}
+\caption{HV2000 Fig 5 (Model 2, \emph{no social security}, $\underline{a}=0$): (a) saving rates by age × income group; (b) age-income distribution. Top: original from paper. Bottom: replicated.}
+\label{fig:HV2000_fig5}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/HV2000_Figure6.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/HV2000_Figure6.png}
+\end{tabular}
+\end{center}
+\caption{HV2000 Fig 6 (Model 2, alternative bequest treatments): (a) $\underline{a}=0$; (b) $\underline{a}=-w$. ``Equal Transfers'' is the baseline Model 2 (single population-wide lump-sum $T$); ``Different Transfers'' routes bequests by ability type via PType with per-type $T_i$. Top: original from paper. Bottom: replicated.}
+\label{fig:HV2000_fig6}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=120mm]{./OriginalTablesFigures/HV2000_Figure7.png} \\
+\includegraphics[width=140mm]{../SavedOutput/Graphs/HV2000_Figure7.png}
+\end{tabular}
+\end{center}
+\caption{HV2000 Fig 7: median saving rates by age × income quartile in Model 4 ($\underline{a}=0$). Compare with Attanasio (1994) Table 2.10. Following HV2000, the lowest income quartile is omitted --- its saving rate is negative at every age --- so the plotted series are the second, third and fourth quartiles plus the total sample. Top: original from paper. Bottom: replicated.}
+\label{fig:HV2000_fig7}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table8.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table8.tex}
+\end{tabular}
+\end{center}
+\caption{Table 8 of Huggett \& Ventura (2000): saving rates with within-age-group averaging (baseline SS). Top: original from paper. Bottom: replicated; Models 2--4.}
+\label{fig:HV2000_table8}
+\end{figure}
+
+\begin{figure}[htp]
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table9.png}
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{c}
+\input{../SavedOutput/LatexInputs/HV2000_Table9.tex}
+\end{tabular}
+\end{center}
+\caption{Table 9 of Huggett \& Ventura (2000): saving rates with within-age-group averaging, no social security. Top: original from paper. Bottom: replicated; Models 2--4.}
+\label{fig:HV2000_table9}
+\end{figure}
+
+
+% Template for adding original-paper images alongside the generated tables.
+% Uncomment and populate ./OriginalTablesFigures/HV2000_TableN.png to use.
+%
+% \begin{figure}[htp]
+% \begin{center}
+% \begin{tabular}{c}
+% \includegraphics[width=140mm]{./OriginalTablesFigures/HV2000_Table4.png}
+% \end{tabular}
+% \end{center}
+% \begin{center}
+% \begin{tabular}{c}
+% \input{../SavedOutput/LatexInputs/HV2000_Table4.tex}
+% \end{tabular}
+% \end{center}
+% \caption{Table 4 of Huggett \& Ventura (2000), original (top) and replicated (bottom).}
+% \label{fig:HV2000_table4_comparison}
+% \end{figure}
+
+
+
+\appendix
+
+\section{Computational implementation}\label{sec:computational}
+
+This appendix collects everything specific to solving the model with the VFI Toolkit. Nothing here changes the economics of Sections~\ref{sec:model}--\ref{sec:ge}.
+
+\subsection*{State space}
+
+Because $\bar{e}$'s next-period value is determined by $(\bar{e}, z, j)$ in Models 1--3 (or $(\bar{e}, z, e, j)$ in Model 4), it is implemented as an \texttt{experienceassetz} (Models 1--3) or \texttt{experienceassetze} (Model 4). HV2000 has no labor-supply choice; to satisfy the experience-asset signature \verb|aprime(d,a,z[,e])| we include a singleton dummy decision variable $d$ that does not enter the return function or the law of motion. The asset and $\bar{e}$ grids have $251$ and $75$ points respectively.
+
+\subsection*{Discretization of the earnings processes}
+
+Model 1 uses $n_z=1$. Model 2 uses $n_z=21$ with $\pi_z=I$ (the shift is permanent), the birth distribution discretized via \verb|discretizeIID_Tauchen| on $[-5\sigma_{y_1}, +5\sigma_{y_1}]$. Models 3 and 4 use $n_z=61$, with the AR(1) discretized via \verb|discretizeAR1_Tauchen| on $\pm 6$ stationary standard deviations (our reading of HV2000 footnote 14). Model 4's iid shock uses $n_e=3$ on $[-2\sigma_{\varepsilon_2}, +2\sigma_{\varepsilon_2}]$ via \verb|discretizeIID_Tauchen|.
+
+For the renormalization described in Section~\ref{sec:earnings} we build an age-varying grid \verb|z_grid_J| and use \verb|MarkovChainMoments_FHorz| to compute the cohort mean $E[z_j]$ at every age, then rescale each column of \verb|z_grid_J| so that $E[z_j]=1$ for all $j$.
+
+\cite*{TanakaToda2013} or \cite*{FarmerToda2017} would give a better Markov-chain approximation than the Tauchen method used here, but we stay with Tauchen to follow the original paper.
+
+\subsection*{Naming}
+
+The code follows HV2000's notation closely; the main renames are the common social-security benefit, \verb|b_common| (HV2000: $b$), whose earnings-related component is computed inline inside the return function using bend points $0.20\, w\, \bar{y}$ and $1.24\, w\, \bar{y}$; and the per-worker mean of $\bar{y}_j$, \verb|ybar_mean|, which has no direct counterpart in HV2000 and is used to express the bend points and the AIME cap as multiples of average labor income.
+
+The Kotlikoff--Summers statistic of Section~\ref{sec:results} is implemented in \texttt{HV2000\_KotlikoffSummersStat.m}, called from each model script to store \texttt{Results.ModelN\_abarX.TransferWealthPct}, which \texttt{HV2000\_WriteTables.m} reads into the Table~4 column.
+
+\subsection*{Figure 6: per-type bequests}
+
+The ``Different Transfers'' counterfactual is implemented by switching Model 2 to a permanent-type layer with $N_i = 21$ types (one per ability level from the discretized initial earnings distribution), promoting $T$ to a per-type vector $T_i$, and solving a per-type bequest balance via \verb|heteroagentoptions.GEptype = {'BequestBalance'}|; see \texttt{HV2000\_Model2\_ptype.m}.
+
+This raises the number of general-equilibrium unknowns from $6$ to $26$ ($5$ aggregate prices plus $21$ per-type transfers), which is past the point where the default Nelder--Mead search is usable: it failed to come within three orders of magnitude of the tolerance in $1205$ evaluations. We instead use Anderson acceleration of the shooting map (\verb|heteroagentoptions.fminalgo=9|), supplying an update rule per equilibrium condition. Each condition is written as ``price minus target'', so the shooting step is $p \leftarrow p - \text{factor} \times \text{residual}$; the bequest-balance rule uses $\text{factor}=1/(1+n)$, which is the exact Newton step for that block, and the capital-market rule is damped to $0.3$, since the Aiyagari fixed point oscillates undamped. This converges in $10$ Anderson iterations at $\underline{a}=0$ and $7$ at $\underline{a}=-w$.
+
+\subsection*{Numerical caveats}
+
+The asset grid runs from $\underline{a}$ to $a_{\max}$, with $31$ evenly spaced points on $[\underline{a},0]$ and the remainder cubically spaced on $(0,a_{\max}]$, so that points concentrate where the mass is.
+
+An earlier version of this replication used $a_{\max}=50$ with $201$ asset points, and that ceiling bound: between $0.37\%$ and $0.58\%$ of the population sat in the top ten asset gridpoints across Tables~6--9, against a tolerance of $10^{-5}$. Under the cubic spacing those ten points covered $a \in [42.5, 50]$, so the constrained households were genuinely trying to accumulate past the ceiling rather than merely bunching on a coarse grid, and the ceiling bound hardest exactly where the incentive to accumulate is strongest --- the no-social-security counterfactual and the highest transitory-variance case. We therefore raise $a_{\max}$ to $150$. Because the cubic spacing places half the points below $a_{\max}/8$, raising the ceiling alone would have coarsened the grid precisely where most households sit, so the number of asset points is raised from $201$ to $251$ at the same time. The \texttt{CheckTopOfGrid} diagnostic reported at the end of the main script is what to watch: it prints the mass in the top $10$, $5$ and $2$ gridpoints of the asset and $\bar{e}$ grids for every model solved, and warns above $10^{-5}$.
+
+Every exhibit in Section~\ref{sec:replication} of this version was produced on the wider $a_{\max}=150$, $251$-point grid. On that grid the ceiling no longer binds in any economically meaningful sense. Over the models whose diagnostic we retained --- the eight of Tables~2--5, the last of the twelve general-equilibrium solves behind Tables~8 and~9, and the two permanent-type solves behind Figure~6 --- the mass in the top ten asset gridpoints ranges from $0$ (Model~1, which has no idiosyncratic risk and so no accumulation motive at the top) to $3.4\times10^{-5}$, the largest value occurring for Model~4 at $\underline{a}=-w$ in the no-social-security pass. The $\bar{e}$ grid never binds at all: the mass in its top five gridpoints is exactly zero for every model. These residuals are two orders of magnitude below the $0.37\%$--$0.58\%$ recorded on the old grid, and we accept them rather than widen the ceiling further; they sit marginally above the $10^{-5}$ warning threshold, so \texttt{CheckTopOfGrid} still prints a warning for the largest few. Where such a residual could matter at all is the largest income multiples of each table, since those are the cells populated by the households closest to the ceiling.
+
+
+
+\bibliographystyle{plainnat}
+\bibliography{/home/kmarshallbanana/Dropbox/RDKbiblio.bib}
+
+\end{document}
