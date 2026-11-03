@@ -1127,7 +1127,7 @@ if doPart(4)==1
     Table10_final=[CorrelationAndTransitionProbStats.Entrepreneur.TransitionProbs(1,2), CorrelationAndTransitionProbStats.Entrepreneur.TransitionProbs(2,1), AggVars_final.Entrepreneur.Mean];
     
     % Entrepreneur entry/exit rates over the transition path (B2021 replication just needs those from first period of transition, but easier to just calc the whole transition path)
-    CorrelationAndTransitionProbStatsTPath=EvalFnOnTransPath_AutoCorrTransProbs_InfHorz(FnsToEvaluate5, AgentDistPath, PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z,simoptions);
+    CorrelationAndTransitionProbStatsTPath=EvalFnOnTransPath_AutoCorrTransProbs_InfHorz(FnsToEvaluate5, AgentDistPath, PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,pi_z,transpathoptions,simoptions);
     
     % Save copies of the entry and exit rates for first-to-second period of the transition path
     Table10_tpath=[CorrelationAndTransitionProbStatsTPath.Entrepreneur.TransitionProbs(1,2,1), CorrelationAndTransitionProbStatsTPath.Entrepreneur.TransitionProbs(2,1,1), AggVarsPath.Entrepreneur.Mean(1)];
