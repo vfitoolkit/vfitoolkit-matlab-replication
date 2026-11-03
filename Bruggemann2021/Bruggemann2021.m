@@ -927,7 +927,7 @@ if doPart(3)==1
         % distribution with no interpolation layer, dumping mass that belongs between coarse
         % nodes j and j+1 onto j.
         AgentDistPath=AgentDistOnTransPath_InfHorz(StationaryDist_initial, PricePath,ParamPath,PolicyPath,n_d,n_a,n_z,pi_z,T,Params,transpathoptions,simoptions);
-        AggVarsPath=EvalFnOnTransPath_AggVars_InfHorz(FnsToEvaluate_TransPath2,AgentDistPath,PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+        AggVarsPath=EvalFnOnTransPath_AggVars_InfHorz(FnsToEvaluate_TransPath2,AgentDistPath,PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,transpathoptions,simoptions);
         
         Y_corp_Path=Params.Z*((AggVarsPath.A.Mean-AggVarsPath.K_noncorp.Mean).^(Params.alpha)).*((AggVarsPath.L.Mean-AggVarsPath.N_lbar.Mean-AggVarsPath.N_noncorp.Mean).^(1-Params.alpha));
         YPath=Y_corp_Path+AggVarsPath.Y_noncorp.Mean;
@@ -1078,7 +1078,7 @@ if doPart(4)==1
     YPath=TPathResults(ii).YPath;
 
     % Create a version of AggVarsPath that contains more FnsToEvaluate (things we didnt need when finding the general eqm)
-    AggVarsPath=EvalFnOnTransPath_AggVars_InfHorz(FnsToEvaluate,AgentDistPath,PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+    AggVarsPath=EvalFnOnTransPath_AggVars_InfHorz(FnsToEvaluate,AgentDistPath,PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,transpathoptions,simoptions);
 
     % take a look at these, should be essentially zero (say 1e-5)
     GeneralEqmCondn_final=FinalEqmResults(ii).GeneralEqmCondn_final;
@@ -1370,7 +1370,7 @@ if doPart(4)==1
     
     %% Calculate some things from transition path (we only want first period, but easier to do the whole thing)
     tic;
-    AllStatsPath=EvalFnOnTransPath_AllStats_InfHorz(FnsToEvaluate6,AgentDistPath,PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,simoptions);
+    AllStatsPath=EvalFnOnTransPath_AllStats_InfHorz(FnsToEvaluate6,AgentDistPath,PolicyPath,PricePath,ParamPath, Params, T, n_d, n_a, n_z, d_grid, a_grid,z_grid,transpathoptions,simoptions);
     % A conditional restriction with zero mass gets no stats fields (the toolkit writes them
     % only under RestrictedSampleMass>0), while the Figure 4/5 assignments below index them
     % directly. Fill NaN so an empty group plots as a gap instead of erroring.
