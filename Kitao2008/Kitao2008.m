@@ -237,6 +237,7 @@ wealthscalingfactor=42618; % Converts model units to dollars
 %%
 vfoptions.gridinterplayer=1;
 vfoptions.ngridinterp=25;
+vfoptions.maxaprimediff=40; % postGI window (in coarse grid points of assets); the two-endogenous-state default is ceil(n_asset/10)=120, which needs roughly 23GB of GPU memory at n_asset=1200 and ngridinterp=25
 
 simoptions.gridinterplayer=vfoptions.gridinterplayer;
 simoptions.ngridinterp=vfoptions.ngridinterp;
